@@ -121,12 +121,53 @@ button:disabled {
 }
 
 .workspace {
+  --split: 60%;
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.72fr);
+  grid-template-columns: var(--split) 8px 1fr;
   gap: 0;
   min-height: 0;
   overflow: hidden;
+}
+
+.splitter {
+  position: relative;
+  cursor: col-resize;
+  background: var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 140ms ease-out;
+  touch-action: none;
+}
+
+.splitter::before {
+  content: "";
+  position: absolute;
+  inset: 0 -4px;
+}
+
+.splitter:hover,
+.splitter:focus-visible,
+.splitter.is-dragging {
+  background: var(--accent);
+  outline: none;
+}
+
+.splitter-grip {
+  width: 3px;
+  height: 36px;
+  border-radius: 999px;
+  background: oklch(0.55 0.02 240 / 0.6);
+  box-shadow:
+    -5px 0 0 oklch(0.55 0.02 240 / 0.4),
+    5px 0 0 oklch(0.55 0.02 240 / 0.4);
+}
+
+.splitter:hover .splitter-grip,
+.splitter.is-dragging .splitter-grip {
+  background: white;
+  box-shadow: -5px 0 0 white, 5px 0 0 white;
 }
 
 .document-pane,
@@ -1032,6 +1073,10 @@ textarea.chat-input {
   .workspace {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr 1fr;
+  }
+
+  .splitter {
+    display: none;
   }
 
   .document-pane,

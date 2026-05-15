@@ -422,6 +422,7 @@ export function TeachingApp() {
               onPageChange={setActivePage}
             />
           </section>
+          <Splitter />
           <section className="teacher-pane" aria-label="Teacher voice call">
             <TeacherPanel
               messages={messages}
@@ -641,6 +642,81 @@ function DocumentBoard({
           </article>
         )}
       </div>
+    </div>
+  );
+}
+
+function Splitter() {
+  const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    if (!dragging) return;
+
+    function setSplit(clientX: number) {
+      const workspace = document.querySelector<HTMLElement>(".workspace");
+      if (!workspace) return;
+      const rect = workspace.getBoundingClientRect();
+      const ratio = (clientX - rect.left) / rect.width;
+      const clamped = Math.min(0.85, Math.max(0.25, ratio));
+      workspace.style.setProperty("--split", `${(clamped * 100).toFixed(2)}%`);
+    }
+
+    function onMove(e: MouseEvent) {
+      e.preventDefault();
+      setSplit(e.clientX);
+    }
+    function onTouch(e: TouchEvent) {
+      const t = e.touches[0];
+      if (t) setSplit(t.clientX);
+    }
+    function stop() {
+      setDragging(false);
+    }
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", stop);
+    document.addEventListener("touchmove", onTouch, { passive: true });
+    document.addEventListener("touchend", stop);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", stop);
+      document.removeEventListener("touchmove", onTouch);
+      document.removeEventListener("touchend", stop);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [dragging]);
+
+  return (
+    <div
+      className={`splitter${dragging ? " is-dragging" : ""}`}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize document and chat panes"
+      tabIndex={0}
+      onMouseDown={() => setDragging(true)}
+      onTouchStart={() => setDragging(true)}
+      onDoubleClick={() => {
+        const ws = document.querySelector<HTMLElement>(".workspace");
+        ws?.style.removeProperty("--split");
+      }}
+      onKeyDown={(e) => {
+        const ws = document.querySelector<HTMLElement>(".workspace");
+        if (!ws) return;
+        const current = parseFloat(
+          getComputedStyle(ws).getPropertyValue("--split") || "60"
+        );
+        if (e.key === "ArrowLeft") {
+          ws.style.setProperty("--split", `${Math.max(25, current - 2)}%`);
+        } else if (e.key === "ArrowRight") {
+          ws.style.setProperty("--split", `${Math.min(85, current + 2)}%`);
+        }
+      }}
+    >
+      <span className="splitter-grip" aria-hidden />
     </div>
   );
 }
