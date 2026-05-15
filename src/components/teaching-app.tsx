@@ -881,6 +881,7 @@ function TeacherPanel({
   onClearChat: () => void;
 }) {
   const logRef = useRef<HTMLDivElement>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
@@ -977,11 +978,7 @@ function TeacherPanel({
               onClearChat();
               return;
             }
-            const ok =
-              typeof window === "undefined"
-                ? true
-                : window.confirm("Clear the chat and restart the lesson from the beginning?");
-            if (ok) onClearChat();
+            setConfirmOpen(true);
           }}
           disabled={messages.length === 0 && !callMode}
         >
@@ -1012,6 +1009,80 @@ function TeacherPanel({
           <AlertTriangle size={14} aria-hidden /> Microphone is not supported in this browser.
         </p>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Restart the lesson?"
+        body="This clears the current chat and starts a fresh session from the beginning. This action cannot be undone."
+        confirmLabel="Clear & restart"
+        cancelLabel="Cancel"
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          onClearChat();
+        }}
+      />
+    </div>
+  );
+}
+
+function ConfirmDialog({
+  open,
+  title,
+  body,
+  confirmLabel,
+  cancelLabel,
+  onConfirm,
+  onCancel
+}: {
+  open: boolean;
+  title: string;
+  body: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onCancel();
+      if (event.key === "Enter") onConfirm();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onCancel, onConfirm]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+      onClick={onCancel}
+    >
+      <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+        <div className="modal-head">
+          <div className="modal-icon" aria-hidden>
+            <AlertTriangle size={20} />
+          </div>
+          <div>
+            <h3 id="confirm-title" className="modal-title">{title}</h3>
+            <p className="modal-body">{body}</p>
+          </div>
+        </div>
+        <div className="modal-actions">
+          <button className="button" type="button" onClick={onCancel}>
+            {cancelLabel}
+          </button>
+          <button className="button danger" type="button" onClick={onConfirm} autoFocus>
+            <RotateCcw size={16} aria-hidden />
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
