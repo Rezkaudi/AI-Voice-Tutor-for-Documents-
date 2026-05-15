@@ -14,6 +14,7 @@ import {
   MicOff,
   Phone,
   PhoneOff,
+  RotateCcw,
   UploadCloud,
   Volume2,
   VolumeX
@@ -102,6 +103,20 @@ export function TeachingApp() {
     start: startListening,
     stop: stopListening
   } = useVoiceRecorder(handleVoiceTranscript, handleVoiceError);
+
+  const clearChat = useCallback(() => {
+    setMessages([]);
+    setHighlight(null);
+    setHasIntroduced(false);
+    setError(null);
+    setIsStreaming(false);
+    if (callModeRef.current) {
+      setCallMode(false);
+      callModeRef.current = false;
+      stopListening();
+    }
+    stopSpeaking();
+  }, [stopListening, stopSpeaking]);
 
   useEffect(() => {
     fetch("/api/access")
@@ -446,6 +461,7 @@ export function TeachingApp() {
                   startListening();
                 }
               }}
+              onClearChat={clearChat}
               onCallToggle={() => {
                 if (callMode) {
                   setCallMode(false);
@@ -847,7 +863,8 @@ function TeacherPanel({
   error,
   onVoiceToggle,
   onMicToggle,
-  onCallToggle
+  onCallToggle,
+  onClearChat
 }: {
   messages: UiMessage[];
   isStreaming: boolean;
@@ -861,6 +878,7 @@ function TeacherPanel({
   onVoiceToggle: () => void;
   onMicToggle: () => void;
   onCallToggle: () => void;
+  onClearChat: () => void;
 }) {
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -947,6 +965,27 @@ function TeacherPanel({
         >
           {callMode ? <PhoneOff size={26} aria-hidden /> : <Phone size={26} aria-hidden />}
           <span>{callMode ? "End" : "Call"}</span>
+        </button>
+
+        <button
+          className="dock-btn"
+          type="button"
+          aria-label="Clear chat and restart"
+          title="Clear chat and restart"
+          onClick={() => {
+            if (messages.length === 0) {
+              onClearChat();
+              return;
+            }
+            const ok =
+              typeof window === "undefined"
+                ? true
+                : window.confirm("Clear the chat and restart the lesson from the beginning?");
+            if (ok) onClearChat();
+          }}
+          disabled={messages.length === 0 && !callMode}
+        >
+          <RotateCcw size={20} aria-hidden />
         </button>
 
         <button
