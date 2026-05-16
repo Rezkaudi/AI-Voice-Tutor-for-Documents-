@@ -49,6 +49,9 @@ export function useTutorChat({
   const abort = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    // Clear the flag now: the stream may be parked on TTS playback, where the
+    // request controller no longer drives the `finally` that would reset it.
+    setIsStreaming(false);
   }, []);
 
   const resetMessages = useCallback(() => {
