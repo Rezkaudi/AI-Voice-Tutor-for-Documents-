@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { buildReferenceSnippet, rankChunks } from "@/lib/retrieval";
-import type { ChatMessage, Reference } from "@/lib/types";
+import type { ChatMessage } from "@/lib/types";
 import { requireAccess } from "@/server/access-control";
 import { getDocumentStore } from "@/server/document-store";
-import { embedQuery, streamTutorAnswer } from "@/server/openai";
+import { streamTutorAnswer } from "@/server/openai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -30,33 +29,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Document not found." }, { status: 404 });
   }
 
-  const chunks = await store.getChunks(documentId);
-  const queryEmbedding = await embedQuery(message).catch(() => null);
-  const ranked = rankChunks(message, chunks, queryEmbedding).slice(0, 5);
-  const selectedChunks = ranked.map((item) => item.chunk);
-  const reference: Reference | null = selectedChunks[0]
-    ? {
-        pageNumber: selectedChunks[0].pageNumber,
-        snippet: buildReferenceSnippet(selectedChunks[0].text, message),
-        chunkId: selectedChunks[0].id
-      }
-    : null;
+  // The tutor reads the document agentically via tools, so hand it everything:
+  // every page (for get_page / get_outline) and every chunk (for search_document).
+  const [pages, chunks] = await Promise.all([
+    store.getPages(documentId),
+    store.getChunks(documentId)
+  ]);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      writeEvent(controller, encoder, "meta", { reference });
+      writeEvent(controller, encoder, "meta", { reference: null });
 
       try {
-        for await (const delta of streamTutorAnswer({
+        for await (const event of streamTutorAnswer({
           document,
           message,
           language,
           history,
-          chunks: selectedChunks,
-          reference
+          pages,
+          chunks
         })) {
-          writeEvent(controller, encoder, "delta", { text: delta });
+          if (event.type === "reference") {
+            writeEvent(controller, encoder, "meta", { reference: event.reference });
+          } else {
+            writeEvent(controller, encoder, "delta", { text: event.text });
+          }
         }
 
         writeEvent(controller, encoder, "done", {});

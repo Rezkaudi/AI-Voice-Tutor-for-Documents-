@@ -3,10 +3,22 @@ import { appConfig, hasOpenAIConfig } from "@/lib/config";
 import {
   buildFallbackAnswer,
   buildTutorInstructions,
-  buildTutorUserTurn,
-  TUTOR_GENERATION
+  TUTOR_GENERATION,
+  TUTOR_TOOLS
 } from "@/lib/prompts";
-import type { ChatMessage, DocumentChunk, DocumentRecord, Reference } from "@/lib/types";
+import { buildReferenceSnippet, rankChunks } from "@/lib/retrieval";
+import type {
+  ChatMessage,
+  DocumentChunk,
+  DocumentPage,
+  DocumentRecord,
+  Reference
+} from "@/lib/types";
+
+/** A streamed tutor turn: spoken text, or a page reference for the UI to show. */
+export type TutorStreamEvent =
+  | { type: "delta"; text: string }
+  | { type: "reference"; reference: Reference };
 
 // Character batch size for streaming the local demo-mode answer.
 const FALLBACK_STREAM_CHUNK = 36;
@@ -77,47 +89,168 @@ export async function embedQuery(query: string): Promise<number[] | null> {
   return embedding ?? null;
 }
 
-export async function* streamTutorAnswer(input: {
+type TutorInput = {
   document: DocumentRecord;
   message: string;
   language?: string;
   history: ChatMessage[];
+  pages: DocumentPage[];
   chunks: DocumentChunk[];
-  reference: Reference | null;
-}): AsyncGenerator<string> {
+};
+
+/**
+ * Streams a tutor answer. The model reads the document agentically: it calls
+ * `search_document` / `get_page` / `get_outline` as needed, we run each tool
+ * and feed the result back, and loop until the model produces spoken text.
+ */
+export async function* streamTutorAnswer(input: TutorInput): AsyncGenerator<TutorStreamEvent> {
   if (!hasOpenAIConfig()) {
     yield* streamFallbackAnswer(input);
     return;
   }
 
   const openai = getClient();
-  const context = input.chunks
-    .map((chunk) => `[Page ${chunk.pageNumber}] ${chunk.text}`)
-    .join("\n\n");
+  // Bind to keep `this` — a detached `openai.responses.create` loses its client.
+  const createResponse = openai.responses.create.bind(openai.responses) as unknown as (
+    body: Record<string, unknown>
+  ) => Promise<AsyncIterable<Record<string, unknown>>>;
 
-  const response = await (openai.responses.create as unknown as (body: Record<string, unknown>) => Promise<AsyncIterable<Record<string, unknown>>>)({
-    model: appConfig.tutorModel,
-    instructions: buildTutorInstructions(input.document.title, input.language),
-    reasoning: { effort: TUTOR_GENERATION.reasoningEffort },
-    max_output_tokens: TUTOR_GENERATION.maxOutputTokens,
-    input: [
-      ...input.history.slice(-TUTOR_GENERATION.historyWindow).map((message) => ({
-        role: message.role,
-        content: message.content
-      })),
-      {
-        role: "user",
-        content: buildTutorUserTurn(context, input.message)
+  // First turn carries history + the student's message. Later turns chain off
+  // `previous_response_id` and carry only the tool outputs.
+  let pendingInput: Record<string, unknown>[] = [
+    ...input.history.slice(-TUTOR_GENERATION.historyWindow).map((message) => ({
+      role: message.role,
+      content: message.content
+    })),
+    { role: "user", content: input.message }
+  ];
+  let previousResponseId: string | undefined;
+
+  for (let step = 0; step < TUTOR_GENERATION.maxToolSteps; step += 1) {
+    const stream = await createResponse({
+      model: appConfig.tutorModel,
+      instructions: buildTutorInstructions(input.document.title, input.language),
+      reasoning: { effort: TUTOR_GENERATION.reasoningEffort },
+      max_output_tokens: TUTOR_GENERATION.maxOutputTokens,
+      tools: TUTOR_TOOLS,
+      input: pendingInput,
+      ...(previousResponseId ? { previous_response_id: previousResponseId } : {}),
+      stream: true
+    });
+
+    const toolCalls: { callId: string; name: string; args: string }[] = [];
+
+    for await (const event of stream) {
+      if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
+        yield { type: "delta", text: event.delta };
+      } else if (event.type === "response.output_item.done") {
+        const item = event.item as Record<string, unknown> | undefined;
+        if (item?.type === "function_call") {
+          toolCalls.push({
+            callId: String(item.call_id),
+            name: String(item.name),
+            args: typeof item.arguments === "string" ? item.arguments : "{}"
+          });
+        }
+      } else if (event.type === "response.completed") {
+        const response = event.response as Record<string, unknown> | undefined;
+        if (response?.id) {
+          previousResponseId = String(response.id);
+        }
       }
-    ],
-    stream: true
-  });
+    }
 
-  for await (const event of response) {
-    if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
-      yield event.delta;
+    // No tool calls means the model has given its final spoken answer.
+    if (toolCalls.length === 0) {
+      return;
+    }
+
+    pendingInput = [];
+    for (const call of toolCalls) {
+      const result = await runTutorTool(call.name, call.args, input);
+      if (result.reference) {
+        yield { type: "reference", reference: result.reference };
+      }
+      pendingInput.push({
+        type: "function_call_output",
+        call_id: call.callId,
+        output: result.output
+      });
     }
   }
+}
+
+/** Runs one tutor tool call and returns its text output plus an optional citation. */
+async function runTutorTool(
+  name: string,
+  rawArgs: string,
+  input: TutorInput
+): Promise<{ output: string; reference: Reference | null }> {
+  let args: Record<string, unknown> = {};
+  try {
+    args = JSON.parse(rawArgs || "{}");
+  } catch {
+    args = {};
+  }
+
+  if (name === "get_outline") {
+    const outline = input.pages
+      .map((page) => `Page ${page.pageNumber}: ${previewLine(page.text)}`)
+      .join("\n");
+    return { output: outline || "The document has no readable pages.", reference: null };
+  }
+
+  if (name === "get_page") {
+    const pageNumber = Number(args.page);
+    const page = input.pages.find((item) => item.pageNumber === pageNumber);
+    if (!page) {
+      return {
+        output: `There is no page ${pageNumber}. The document has ${input.pages.length} page(s).`,
+        reference: null
+      };
+    }
+    return {
+      output: `[Page ${page.pageNumber}]\n${page.text}`,
+      reference: {
+        pageNumber: page.pageNumber,
+        snippet: buildReferenceSnippet(page.text, input.message),
+        chunkId: input.chunks.find((chunk) => chunk.pageNumber === page.pageNumber)?.id
+      }
+    };
+  }
+
+  if (name === "search_document") {
+    const query = typeof args.query === "string" && args.query.trim() ? args.query : input.message;
+    const embedding = await embedQuery(query).catch(() => null);
+    const ranked = rankChunks(query, input.chunks, embedding).slice(0, 6);
+    if (!ranked.length) {
+      return { output: "No matching passages were found in the document.", reference: null };
+    }
+
+    const output = ranked
+      .map((item) => `[Page ${item.chunk.pageNumber}] ${item.chunk.text}`)
+      .join("\n\n");
+    const top = ranked[0].chunk;
+    return {
+      output,
+      reference: {
+        pageNumber: top.pageNumber,
+        snippet: buildReferenceSnippet(top.text, query),
+        chunkId: top.id
+      }
+    };
+  }
+
+  return { output: `Unknown tool: ${name}`, reference: null };
+}
+
+/** One-line preview of a page, used by the get_outline tool. */
+function previewLine(text: string): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (!clean) {
+    return "(empty page)";
+  }
+  return clean.length > 140 ? `${clean.slice(0, 140)}...` : clean;
 }
 
 function getClient(): OpenAI {
@@ -128,13 +261,18 @@ function getClient(): OpenAI {
   return client;
 }
 
-async function* streamFallbackAnswer(input: {
-  chunks: DocumentChunk[];
-  reference: Reference | null;
-}): AsyncGenerator<string> {
-  const answer = buildFallbackAnswer(input.reference, input.chunks[0]);
+async function* streamFallbackAnswer(input: TutorInput): AsyncGenerator<TutorStreamEvent> {
+  const firstChunk = input.chunks[0];
+  const reference: Reference | null = firstChunk
+    ? { pageNumber: firstChunk.pageNumber, snippet: firstChunk.snippet, chunkId: firstChunk.id }
+    : null;
 
+  if (reference) {
+    yield { type: "reference", reference };
+  }
+
+  const answer = buildFallbackAnswer(reference, firstChunk);
   for (let index = 0; index < answer.length; index += FALLBACK_STREAM_CHUNK) {
-    yield answer.slice(index, index + FALLBACK_STREAM_CHUNK);
+    yield { type: "delta", text: answer.slice(index, index + FALLBACK_STREAM_CHUNK) };
   }
 }
