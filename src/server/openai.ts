@@ -1,6 +1,15 @@
 import OpenAI from "openai";
 import { appConfig, hasOpenAIConfig } from "@/lib/config";
+import {
+  buildFallbackAnswer,
+  buildTutorInstructions,
+  buildTutorUserTurn,
+  TUTOR_GENERATION
+} from "@/lib/prompts";
 import type { ChatMessage, DocumentChunk, DocumentRecord, Reference } from "@/lib/types";
+
+// Character batch size for streaming the local demo-mode answer.
+const FALLBACK_STREAM_CHUNK = 36;
 
 let client: OpenAI | null = null;
 
@@ -88,22 +97,17 @@ export async function* streamTutorAnswer(input: {
 
   const response = await (openai.responses.create as unknown as (body: Record<string, unknown>) => Promise<AsyncIterable<Record<string, unknown>>>)({
     model: appConfig.tutorModel,
-    instructions: tutorInstructions(input.document.title, input.language),
-    // gpt-5.x are reasoning models: without this they spend medium reasoning
-    // effort before emitting a single visible token. "none" gives the fastest
-    // time-to-first-word, which is what a live voice tutor needs.
-    // (gpt-5.4-mini accepts: none, low, medium, high, xhigh.)
-    reasoning: { effort: "none" },
-    // Keep replies tight so playback starts (and ends) sooner.
-    max_output_tokens: 700,
+    instructions: buildTutorInstructions(input.document.title, input.language),
+    reasoning: { effort: TUTOR_GENERATION.reasoningEffort },
+    max_output_tokens: TUTOR_GENERATION.maxOutputTokens,
     input: [
-      ...input.history.slice(-8).map((message) => ({
+      ...input.history.slice(-TUTOR_GENERATION.historyWindow).map((message) => ({
         role: message.role,
         content: message.content
       })),
       {
         role: "user",
-        content: `Document context:\n${context}\n\nStudent request:\n${input.message}`
+        content: buildTutorUserTurn(context, input.message)
       }
     ],
     stream: true
@@ -124,45 +128,13 @@ function getClient(): OpenAI {
   return client;
 }
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  ja: "Japanese",
-  en: "English",
-  ar: "Arabic"
-};
-
-function tutorInstructions(title: string, language?: string): string {
-  const languageName = language ? LANGUAGE_NAMES[language] : undefined;
-  const languageRule = languageName
-    ? `Always respond entirely in ${languageName}, regardless of the language of the document or the student's message. Every reply, including check-in questions, must be in ${languageName}.`
-    : "Respond in the same language the student writes or speaks in.";
-
-  return [
-    `You are a calm, engaging AI teacher helping a student learn "${title}".`,
-    languageRule,
-    "Teach only from the supplied document context. If the document does not contain the answer, say that clearly.",
-    "Use short paragraphs, concrete examples, and one small check-in question when useful.",
-    "When the student asks to continue, move to the next important idea from the context.",
-    "Do not mention embeddings, chunks, retrieval, or internal tooling."
-  ].join("\n");
-}
-
 async function* streamFallbackAnswer(input: {
-  message: string;
   chunks: DocumentChunk[];
   reference: Reference | null;
 }): AsyncGenerator<string> {
-  const reference = input.reference;
-  const firstChunk = input.chunks[0];
-  const sourceText = reference?.snippet || firstChunk?.snippet || "I found the document, but I could not extract a useful passage yet.";
-  const pageText = reference ? `On page ${reference.pageNumber}, ` : "";
-  const answer = [
-    "I can teach from this document in local demo mode.",
-    `${pageText}the most relevant passage says: "${sourceText}"`,
-    "A simple way to understand it is to identify the main claim, then connect each detail back to that claim.",
-    "What part would you like me to slow down and explain next?"
-  ].join("\n\n");
+  const answer = buildFallbackAnswer(input.reference, input.chunks[0]);
 
-  for (let index = 0; index < answer.length; index += 36) {
-    yield answer.slice(index, index + 36);
+  for (let index = 0; index < answer.length; index += FALLBACK_STREAM_CHUNK) {
+    yield answer.slice(index, index + FALLBACK_STREAM_CHUNK);
   }
 }

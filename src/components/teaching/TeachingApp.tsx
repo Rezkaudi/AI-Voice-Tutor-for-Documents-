@@ -7,11 +7,12 @@ import { useDocument } from "@/hooks/use-document";
 import { useSpeech } from "@/hooks/use-speech";
 import { useTutorChat } from "@/hooks/use-tutor-chat";
 import { useVoiceRecorder } from "@/hooks/use-voice-recorder";
+import { GREETING_PROMPT } from "@/lib/prompts";
 import { AccessScreen } from "./AccessScreen";
 import { DocumentBoard } from "./DocumentBoard";
 import { Splitter } from "./Splitter";
 import { TeacherPanel } from "./TeacherPanel";
-import { GREETING_PROMPT, type MobilePane } from "./types";
+import type { MobilePane } from "./types";
 import { UploadPanel } from "./UploadPanel";
 
 // Gap before listening resumes so playback fully releases the audio device.
