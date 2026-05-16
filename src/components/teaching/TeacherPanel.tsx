@@ -2,6 +2,7 @@ import { AlertTriangle, Loader2, Mic, MicOff, Phone, PhoneOff, RotateCcw } from 
 import { useEffect, useRef, useState } from "react";
 import { renderMessageBody } from "@/lib/message-format";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { MicPermissionDialog } from "./MicPermissionDialog";
 import { TeacherAvatar } from "./TeacherAvatar";
 import { SPEECH_LANGUAGES, type UiMessage } from "./types";
 
@@ -16,6 +17,7 @@ type TeacherStatus = {
 type TeacherPanelProps = TeacherStatus & {
   messages: UiMessage[];
   micSupported: boolean;
+  micBlocked: boolean;
   speechLanguage: string;
   error: string | null;
   onSpeechLanguageChange: (language: string) => void;
@@ -32,6 +34,7 @@ export function TeacherPanel({
   isListening,
   isTranscribing,
   micSupported,
+  micBlocked,
   callMode,
   speechLanguage,
   error,
@@ -42,10 +45,26 @@ export function TeacherPanel({
 }: TeacherPanelProps) {
   const logRef = useRef<HTMLDivElement>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [micDialogOpen, setMicDialogOpen] = useState(false);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [messages]);
+
+  // Pop the dialog up the moment a block is detected; close it automatically
+  // once the user re-enables the mic (micBlocked flips back to false).
+  useEffect(() => {
+    setMicDialogOpen(micBlocked);
+  }, [micBlocked]);
+
+  // While blocked, the mic button explains the fix instead of failing silently.
+  const handleMicClick = () => {
+    if (micBlocked) {
+      setMicDialogOpen(true);
+      return;
+    }
+    onMicToggle();
+  };
 
   const status = { isStreaming, isSpeaking, isListening, isTranscribing, callMode };
   const orbState = deriveOrbState(status);
@@ -85,7 +104,7 @@ export function TeacherPanel({
                   aria-checked={active}
                   className={`lang-pill${active ? " is-active" : ""}`}
                   onClick={() => onSpeechLanguageChange(option.value)}
-                  disabled={isListening || isTranscribing}
+                  disabled={isListening || isTranscribing || micBlocked}
                 >
                   {option.label}
                 </button>
@@ -132,7 +151,7 @@ export function TeacherPanel({
           aria-label={callMode ? "End voice call" : "Start voice call"}
           aria-pressed={callMode}
           onClick={onCallToggle}
-          disabled={!micSupported}
+          disabled={!micSupported || micBlocked}
         >
           {callMode ? <PhoneOff size={26} aria-hidden /> : <Phone size={26} aria-hidden />}
           <span>{callMode ? "End" : "Call"}</span>
@@ -144,7 +163,7 @@ export function TeacherPanel({
           aria-label="Clear chat and restart"
           title="Clear chat and restart"
           onClick={handleClearClick}
-          disabled={!hasMessages && !callMode}
+          disabled={(!hasMessages && !callMode) || micBlocked}
         >
           <RotateCcw size={20} aria-hidden />
         </button>
@@ -155,8 +174,8 @@ export function TeacherPanel({
           aria-label={isListening ? "Mute microphone" : "Speak now"}
           aria-pressed={isListening}
           title={isListening ? "Mute microphone" : "Speak now"}
-          onClick={onMicToggle}
-          disabled={!callMode || isStreaming || isTranscribing}
+          onClick={handleMicClick}
+          disabled={!callMode || isStreaming || isTranscribing || micBlocked}
         >
           {isTranscribing ? (
             <Loader2 className="spin" size={20} aria-hidden />
@@ -172,7 +191,20 @@ export function TeacherPanel({
         <p className="call-warn">
           <AlertTriangle size={14} aria-hidden /> Microphone is not supported in this browser.
         </p>
+      ) : micBlocked ? (
+        <button
+          type="button"
+          className="call-warn call-warn--blocked"
+          onClick={() => setMicDialogOpen(true)}
+        >
+          <AlertTriangle size={14} aria-hidden />
+          <span>
+            Microphone is <strong>blocked</strong>. Tap here for steps to turn it back on.
+          </span>
+        </button>
       ) : null}
+
+      <MicPermissionDialog open={micDialogOpen} onClose={() => setMicDialogOpen(false)} />
 
       <ConfirmDialog
         open={confirmOpen}

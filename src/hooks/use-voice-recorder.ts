@@ -7,10 +7,25 @@ const AUDIO_MIME_CANDIDATES = [
   "audio/mp4"
 ];
 
+/**
+ * Browser microphone permission state. `denied` means the user blocked it —
+ * the browser will never re-prompt; the user must re-enable it in site
+ * settings. `unknown` means the Permissions API could not report it.
+ */
+export type MicPermission = "unknown" | "prompt" | "granted" | "denied";
+
 export type VoiceRecorder = {
   isListening: boolean;
   isTranscribing: boolean;
   isSupported: boolean;
+  /** Live permission state; updates automatically when the user changes it. */
+  permission: MicPermission;
+  /**
+   * Asks the browser for mic access. Shows the native prompt when the state is
+   * still `prompt`; when already `denied` it can only succeed if the user has
+   * re-enabled the mic in site settings. Resolves to the resulting grant.
+   */
+  requestPermission: () => Promise<boolean>;
   start: () => Promise<void>;
   stop: () => void;
   /** Stops recording and aborts any in-flight transcription without sending it. */
@@ -30,6 +45,7 @@ export function useVoiceRecorder(
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
+  const [permission, setPermission] = useState<MicPermission>("unknown");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
@@ -52,10 +68,59 @@ export function useVoiceRecorder(
     );
   }, []);
 
+  // Track the live permission state. The `onchange` handler is what lets the
+  // UI recover the moment the user re-enables a previously blocked mic in
+  // their browser site settings — no page reload required.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.permissions?.query) {
+      return;
+    }
+    let status: PermissionStatus | null = null;
+    let cancelled = false;
+    navigator.permissions
+      .query({ name: "microphone" as PermissionName })
+      .then((result) => {
+        if (cancelled) return;
+        status = result;
+        setPermission(result.state as MicPermission);
+        result.onchange = () => setPermission(result.state as MicPermission);
+      })
+      .catch(() => {
+        // Firefox/Safari may not expose "microphone" — leave it "unknown".
+      });
+    return () => {
+      cancelled = true;
+      if (status) status.onchange = null;
+    };
+  }, []);
+
   const cleanupStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
   }, []);
+
+  const requestPermission = useCallback(async () => {
+    if (!isSupported) {
+      onErrorRef.current("Microphone recording is not supported in this browser.");
+      return false;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Only probing the grant here — release the device immediately.
+      stream.getTracks().forEach((track) => track.stop());
+      setPermission("granted");
+      return true;
+    } catch (error) {
+      const name = error instanceof Error ? error.name : "";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        // The blocked-mic popup explains this — skip the inline error bubble.
+        setPermission("denied");
+        return false;
+      }
+      onErrorRef.current(describeRecorderError(error));
+      return false;
+    }
+  }, [isSupported]);
 
   const start = useCallback(async () => {
     if (!isSupported) {
@@ -66,6 +131,7 @@ export function useVoiceRecorder(
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+      setPermission("granted");
       const mimeType = pickAudioMimeType();
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
@@ -123,6 +189,13 @@ export function useVoiceRecorder(
       setIsListening(true);
     } catch (error) {
       cleanupStream();
+      // Browsers without the Permissions API only reveal a block here.
+      const name = error instanceof Error ? error.name : "";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        // The blocked-mic popup explains this — skip the inline error bubble.
+        setPermission("denied");
+        return;
+      }
       onErrorRef.current(describeRecorderError(error));
     }
   }, [cleanupStream, getLanguage, isSupported]);
@@ -160,7 +233,16 @@ export function useVoiceRecorder(
     };
   }, [cleanupStream]);
 
-  return { isListening, isTranscribing, isSupported, start, stop, cancel };
+  return {
+    isListening,
+    isTranscribing,
+    isSupported,
+    permission,
+    requestPermission,
+    start,
+    stop,
+    cancel
+  };
 }
 
 function pickAudioMimeType(): string | null {
@@ -172,9 +254,6 @@ function pickAudioMimeType(): string | null {
 
 function describeRecorderError(error: unknown): string {
   const name = error instanceof Error ? error.name : "";
-  if (name === "NotAllowedError" || name === "SecurityError") {
-    return "Microphone permission was blocked. Allow mic access in your browser site settings.";
-  }
   if (name === "NotFoundError" || name === "OverconstrainedError") {
     return "No microphone was found. Connect one and try again.";
   }

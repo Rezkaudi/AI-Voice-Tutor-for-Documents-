@@ -109,7 +109,7 @@ export function TeachingApp() {
     }
   }, [speech, voice]);
 
-  const handleCallToggle = useCallback(() => {
+  const handleCallToggle = useCallback(async () => {
     if (callMode) {
       setCallMode(false);
       callModeRef.current = false;
@@ -123,6 +123,15 @@ export function TeachingApp() {
 
     if (!voice.isSupported) {
       setError("Microphone is not supported in this browser.");
+      return;
+    }
+
+    // Ask for the mic up front, on this click. While the permission is still
+    // "prompt" the browser shows its native dialog here — the one chance for a
+    // clean one-click grant before the user can block it. If it fails, the
+    // blocked-mic popup guides them; don't enter call mode without a mic.
+    const granted = await voice.requestPermission();
+    if (!granted) {
       return;
     }
 
@@ -242,6 +251,7 @@ export function TeachingApp() {
                 isListening={voice.isListening}
                 isTranscribing={voice.isTranscribing}
                 micSupported={voice.isSupported}
+                micBlocked={voice.permission === "denied"}
                 callMode={callMode}
                 speechLanguage={speechLanguage}
                 error={error}
