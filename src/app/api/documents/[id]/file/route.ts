@@ -21,7 +21,7 @@ export async function GET(
     return new Response(new Uint8Array(localFile.buffer), {
       headers: {
         "content-type": localFile.mimeType,
-        "content-disposition": `inline; filename="${localFile.fileName.replaceAll('"', "")}"`
+        "content-disposition": `inline; filename="${sanitizeHeaderFileName(localFile.fileName)}"`
       }
     });
   }
@@ -32,4 +32,15 @@ export async function GET(
   }
 
   return NextResponse.json({ error: "File not found." }, { status: 404 });
+}
+
+/** Drop control chars (incl. CR/LF), quotes, and backslashes so the file name cannot break the header. */
+function sanitizeHeaderFileName(fileName: string): string {
+  const stripped = Array.from(fileName)
+    .filter((char) => {
+      const code = char.codePointAt(0) ?? 0;
+      return code > 0x1f && char !== '"' && char !== "\\";
+    })
+    .join("");
+  return stripped.trim() || "document";
 }
