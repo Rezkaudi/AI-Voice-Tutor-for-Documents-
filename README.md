@@ -223,7 +223,7 @@ sequenceDiagram
     API->>API: validateUploadFile() (<=25MB, .pdf/.txt/.md)
     API->>EX: extractPagesFromUpload(buffer, kind)
     alt PDF
-        EX->>EX: pdf.js text per page; reject scanned or over 300 pages
+        EX->>EX: pdf.js text per page, reject scanned or over 300 pages
     else Text / Markdown
         EX->>EX: split into ~5000-char pages
     end
