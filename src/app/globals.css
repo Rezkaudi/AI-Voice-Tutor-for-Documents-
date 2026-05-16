@@ -842,6 +842,65 @@ textarea.chat-input {
   font-size: 0.9rem;
 }
 
+.lang-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.lang-picker-caption {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: oklch(0.66 0.02 215);
+}
+
+.lang-picker-track {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid oklch(0.4 0.03 220 / 0.7);
+  background: oklch(0.22 0.03 230);
+}
+
+.lang-pill {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  color: oklch(0.78 0.02 215);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.lang-pill:hover:not(:disabled):not(.is-active) {
+  color: oklch(0.92 0.01 215);
+  background: oklch(0.3 0.03 230);
+}
+
+.lang-pill.is-active {
+  color: oklch(0.18 0.04 230);
+  background: oklch(0.78 0.13 165);
+}
+
+.lang-pill:focus-visible {
+  outline: 2px solid oklch(0.78 0.13 165);
+  outline-offset: 2px;
+}
+
+.lang-pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .call-transcript {
   width: 100%;
   max-width: 520px;

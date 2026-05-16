@@ -15,6 +15,10 @@ export async function POST(request: Request) {
 
   const formData = await request.formData().catch(() => null);
   const file = formData?.get("audio");
+  const languageRaw = formData?.get("language");
+  const language = typeof languageRaw === "string" && /^[a-z]{2}$/i.test(languageRaw)
+    ? languageRaw.toLowerCase()
+    : undefined;
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Audio file is required." }, { status: 400 });
@@ -29,7 +33,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const text = await transcribeAudio(file);
+    const text = await transcribeAudio(file, language);
     return NextResponse.json({ text });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Transcription failed.";

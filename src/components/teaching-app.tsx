@@ -43,6 +43,13 @@ type StreamEvent =
   | { event: "done"; data: Record<string, never> }
   | { event: "error"; data: { error: string } };
 
+const SPEECH_LANGUAGES: { value: string; label: string }[] = [
+  { value: "ja", label: "Japanese" },
+  { value: "en", label: "English" },
+  { value: "ar", label: "Arabic" },
+  { value: "", label: "Auto" }
+];
+
 export function TeachingApp() {
   const [accessState, setAccessState] = useState<AccessState>("checking");
   const [accessCode, setAccessCode] = useState("");
@@ -58,6 +65,11 @@ export function TeachingApp() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [callMode, setCallMode] = useState(false);
+  const [speechLanguage, setSpeechLanguage] = useState<string>("ja");
+  const speechLanguageRef = useRef(speechLanguage);
+  useEffect(() => {
+    speechLanguageRef.current = speechLanguage;
+  }, [speechLanguage]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const speakRequestRef = useRef(0);
@@ -102,7 +114,7 @@ export function TeachingApp() {
     isSupported: micSupported,
     start: startListening,
     stop: stopListening
-  } = useVoiceRecorder(handleVoiceTranscript, handleVoiceError);
+  } = useVoiceRecorder(handleVoiceTranscript, handleVoiceError, () => speechLanguageRef.current);
 
   const clearChat = useCallback(() => {
     setMessages([]);
@@ -448,6 +460,8 @@ export function TeachingApp() {
               micSupported={micSupported}
               callMode={callMode}
               voiceEnabled={voiceEnabled}
+              speechLanguage={speechLanguage}
+              onSpeechLanguageChange={setSpeechLanguage}
               error={error}
               onVoiceToggle={() => {
                 stopSpeaking();
@@ -860,6 +874,8 @@ function TeacherPanel({
   micSupported,
   callMode,
   voiceEnabled,
+  speechLanguage,
+  onSpeechLanguageChange,
   error,
   onVoiceToggle,
   onMicToggle,
@@ -874,6 +890,8 @@ function TeacherPanel({
   micSupported: boolean;
   callMode: boolean;
   voiceEnabled: boolean;
+  speechLanguage: string;
+  onSpeechLanguageChange: (language: string) => void;
   error: string | null;
   onVoiceToggle: () => void;
   onMicToggle: () => void;
@@ -918,6 +936,33 @@ function TeacherPanel({
       <div className="call-meta">
         <h2>AI Teacher</h2>
         <p role="status" aria-live="polite">{status}</p>
+        <div className="lang-picker">
+          <span className="lang-picker-caption" id="lang-picker-label">
+            I speak
+          </span>
+          <div
+            className="lang-picker-track"
+            role="radiogroup"
+            aria-labelledby="lang-picker-label"
+          >
+            {SPEECH_LANGUAGES.map((option) => {
+              const active = speechLanguage === option.value;
+              return (
+                <button
+                  key={option.value || "auto"}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  className={`lang-pill${active ? " is-active" : ""}`}
+                  onClick={() => onSpeechLanguageChange(option.value)}
+                  disabled={isListening || isTranscribing}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <div ref={logRef} className="call-transcript" aria-live="polite">
@@ -1141,7 +1186,8 @@ function updateMessage(messages: UiMessage[], id: string, patch: Partial<UiMessa
 
 function useVoiceRecorder(
   onTranscript: (transcript: string) => void,
-  onError: (message: string) => void
+  onError: (message: string) => void,
+  getLanguage?: () => string | undefined
 ) {
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -1207,7 +1253,7 @@ function useVoiceRecorder(
         setIsListening(false);
         setIsTranscribing(true);
         try {
-          const text = await sendAudioForTranscription(blob);
+          const text = await sendAudioForTranscription(blob, getLanguage?.());
           if (text) {
             onTranscriptRef.current(text);
           }
@@ -1269,10 +1315,13 @@ function pickAudioMimeType(): string | null {
   return null;
 }
 
-async function sendAudioForTranscription(blob: Blob): Promise<string> {
+async function sendAudioForTranscription(blob: Blob, language?: string): Promise<string> {
   const extension = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "m4a" : "webm";
   const formData = new FormData();
   formData.append("audio", new File([blob], `recording.${extension}`, { type: blob.type || "audio/webm" }));
+  if (language) {
+    formData.append("language", language);
+  }
   const response = await fetch("/api/transcribe", { method: "POST", body: formData });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {

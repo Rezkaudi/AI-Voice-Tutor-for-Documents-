@@ -40,7 +40,7 @@ export async function synthesizeSpeech(text: string): Promise<ArrayBuffer> {
   return await response.arrayBuffer();
 }
 
-export async function transcribeAudio(file: File): Promise<string> {
+export async function transcribeAudio(file: File, language?: string): Promise<string> {
   if (!hasOpenAIConfig()) {
     throw new Error("Voice input needs OPENAI_API_KEY to be configured on the server.");
   }
@@ -48,7 +48,8 @@ export async function transcribeAudio(file: File): Promise<string> {
   const openai = getClient();
   const response = await openai.audio.transcriptions.create({
     file,
-    model: appConfig.transcribeModel
+    model: appConfig.transcribeModel,
+    ...(language ? { language } : {})
   });
   return (response.text || "").trim();
 }
