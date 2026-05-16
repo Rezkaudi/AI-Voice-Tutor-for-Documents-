@@ -23,6 +23,8 @@ export type TutorChat = {
   isStreaming: boolean;
   sendMessage: (content: string, options?: SendOptions) => Promise<void>;
   resetMessages: () => void;
+  /** Aborts the in-flight `/api/chat` request, keeping any text streamed so far. */
+  abort: () => void;
 };
 
 /**
@@ -42,8 +44,16 @@ export function useTutorChat({
   const [isStreaming, setIsStreaming] = useState(false);
   const messagesRef = useRef<UiMessage[]>([]);
   messagesRef.current = messages;
+  const abortRef = useRef<AbortController | null>(null);
+
+  const abort = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }, []);
 
   const resetMessages = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
     setMessages([]);
     setIsStreaming(false);
   }, []);
@@ -76,6 +86,9 @@ export function useTutorChat({
 
       let assistantText = "";
 
+      const controller = new AbortController();
+      abortRef.current = controller;
+
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
@@ -85,7 +98,8 @@ export function useTutorChat({
             message: trimmed,
             language: getLanguage(),
             messages: history
-          })
+          }),
+          signal: controller.signal
         });
 
         if (!response.ok || !response.body) {
@@ -138,9 +152,17 @@ export function useTutorChat({
 
         onAnswerComplete();
       } catch (error) {
+        if (controller.signal.aborted) {
+          // Call ended mid-answer: drop the request silently and keep what
+          // streamed so far instead of surfacing an error.
+          return;
+        }
         onError(error instanceof Error ? error.message : "The teacher could not respond.");
         setMessages((current) => current.filter((message) => message.id !== assistantId));
       } finally {
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+        }
         setIsStreaming(false);
       }
     },
@@ -155,7 +177,7 @@ export function useTutorChat({
     ]
   );
 
-  return { messages, isStreaming, sendMessage, resetMessages };
+  return { messages, isStreaming, sendMessage, resetMessages, abort };
 }
 
 function patchMessage(

@@ -95,7 +95,7 @@ export function TeachingApp() {
     if (callModeRef.current) {
       setCallMode(false);
       callModeRef.current = false;
-      voice.stop();
+      voice.cancel();
     }
     speech.stopSpeaking();
   }, [chat, documentWorkspace, speech, voice]);
@@ -113,7 +113,10 @@ export function TeachingApp() {
     if (callMode) {
       setCallMode(false);
       callModeRef.current = false;
-      voice.stop();
+      // End the call: abort every in-flight request — chat stream,
+      // transcription, and TTS — alongside stopping the mic and playback.
+      chat.abort();
+      voice.cancel();
       speech.stopSpeaking();
       return;
     }

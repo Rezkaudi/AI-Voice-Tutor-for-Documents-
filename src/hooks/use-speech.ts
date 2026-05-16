@@ -23,9 +23,13 @@ export function useSpeech(): SpeechController {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   // Monotonic id: bumping it invalidates every in-flight TTS fetch/playback.
   const sessionIdRef = useRef(0);
+  // Aborts the active session's `/api/speak` fetches outright, not just stale-checks them.
+  const speakAbortRef = useRef<AbortController | null>(null);
 
   const stopSpeaking = useCallback(() => {
     sessionIdRef.current += 1;
+    speakAbortRef.current?.abort();
+    speakAbortRef.current = null;
     const audio = audioRef.current;
     if (audio) {
       audio.pause();
@@ -42,6 +46,8 @@ export function useSpeech(): SpeechController {
   const createSpeechSession = useCallback((): SpeechSession => {
     const sessionId = ++sessionIdRef.current;
     const isStale = () => sessionId !== sessionIdRef.current;
+    const controller = new AbortController();
+    speakAbortRef.current = controller;
     let chain: Promise<void> = Promise.resolve();
 
     function push(sentence: string) {
@@ -53,7 +59,7 @@ export function useSpeech(): SpeechController {
       // Start synthesis immediately so it overlaps with playback of earlier clips.
       const clip: Promise<Blob | null> = isStale()
         ? Promise.resolve(null)
-        : fetchSpeechClip(text);
+        : fetchSpeechClip(text, controller.signal);
 
       chain = chain.then(async () => {
         if (isStale()) return;
@@ -75,11 +81,12 @@ export function useSpeech(): SpeechController {
   return { isSpeaking, stopSpeaking, createSpeechSession };
 }
 
-function fetchSpeechClip(text: string): Promise<Blob | null> {
+function fetchSpeechClip(text: string, signal?: AbortSignal): Promise<Blob | null> {
   return fetch("/api/speak", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ text })
+    body: JSON.stringify({ text }),
+    signal
   })
     .then((response) => (response.ok ? response.blob() : null))
     .catch(() => null);

@@ -13,6 +13,8 @@ export type VoiceRecorder = {
   isSupported: boolean;
   start: () => Promise<void>;
   stop: () => void;
+  /** Stops recording and aborts any in-flight transcription without sending it. */
+  cancel: () => void;
 };
 
 /**
@@ -31,6 +33,8 @@ export function useVoiceRecorder(
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const transcribeAbortRef = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
   const onTranscriptRef = useRef(onTranscript);
   const onErrorRef = useRef(onError);
 
@@ -84,7 +88,7 @@ export function useVoiceRecorder(
         const chunks = chunksRef.current;
         chunksRef.current = [];
         cleanupStream();
-        if (chunks.length === 0) {
+        if (chunks.length === 0 || cancelledRef.current) {
           setIsListening(false);
           return;
         }
@@ -92,21 +96,29 @@ export function useVoiceRecorder(
         const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
         setIsListening(false);
         setIsTranscribing(true);
+        const controller = new AbortController();
+        transcribeAbortRef.current = controller;
         try {
-          const text = await transcribeRecording(blob, getLanguage?.());
+          const text = await transcribeRecording(blob, getLanguage?.(), controller.signal);
           if (text) {
             onTranscriptRef.current(text);
           }
         } catch (error) {
-          onErrorRef.current(
-            error instanceof Error ? error.message : "Transcription failed."
-          );
+          if (!controller.signal.aborted) {
+            onErrorRef.current(
+              error instanceof Error ? error.message : "Transcription failed."
+            );
+          }
         } finally {
+          if (transcribeAbortRef.current === controller) {
+            transcribeAbortRef.current = null;
+          }
           setIsTranscribing(false);
         }
       };
 
       mediaRecorderRef.current = recorder;
+      cancelledRef.current = false;
       recorder.start();
       setIsListening(true);
     } catch (error) {
@@ -125,6 +137,20 @@ export function useVoiceRecorder(
     }
   }, [cleanupStream]);
 
+  const cancel = useCallback(() => {
+    cancelledRef.current = true;
+    transcribeAbortRef.current?.abort();
+    transcribeAbortRef.current = null;
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    } else {
+      cleanupStream();
+    }
+    setIsListening(false);
+    setIsTranscribing(false);
+  }, [cleanupStream]);
+
   useEffect(() => {
     return () => {
       if (mediaRecorderRef.current?.state === "recording") {
@@ -134,7 +160,7 @@ export function useVoiceRecorder(
     };
   }, [cleanupStream]);
 
-  return { isListening, isTranscribing, isSupported, start, stop };
+  return { isListening, isTranscribing, isSupported, start, stop, cancel };
 }
 
 function pickAudioMimeType(): string | null {
@@ -155,7 +181,11 @@ function describeRecorderError(error: unknown): string {
   return error instanceof Error ? error.message : "Could not start the microphone.";
 }
 
-async function transcribeRecording(blob: Blob, language?: string): Promise<string> {
+async function transcribeRecording(
+  blob: Blob,
+  language?: string,
+  signal?: AbortSignal
+): Promise<string> {
   const extension = blob.type.includes("ogg")
     ? "ogg"
     : blob.type.includes("mp4")
@@ -171,7 +201,11 @@ async function transcribeRecording(blob: Blob, language?: string): Promise<strin
     formData.append("language", language);
   }
 
-  const response = await fetch("/api/transcribe", { method: "POST", body: formData });
+  const response = await fetch("/api/transcribe", {
+    method: "POST",
+    body: formData,
+    signal
+  });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(data.error || "Transcription failed.");
