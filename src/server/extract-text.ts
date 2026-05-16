@@ -1,3 +1,4 @@
+import { DOMMatrix, ImageData, Path2D } from "@napi-rs/canvas";
 import { MAX_PDF_PAGES, normalizeText } from "@/lib/documents";
 import type { DocumentPage, UploadKind } from "@/lib/types";
 
@@ -12,6 +13,8 @@ export async function extractPagesFromUpload(buffer: Buffer, kind: UploadKind): 
 }
 
 async function extractPdfPages(buffer: Buffer): Promise<DocumentPage[]> {
+  installPdfJsNodePolyfills();
+
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const loadingTask = pdfjs.getDocument({
     data: new Uint8Array(buffer),
@@ -44,6 +47,18 @@ async function extractPdfPages(buffer: Buffer): Promise<DocumentPage[]> {
   }
 
   return pages;
+}
+
+function installPdfJsNodePolyfills(): void {
+  const pdfJsGlobal = globalThis as unknown as {
+    DOMMatrix?: typeof DOMMatrix;
+    ImageData?: typeof ImageData;
+    Path2D?: typeof Path2D;
+  };
+
+  pdfJsGlobal.DOMMatrix ??= DOMMatrix;
+  pdfJsGlobal.ImageData ??= ImageData;
+  pdfJsGlobal.Path2D ??= Path2D;
 }
 
 function splitPlainText(text: string): DocumentPage[] {
