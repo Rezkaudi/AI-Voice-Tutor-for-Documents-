@@ -10,19 +10,24 @@ export async function embedTexts(texts: string[]): Promise<(number[] | null)[]> 
   }
 
   const openai = getClient();
-  const embeddings: (number[] | null)[] = [];
 
+  // Split into API-sized batches, then run every batch concurrently instead of
+  // sequentially. For a multi-page document this turns N round trips into one.
+  const batches: string[][] = [];
   for (let index = 0; index < texts.length; index += 96) {
-    const batch = texts.slice(index, index + 96);
-    const response = await openai.embeddings.create({
-      model: appConfig.embeddingModel,
-      input: batch
-    });
-
-    embeddings.push(...response.data.map((item) => item.embedding));
+    batches.push(texts.slice(index, index + 96));
   }
 
-  return embeddings;
+  const responses = await Promise.all(
+    batches.map((batch) =>
+      openai.embeddings.create({
+        model: appConfig.embeddingModel,
+        input: batch
+      })
+    )
+  );
+
+  return responses.flatMap((response) => response.data.map((item) => item.embedding));
 }
 
 export async function synthesizeSpeech(text: string): Promise<ArrayBuffer> {
@@ -84,6 +89,13 @@ export async function* streamTutorAnswer(input: {
   const response = await (openai.responses.create as unknown as (body: Record<string, unknown>) => Promise<AsyncIterable<Record<string, unknown>>>)({
     model: appConfig.tutorModel,
     instructions: tutorInstructions(input.document.title, input.language),
+    // gpt-5.x are reasoning models: without this they spend medium reasoning
+    // effort before emitting a single visible token. "none" gives the fastest
+    // time-to-first-word, which is what a live voice tutor needs.
+    // (gpt-5.4-mini accepts: none, low, medium, high, xhigh.)
+    reasoning: { effort: "none" },
+    // Keep replies tight so playback starts (and ends) sooner.
+    max_output_tokens: 700,
     input: [
       ...input.history.slice(-8).map((message) => ({
         role: message.role,

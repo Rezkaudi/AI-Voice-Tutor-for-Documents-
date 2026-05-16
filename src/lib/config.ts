@@ -3,7 +3,7 @@ export const appConfig = {
   openaiApiKey: process.env.OPENAI_API_KEY?.trim() || "",
   tutorModel: process.env.OPENAI_TUTOR_MODEL?.trim() || "gpt-5.4-mini",
   embeddingModel: process.env.OPENAI_EMBEDDING_MODEL?.trim() || "text-embedding-3-small",
-  transcribeModel: process.env.OPENAI_TRANSCRIBE_MODEL?.trim() || "whisper-1",
+  transcribeModel: process.env.OPENAI_TRANSCRIBE_MODEL?.trim() || "gpt-4o-mini-transcribe",
   speechModel: process.env.OPENAI_SPEECH_MODEL?.trim() || "gpt-4o-mini-tts",
   speechVoice: process.env.OPENAI_SPEECH_VOICE?.trim() || "alloy",
   supabaseUrl: process.env.SUPABASE_URL?.trim() || "",

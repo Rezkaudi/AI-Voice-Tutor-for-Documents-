@@ -259,6 +259,9 @@ export function TeachingApp() {
         throw new Error(data.error || "The teacher could not respond.");
       }
 
+      const speech = voiceEnabled ? createSpeechSession() : null;
+      let spokenChars = 0;
+
       await readEventStream(response.body, (event) => {
         if (event.event === "meta") {
           const reference = event.data.reference;
@@ -272,6 +275,16 @@ export function TeachingApp() {
         if (event.event === "delta") {
           assistantText += event.data.text;
           setMessages((current) => updateMessage(current, assistantId, { content: assistantText }));
+
+          // Speak each finished sentence as soon as it arrives, instead of
+          // waiting for the whole answer to finish streaming.
+          if (speech) {
+            const { sentences, consumed } = extractSentences(assistantText.slice(spokenChars));
+            if (consumed > 0) {
+              spokenChars += consumed;
+              sentences.forEach((sentence) => speech.push(sentence));
+            }
+          }
         }
 
         if (event.event === "error") {
@@ -279,7 +292,14 @@ export function TeachingApp() {
         }
       });
 
-      speak(assistantText);
+      if (speech) {
+        const tail = assistantText.slice(spokenChars).trim();
+        if (tail) {
+          speech.push(tail);
+        }
+        await speech.finished();
+      }
+      maybeContinueCall();
     } catch (chatError) {
       setError(chatError instanceof Error ? chatError.message : "The teacher could not respond.");
       setMessages((current) => current.filter((message) => message.id !== assistantId));
@@ -293,73 +313,109 @@ export function TeachingApp() {
     sendMessageRef.current = sendMessage;
   });
 
-  async function speak(text: string) {
-    const trimmed = text.trim();
-    if (!voiceEnabled || !trimmed || typeof window === "undefined") {
-      maybeContinueCall();
-      return;
-    }
+  // A speech session synthesizes sentences as they stream in and plays the
+  // resulting clips strictly in order, even if a later fetch resolves first.
+  function createSpeechSession(): { push: (sentence: string) => void; finished: () => Promise<void> } {
+    const sessionId = ++speakRequestRef.current;
+    const isStale = () => sessionId !== speakRequestRef.current;
+    let chain: Promise<void> = Promise.resolve();
 
-    const requestId = ++speakRequestRef.current;
-
-    try {
-      const response = await fetch("/api/speak", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text: trimmed })
-      });
-
-      if (requestId !== speakRequestRef.current) {
-        return; // a newer request superseded this one
-      }
-
-      if (!response.ok) {
-        throw new Error("tts-failed");
-      }
-
-      const blob = await response.blob();
-      if (requestId !== speakRequestRef.current) {
+    function push(sentence: string) {
+      const text = sentence.trim().slice(0, 4000);
+      if (!text) {
         return;
       }
 
+      // Start synthesis immediately so it overlaps with playback of earlier clips.
+      const clip: Promise<Blob | null> = isStale()
+        ? Promise.resolve(null)
+        : fetch("/api/speak", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ text })
+          })
+            .then((response) => (response.ok ? response.blob() : null))
+            .catch(() => null);
+
+      chain = chain.then(async () => {
+        if (isStale()) {
+          return;
+        }
+        const blob = await clip;
+        if (isStale()) {
+          return;
+        }
+        if (blob) {
+          await playClip(blob, isStale);
+        } else {
+          // Fall back to browser speech if server TTS is unavailable (e.g. no API key).
+          await playWithSpeechSynthesis(text, isStale);
+        }
+      });
+    }
+
+    return { push, finished: () => chain };
+  }
+
+  function playClip(blob: Blob, isStale: () => boolean): Promise<void> {
+    return new Promise<void>((resolve) => {
       const audio = audioRef.current ?? new Audio();
       audioRef.current = audio;
 
       if (audio.src.startsWith("blob:")) {
         URL.revokeObjectURL(audio.src);
       }
+
+      let settled = false;
+      const finish = () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        setIsSpeaking(false);
+        resolve();
+      };
+
       audio.src = URL.createObjectURL(blob);
       audio.onplay = () => setIsSpeaking(true);
-      audio.onended = () => {
-        setIsSpeaking(false);
-        maybeContinueCall();
+      audio.onended = finish;
+      audio.onerror = finish;
+      audio.onpause = () => {
+        // stopSpeaking() pauses playback; release the chain so it can unwind.
+        if (isStale()) {
+          finish();
+        }
       };
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        maybeContinueCall();
-      };
-      await audio.play();
-    } catch {
-      // Fall back to browser SpeechSynthesis if server TTS fails (e.g. no OPENAI_API_KEY).
-      if (requestId !== speakRequestRef.current) return;
-      if (!("speechSynthesis" in window)) {
-        maybeContinueCall();
+      audio.play().catch(finish);
+    });
+  }
+
+  function playWithSpeechSynthesis(text: string, isStale: () => boolean): Promise<void> {
+    return new Promise<void>((resolve) => {
+      if (typeof window === "undefined" || !("speechSynthesis" in window) || isStale()) {
+        resolve();
         return;
       }
+
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(trimmed);
+      const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.96;
+
+      let settled = false;
+      const finish = () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        setIsSpeaking(false);
+        resolve();
+      };
+
       utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        maybeContinueCall();
-      };
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-        maybeContinueCall();
-      };
+      utterance.onend = finish;
+      utterance.onerror = finish;
       window.speechSynthesis.speak(utterance);
-    }
+    });
   }
 
   function maybeContinueCall() {
@@ -1138,6 +1194,43 @@ function renderMessageBody(content: string): ReactNode {
   const cleaned = content.replace(/\*\*(.+?)\*\*/g, "$1").replace(/(^|\W)\*(.+?)\*(?=\W|$)/g, "$1$2");
   const paragraphs = cleaned.split(/\n{2,}/);
   return paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>);
+}
+
+// Latin, CJK and Arabic sentence-ending punctuation.
+const HARD_TERMINATORS = "。！？…";
+const ASCII_TERMINATORS = ".!?؟";
+
+// Pull every complete sentence out of a streaming buffer and report how many
+// characters were consumed, so the caller can keep speaking only the new tail.
+function extractSentences(buffer: string): { sentences: string[]; consumed: number } {
+  const sentences: string[] = [];
+  let start = 0;
+  let consumed = 0;
+
+  for (let index = 0; index < buffer.length; index += 1) {
+    const char = buffer[index];
+    const next = buffer[index + 1];
+    let isBoundary = false;
+
+    if (char === "\n" || HARD_TERMINATORS.includes(char)) {
+      isBoundary = true;
+    } else if (ASCII_TERMINATORS.includes(char)) {
+      // Only break once the following character has streamed in and is
+      // whitespace — this avoids splitting "3.5" or a half-streamed token.
+      isBoundary = next !== undefined && /\s/.test(next);
+    }
+
+    if (isBoundary) {
+      const piece = buffer.slice(start, index + 1).trim();
+      if (piece.length >= 2) {
+        sentences.push(piece);
+        start = index + 1;
+        consumed = index + 1;
+      }
+    }
+  }
+
+  return { sentences, consumed };
 }
 
 async function readEventStream(

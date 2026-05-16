@@ -24,8 +24,14 @@ type StoredFile = {
   fileName: string;
 };
 
+export type ChunkEmbeddingUpdate = {
+  id: string;
+  embedding: number[] | null;
+};
+
 export type DocumentStore = {
   saveProcessedDocument(input: SaveDocumentInput): Promise<DocumentRecord>;
+  updateChunkEmbeddings(documentId: string, updates: ChunkEmbeddingUpdate[]): Promise<void>;
   getDocument(id: string): Promise<DocumentRecord | null>;
   getPages(documentId: string): Promise<DocumentPage[]>;
   getChunks(documentId: string): Promise<DocumentChunk[]>;
@@ -80,6 +86,16 @@ class LocalDocumentStore implements DocumentStore {
     await writeFile(this.indexPath, JSON.stringify([...records.filter((item) => item.id !== id), record], null, 2));
 
     return record;
+  }
+
+  async updateChunkEmbeddings(documentId: string, updates: ChunkEmbeddingUpdate[]): Promise<void> {
+    const embeddingById = new Map(updates.map((update) => [update.id, update.embedding]));
+    const chunks = await this.getChunks(documentId);
+    const merged = chunks.map((chunk) =>
+      embeddingById.has(chunk.id) ? { ...chunk, embedding: embeddingById.get(chunk.id) ?? null } : chunk
+    );
+    await this.ensureDirs();
+    await writeFile(this.chunksPath(documentId), JSON.stringify(merged, null, 2));
   }
 
   async getDocument(id: string): Promise<DocumentRecord | null> {
@@ -207,6 +223,25 @@ class SupabaseDocumentStore implements DocumentStore {
     }
 
     return mapDocumentRow(documentInsert.data);
+  }
+
+  async updateChunkEmbeddings(documentId: string, updates: ChunkEmbeddingUpdate[]): Promise<void> {
+    const withEmbedding = updates.filter((update) => update.embedding && update.embedding.length > 0);
+
+    // Update in small concurrent waves to fill embeddings without flooding the
+    // database with one request per chunk all at once.
+    for (let index = 0; index < withEmbedding.length; index += 20) {
+      const wave = withEmbedding.slice(index, index + 20);
+      await Promise.all(
+        wave.map((update) =>
+          this.client
+            .from("document_chunks")
+            .update({ embedding: vectorLiteral(update.embedding as number[]) })
+            .eq("id", update.id)
+            .eq("document_id", documentId)
+        )
+      );
+    }
   }
 
   async getDocument(id: string): Promise<DocumentRecord | null> {

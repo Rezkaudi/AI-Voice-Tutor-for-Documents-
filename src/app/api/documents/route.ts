@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { chunkDocumentPages, titleFromFileName, validateUploadFile } from "@/lib/documents";
 import { requireAccess } from "@/server/access-control";
 import { getDocumentStore } from "@/server/document-store";
@@ -49,13 +49,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No searchable text was found in this file." }, { status: 422 });
     }
 
-    const embeddings = await embedTexts(chunks.map((chunk) => chunk.text)).catch(() => chunks.map(() => null));
-    const embeddedChunks = chunks.map((chunk, index) => ({
-      ...chunk,
-      embedding: embeddings[index]
-    }));
-
-    const document = await getDocumentStore().saveProcessedDocument({
+    // Save immediately with empty embeddings so the learner can start right
+    // away. Chat retrieval falls back to keyword ranking until embeddings land.
+    const store = getDocumentStore();
+    const document = await store.saveProcessedDocument({
       id,
       title: titleFromFileName(file.name),
       fileName: file.name,
@@ -64,7 +61,21 @@ export async function POST(request: Request) {
       fileSize: file.size,
       fileBuffer,
       pages,
-      chunks: embeddedChunks
+      chunks: chunks.map((chunk) => ({ ...chunk, embedding: null }))
+    });
+
+    // Compute embeddings after the response is sent so the upload no longer
+    // blocks on multiple OpenAI round trips.
+    after(async () => {
+      try {
+        const embeddings = await embedTexts(chunks.map((chunk) => chunk.text));
+        await store.updateChunkEmbeddings(
+          id,
+          chunks.map((chunk, index) => ({ id: chunk.id, embedding: embeddings[index] ?? null }))
+        );
+      } catch (embeddingError) {
+        console.error("Background embedding failed for document", id, embeddingError);
+      }
     });
 
     return NextResponse.json({
