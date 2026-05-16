@@ -418,7 +418,7 @@ export function TeachingApp() {
             <BookOpen size={21} aria-hidden />
           </div>
           <div>
-            <h1 className="brand-title">AI Teaching Avatar</h1>
+            <h1 className="brand-title">AI Voice Tutor for Documents</h1>
             <p className="brand-subtitle">
               {loadedDocument ? loadedDocument.document.title : "Document learning board"}
             </p>

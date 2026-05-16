@@ -1,4 +1,4 @@
-# AI Teaching Avatar MVP
+# AI Voice Tutor for Documents
 
 A simple document-learning web app: upload a searchable PDF, `.txt`, or `.md` file, let the server extract and chunk the text, then learn from it in a split-screen teacher session.
 
