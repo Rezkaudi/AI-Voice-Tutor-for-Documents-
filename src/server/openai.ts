@@ -66,6 +66,7 @@ export async function embedQuery(query: string): Promise<number[] | null> {
 export async function* streamTutorAnswer(input: {
   document: DocumentRecord;
   message: string;
+  language?: string;
   history: ChatMessage[];
   chunks: DocumentChunk[];
   reference: Reference | null;
@@ -82,7 +83,7 @@ export async function* streamTutorAnswer(input: {
 
   const response = await (openai.responses.create as unknown as (body: Record<string, unknown>) => Promise<AsyncIterable<Record<string, unknown>>>)({
     model: appConfig.tutorModel,
-    instructions: tutorInstructions(input.document.title),
+    instructions: tutorInstructions(input.document.title, input.language),
     input: [
       ...input.history.slice(-8).map((message) => ({
         role: message.role,
@@ -111,9 +112,21 @@ function getClient(): OpenAI {
   return client;
 }
 
-function tutorInstructions(title: string): string {
+const LANGUAGE_NAMES: Record<string, string> = {
+  ja: "Japanese",
+  en: "English",
+  ar: "Arabic"
+};
+
+function tutorInstructions(title: string, language?: string): string {
+  const languageName = language ? LANGUAGE_NAMES[language] : undefined;
+  const languageRule = languageName
+    ? `Always respond entirely in ${languageName}, regardless of the language of the document or the student's message. Every reply, including check-in questions, must be in ${languageName}.`
+    : "Respond in the same language the student writes or speaks in.";
+
   return [
     `You are a calm, engaging AI teacher helping a student learn "${title}".`,
+    languageRule,
     "Teach only from the supplied document context. If the document does not contain the answer, say that clearly.",
     "Use short paragraphs, concrete examples, and one small check-in question when useful.",
     "When the student asks to continue, move to the next important idea from the context.",

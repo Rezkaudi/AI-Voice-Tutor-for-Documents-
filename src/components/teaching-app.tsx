@@ -249,6 +249,7 @@ export function TeachingApp() {
         body: JSON.stringify({
           documentId: loadedDocument.document.id,
           message: trimmed,
+          language: speechLanguageRef.current,
           messages: messages.map(({ role, content }) => ({ role, content }))
         })
       });

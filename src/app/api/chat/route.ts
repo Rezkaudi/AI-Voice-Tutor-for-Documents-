@@ -17,6 +17,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const documentId = typeof body?.documentId === "string" ? body.documentId : "";
   const message = typeof body?.message === "string" ? body.message.trim() : "";
+  const language = typeof body?.language === "string" ? body.language.trim() : "";
   const history = Array.isArray(body?.messages) ? sanitizeMessages(body.messages) : [];
 
   if (!documentId || !message) {
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
         for await (const delta of streamTutorAnswer({
           document,
           message,
+          language,
           history,
           chunks: selectedChunks,
           reference
