@@ -65,6 +65,7 @@ export function TeachingApp() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [callMode, setCallMode] = useState(false);
+  const [mobilePane, setMobilePane] = useState<"document" | "teacher">("teacher");
   const [speechLanguage, setSpeechLanguage] = useState<string>("ja");
   const speechLanguageRef = useRef(speechLanguage);
   useEffect(() => {
@@ -449,19 +450,29 @@ export function TeachingApp() {
           <h2>Access Code</h2>
           <p>Enter the demo code for this teaching workspace.</p>
           <div style={{ height: 16 }} />
+          <label className="field-label" htmlFor="access-code">
+            Access code
+          </label>
           <input
+            id="access-code"
             className="access-input"
             value={accessCode}
             onChange={(event) => setAccessCode(event.target.value)}
-            placeholder="Code"
+            placeholder="Enter your code"
             type="password"
+            autoComplete="one-time-code"
+            autoFocus
           />
           <div style={{ height: 12 }} />
           <button className="button primary" type="submit">
             <CheckCircle2 size={18} aria-hidden />
             Enter
           </button>
-          {error ? <p className="error-text">{error}</p> : null}
+          {error ? (
+            <p className="error-text" role="alert">
+              {error}
+            </p>
+          ) : null}
         </form>
       </div>
     );
@@ -494,8 +505,40 @@ export function TeachingApp() {
       </header>
 
       {loadedDocument ? (
-        <main className="workspace">
-          <section className="document-pane" aria-label="Document board">
+        <>
+          <nav className="mobile-tabs" role="tablist" aria-label="Switch view">
+            <button
+              type="button"
+              role="tab"
+              id="tab-document"
+              aria-selected={mobilePane === "document"}
+              aria-controls="pane-document"
+              className="mobile-tab"
+              onClick={() => setMobilePane("document")}
+            >
+              <FileText size={16} aria-hidden />
+              Document
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="tab-teacher"
+              aria-selected={mobilePane === "teacher"}
+              aria-controls="pane-teacher"
+              className="mobile-tab"
+              onClick={() => setMobilePane("teacher")}
+            >
+              <Phone size={16} aria-hidden />
+              Teacher
+            </button>
+          </nav>
+          <main className="workspace" data-pane={mobilePane}>
+          <section
+            className="document-pane"
+            id="pane-document"
+            aria-labelledby="tab-document"
+            aria-label="Document board"
+          >
             <DocumentBoard
               fileUrl={loadedDocument.fileUrl}
               mimeType={loadedDocument.document.mimeType}
@@ -507,7 +550,12 @@ export function TeachingApp() {
             />
           </section>
           <Splitter />
-          <section className="teacher-pane" aria-label="Teacher voice call">
+          <section
+            className="teacher-pane"
+            id="pane-teacher"
+            aria-labelledby="tab-teacher"
+            aria-label="Teacher voice call"
+          >
             <TeacherPanel
               messages={messages}
               isStreaming={isStreaming}
@@ -560,7 +608,8 @@ export function TeachingApp() {
               }}
             />
           </section>
-        </main>
+          </main>
+        </>
       ) : (
         <main className="document-pane" style={{ borderRight: 0 }}>
           <UploadPanel
@@ -1158,21 +1207,22 @@ function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div
-      className="modal-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-title"
-      onClick={onCancel}
-    >
-      <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onCancel}>
+      <div
+        className="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        aria-describedby="confirm-body"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="modal-head">
           <div className="modal-icon" aria-hidden>
             <AlertTriangle size={20} />
           </div>
           <div>
             <h3 id="confirm-title" className="modal-title">{title}</h3>
-            <p className="modal-body">{body}</p>
+            <p id="confirm-body" className="modal-body">{body}</p>
           </div>
         </div>
         <div className="modal-actions">
