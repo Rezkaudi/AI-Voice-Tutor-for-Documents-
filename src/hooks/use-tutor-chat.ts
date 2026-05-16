@@ -11,7 +11,6 @@ type SendOptions = { hidden?: boolean };
 
 type UseTutorChatParams = {
   loadedDocument: LoadedDocument | null;
-  voiceEnabled: boolean;
   speech: SpeechController;
   getLanguage: () => string;
   onReference: (reference: Reference | null) => void;
@@ -33,7 +32,6 @@ export type TutorChat = {
  */
 export function useTutorChat({
   loadedDocument,
-  voiceEnabled,
   speech,
   getLanguage,
   onReference,
@@ -95,7 +93,7 @@ export function useTutorChat({
           throw new Error(data.error || "The teacher could not respond.");
         }
 
-        const session = voiceEnabled ? speech.createSpeechSession() : null;
+        const session = speech.createSpeechSession();
         let spokenChars = 0;
 
         await readEventStream(response.body, (event) => {
@@ -153,8 +151,7 @@ export function useTutorChat({
       onAnswerComplete,
       onError,
       onReference,
-      speech,
-      voiceEnabled
+      speech
     ]
   );
 

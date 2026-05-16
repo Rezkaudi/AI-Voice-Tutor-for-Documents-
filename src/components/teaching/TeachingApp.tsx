@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, FileText, Phone, Volume2 } from "lucide-react";
+import { BookOpen, FileText, Phone } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccess } from "@/hooks/use-access";
 import { useDocument } from "@/hooks/use-document";
@@ -25,7 +25,6 @@ const CALL_RESUME_DELAY_MS = 350;
  */
 export function TeachingApp() {
   const [error, setError] = useState<string | null>(null);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [callMode, setCallMode] = useState(false);
   const [hasIntroduced, setHasIntroduced] = useState(false);
   const [mobilePane, setMobilePane] = useState<MobilePane>("teacher");
@@ -73,7 +72,6 @@ export function TeachingApp() {
 
   const chat = useTutorChat({
     loadedDocument: documentWorkspace.loadedDocument,
-    voiceEnabled,
     speech,
     getLanguage,
     onReference: documentWorkspace.applyReference,
@@ -102,11 +100,6 @@ export function TeachingApp() {
     speech.stopSpeaking();
   }, [chat, documentWorkspace, speech, voice]);
 
-  const handleVoiceToggle = useCallback(() => {
-    speech.stopSpeaking();
-    setVoiceEnabled((value) => !value);
-  }, [speech]);
-
   const handleMicToggle = useCallback(() => {
     if (voice.isListening) {
       voice.stop();
@@ -132,7 +125,6 @@ export function TeachingApp() {
 
     setCallMode(true);
     callModeRef.current = true;
-    setVoiceEnabled(true);
 
     if (!hasIntroduced) {
       setHasIntroduced(true);
@@ -179,14 +171,12 @@ export function TeachingApp() {
           </div>
         </div>
         <div className="status-strip">
-          <span className="pill">
-            <FileText size={15} aria-hidden />
-            {loadedDocument ? `${loadedDocument.document.pageCount} pages` : "PDF, TXT, MD"}
-          </span>
-          <span className="pill">
-            <Volume2 size={15} aria-hidden />
-            Browser voice
-          </span>
+          {loadedDocument ? (
+            <span className="pill">
+              <FileText size={15} aria-hidden />
+              {`${loadedDocument.document.pageCount} pages`}
+            </span>
+          ) : null}
         </div>
       </header>
 
@@ -250,11 +240,9 @@ export function TeachingApp() {
                 isTranscribing={voice.isTranscribing}
                 micSupported={voice.isSupported}
                 callMode={callMode}
-                voiceEnabled={voiceEnabled}
                 speechLanguage={speechLanguage}
                 error={error}
                 onSpeechLanguageChange={setSpeechLanguage}
-                onVoiceToggle={handleVoiceToggle}
                 onMicToggle={handleMicToggle}
                 onCallToggle={handleCallToggle}
                 onClearChat={clearChat}

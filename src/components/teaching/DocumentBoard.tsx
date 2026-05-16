@@ -75,12 +75,6 @@ function DocumentBoardComponent({
               title={`Document page ${activePage}`}
               className="pdf-iframe"
             />
-            {highlight && highlight.pageNumber === activePage ? (
-              <aside className="reference-note pdf-overlay">
-                <strong>Teacher reference</strong>
-                <span>{highlight.snippet}</span>
-              </aside>
-            ) : null}
           </div>
         ) : (
           <article className="page-paper">

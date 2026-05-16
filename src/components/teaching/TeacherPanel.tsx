@@ -1,4 +1,4 @@
-import { AlertTriangle, Loader2, Mic, MicOff, Phone, PhoneOff, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { AlertTriangle, Loader2, Mic, MicOff, Phone, PhoneOff, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { renderMessageBody } from "@/lib/message-format";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -16,11 +16,9 @@ type TeacherStatus = {
 type TeacherPanelProps = TeacherStatus & {
   messages: UiMessage[];
   micSupported: boolean;
-  voiceEnabled: boolean;
   speechLanguage: string;
   error: string | null;
   onSpeechLanguageChange: (language: string) => void;
-  onVoiceToggle: () => void;
   onMicToggle: () => void;
   onCallToggle: () => void;
   onClearChat: () => void;
@@ -35,11 +33,9 @@ export function TeacherPanel({
   isTranscribing,
   micSupported,
   callMode,
-  voiceEnabled,
   speechLanguage,
   error,
   onSpeechLanguageChange,
-  onVoiceToggle,
   onMicToggle,
   onCallToggle,
   onClearChat
@@ -130,18 +126,6 @@ export function TeacherPanel({
       </div>
 
       <div className="call-dock" role="group" aria-label="Call controls">
-        <button
-          className="dock-btn"
-          type="button"
-          aria-label={voiceEnabled ? "Mute teacher voice" : "Unmute teacher voice"}
-          aria-pressed={!voiceEnabled}
-          title={voiceEnabled ? "Mute teacher voice" : "Unmute teacher voice"}
-          onClick={onVoiceToggle}
-          disabled={!callMode}
-        >
-          {voiceEnabled ? <Volume2 size={20} aria-hidden /> : <VolumeX size={20} aria-hidden />}
-        </button>
-
         <button
           className={`call-cta ${callMode ? "call-cta--end" : "call-cta--start"}`}
           type="button"
