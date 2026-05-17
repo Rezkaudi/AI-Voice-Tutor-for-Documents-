@@ -246,6 +246,7 @@ export function TeachingApp() {
             >
               <TeacherPanel
                 messages={chat.messages}
+                documentTitle={loadedDocument.document.title}
                 isStreaming={chat.isStreaming}
                 isSpeaking={speech.isSpeaking}
                 isListening={voice.isListening}

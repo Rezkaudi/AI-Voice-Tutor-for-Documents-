@@ -1,5 +1,15 @@
-import { AlertTriangle, Loader2, Mic, MicOff, Phone, PhoneOff, RotateCcw } from "lucide-react";
+import {
+  AlertTriangle,
+  Download,
+  Loader2,
+  Mic,
+  MicOff,
+  Phone,
+  PhoneOff,
+  RotateCcw
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { downloadChatPdf } from "@/lib/chat-pdf";
 import { renderMessageBody } from "@/lib/message-format";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { MicPermissionDialog } from "./MicPermissionDialog";
@@ -16,6 +26,7 @@ type TeacherStatus = {
 
 type TeacherPanelProps = TeacherStatus & {
   messages: UiMessage[];
+  documentTitle: string;
   micSupported: boolean;
   micBlocked: boolean;
   speechLanguage: string;
@@ -29,6 +40,7 @@ type TeacherPanelProps = TeacherStatus & {
 /** Avatar-led voice-call panel: transcript, language picker, and call controls. */
 export function TeacherPanel({
   messages,
+  documentTitle,
   isStreaming,
   isSpeaking,
   isListening,
@@ -71,6 +83,7 @@ export function TeacherPanel({
   const statusLabel = deriveStatusLabel(status, messages.length);
   const visibleMessages = messages.filter((message) => !message.hidden);
   const hasMessages = messages.length > 0;
+  const canExport = visibleMessages.some((message) => message.content.trim());
 
   const handleClearClick = () => {
     if (!hasMessages) {
@@ -82,6 +95,18 @@ export function TeacherPanel({
 
   return (
     <div className={`call-stage${callMode ? " in-call" : ""}`}>
+      <button
+        className="call-export"
+        type="button"
+        aria-label="Download chat as PDF"
+        title="Download chat as PDF"
+        onClick={() => downloadChatPdf(messages, documentTitle)}
+        disabled={!canExport}
+      >
+        <Download size={16} aria-hidden />
+        <span>PDF</span>
+      </button>
+
       <TeacherAvatar state={orbState} />
 
       <div className="call-meta">
