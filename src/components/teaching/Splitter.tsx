@@ -4,14 +4,20 @@ const MIN_SPLIT = 25;
 const MAX_SPLIT = 85;
 const DEFAULT_SPLIT = 60;
 const KEYBOARD_STEP = 2;
+const MIN_CHAT_WIDTH = 400;
 
 function workspaceEl(): HTMLElement | null {
   return document.querySelector<HTMLElement>(".workspace");
 }
 
 function applySplit(percent: number): void {
-  const clamped = Math.min(MAX_SPLIT, Math.max(MIN_SPLIT, percent));
-  workspaceEl()?.style.setProperty("--split", `${clamped.toFixed(2)}%`);
+  const workspace = workspaceEl();
+  if (!workspace) return;
+  // Cap the split so the chat pane never shrinks below MIN_CHAT_WIDTH.
+  const width = workspace.getBoundingClientRect().width;
+  const maxSplit = width > 0 ? Math.min(MAX_SPLIT, (1 - MIN_CHAT_WIDTH / width) * 100) : MAX_SPLIT;
+  const clamped = Math.min(maxSplit, Math.max(MIN_SPLIT, percent));
+  workspace.style.setProperty("--split", `${clamped.toFixed(2)}%`);
 }
 
 /** Draggable divider that controls the document / teacher pane ratio. */
