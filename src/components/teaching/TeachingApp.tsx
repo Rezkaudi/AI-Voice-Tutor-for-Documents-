@@ -6,7 +6,7 @@ import { useAccess } from "@/hooks/use-access";
 import { useDocument } from "@/hooks/use-document";
 import { useSpeech } from "@/hooks/use-speech";
 import { useTutorChat } from "@/hooks/use-tutor-chat";
-import { useVoiceRecorder } from "@/hooks/use-voice-recorder";
+import { useVoiceConversation } from "@/hooks/use-voice-conversation";
 import { GREETING_PROMPT } from "@/lib/prompts";
 import { AccessScreen } from "./AccessScreen";
 import { DocumentBoard } from "./DocumentBoard";
@@ -15,13 +15,10 @@ import { TeacherPanel } from "./TeacherPanel";
 import type { MobilePane } from "./types";
 import { UploadPanel } from "./UploadPanel";
 
-// Gap before listening resumes so playback fully releases the audio device.
-const CALL_RESUME_DELAY_MS = 350;
-
 /**
  * Root of the voice tutor workspace. Composes the access, document, speech,
- * chat, and voice-recorder hooks and wires their cross-cutting interactions
- * (call mode, lesson greeting, transcript clearing).
+ * chat, and voice-conversation hooks and wires their cross-cutting interactions
+ * (call mode, lesson greeting, hands-free turn-taking, transcript clearing).
  */
 export function TeachingApp() {
   const [error, setError] = useState<string | null>(null);
@@ -31,13 +28,15 @@ export function TeachingApp() {
   const [speechLanguage, setSpeechLanguage] = useState("ja");
 
   // Refs mirror state for callbacks that must read the latest value without
-  // being re-created (audio event handlers, deferred timers, the voice hook).
+  // being re-created (the voice hook's speech-start/transcript callbacks).
   const callModeRef = useRef(false);
   const speechLanguageRef = useRef(speechLanguage);
-  const isStreamingRef = useRef(false);
   const sendMessageRef = useRef<(content: string, options?: { hidden?: boolean }) => void>(
     () => {}
   );
+  // Lets the voice hook abort the in-flight answer when the student barges in,
+  // without the hook depending on the chat hook (which depends on it back).
+  const abortChatRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     speechLanguageRef.current = speechLanguage;
@@ -59,16 +58,20 @@ export function TeachingApp() {
     }
   }, []);
 
-  const voice = useVoiceRecorder(handleVoiceTranscript, setError, getLanguage);
-
-  const maybeContinueCall = useCallback(() => {
+  // The student started talking: barge in on the teacher — stop playback and
+  // abort the answer still streaming — so a new turn can take over instantly.
+  const handleSpeechStart = useCallback(() => {
     if (!callModeRef.current) return;
-    setTimeout(() => {
-      if (callModeRef.current && !isStreamingRef.current) {
-        voice.start();
-      }
-    }, CALL_RESUME_DELAY_MS);
-  }, [voice]);
+    speech.stopSpeaking();
+    abortChatRef.current();
+  }, [speech]);
+
+  const voice = useVoiceConversation({
+    onTranscript: handleVoiceTranscript,
+    onError: setError,
+    onSpeechStart: handleSpeechStart,
+    getLanguage
+  });
 
   const chat = useTutorChat({
     loadedDocument: documentWorkspace.loadedDocument,
@@ -76,15 +79,15 @@ export function TeachingApp() {
     getLanguage,
     onReference: documentWorkspace.applyReference,
     onError: setError,
-    onAnswerComplete: maybeContinueCall
+    // The VAD listens continuously, so nothing needs restarting between turns.
+    onAnswerComplete: () => {}
   });
 
-  useEffect(() => {
-    isStreamingRef.current = chat.isStreaming;
-  }, [chat.isStreaming]);
-  // Keep the ref fresh so the voice hook can auto-send on a final transcript.
+  // Keep the refs fresh so the voice hook can auto-send a final transcript and
+  // barge in on an in-flight answer without re-creating its callbacks.
   useEffect(() => {
     sendMessageRef.current = chat.sendMessage;
+    abortChatRef.current = chat.abort;
   });
 
   const clearChat = useCallback(() => {
@@ -95,28 +98,28 @@ export function TeachingApp() {
     if (callModeRef.current) {
       setCallMode(false);
       callModeRef.current = false;
-      voice.cancel();
+      voice.stop();
     }
     speech.stopSpeaking();
   }, [chat, documentWorkspace, speech, voice]);
 
+  // The mic button is now a mute toggle — the call stays live either way.
   const handleMicToggle = useCallback(() => {
     if (voice.isListening) {
-      voice.stop();
+      voice.pause();
     } else {
-      speech.stopSpeaking();
-      voice.start();
+      voice.resume();
     }
-  }, [speech, voice]);
+  }, [voice]);
 
   const handleCallToggle = useCallback(async () => {
     if (callMode) {
       setCallMode(false);
       callModeRef.current = false;
       // End the call: abort every in-flight request — chat stream,
-      // transcription, and TTS — alongside stopping the mic and playback.
+      // transcription, and TTS — alongside releasing the mic and playback.
       chat.abort();
-      voice.cancel();
+      voice.stop();
       speech.stopSpeaking();
       return;
     }
@@ -138,11 +141,13 @@ export function TeachingApp() {
     setCallMode(true);
     callModeRef.current = true;
 
+    // Start listening hands-free for the whole call. The VAD detects when the
+    // student speaks and stops on its own — no record/send button.
+    await voice.start();
+
     if (!hasIntroduced) {
       setHasIntroduced(true);
       chat.sendMessage(GREETING_PROMPT, { hidden: true });
-    } else {
-      voice.start();
     }
   }, [callMode, chat, hasIntroduced, speech, voice]);
 
@@ -250,6 +255,8 @@ export function TeachingApp() {
                 isStreaming={chat.isStreaming}
                 isSpeaking={speech.isSpeaking}
                 isListening={voice.isListening}
+                isUserSpeaking={voice.isUserSpeaking}
+                isConnecting={voice.isConnecting}
                 isTranscribing={voice.isTranscribing}
                 micSupported={voice.isSupported}
                 micBlocked={voice.permission === "denied"}

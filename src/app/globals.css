@@ -864,11 +864,19 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Glows only while the student is actually talking — not for the whole call. */
 .dock-btn.is-on {
   background: oklch(0.55 0.11 154);
   border-color: oklch(0.7 0.13 154);
   color: oklch(0.99 0.008 138);
   animation: listen-pulse 1.4s ease-in-out infinite;
+}
+
+/* Muted mic: clearly "off" so it does not read as an active record button. */
+.dock-btn.is-muted {
+  background: oklch(0.3 0.05 28);
+  border-color: oklch(0.5 0.12 28);
+  color: oklch(0.86 0.07 32);
 }
 
 .call-cta {

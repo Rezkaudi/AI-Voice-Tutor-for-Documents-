@@ -8,3 +8,6 @@ dist
 coverage
 *.tsbuildinfo
 .claude
+
+# VAD runtime assets — regenerated from node_modules by `postinstall`.
+/public/vad

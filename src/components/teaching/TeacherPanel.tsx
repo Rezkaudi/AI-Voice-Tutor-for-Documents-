@@ -19,7 +19,12 @@ import { SPEECH_LANGUAGES, type UiMessage } from "./types";
 type TeacherStatus = {
   isStreaming: boolean;
   isSpeaking: boolean;
+  /** The mic is open and listening (false while muted). */
   isListening: boolean;
+  /** The student is speaking right now. */
+  isUserSpeaking: boolean;
+  /** The VAD model is still loading after the call started. */
+  isConnecting: boolean;
   isTranscribing: boolean;
   callMode: boolean;
 };
@@ -44,6 +49,8 @@ export function TeacherPanel({
   isStreaming,
   isSpeaking,
   isListening,
+  isUserSpeaking,
+  isConnecting,
   isTranscribing,
   micSupported,
   micBlocked,
@@ -78,7 +85,15 @@ export function TeacherPanel({
     onMicToggle();
   };
 
-  const status = { isStreaming, isSpeaking, isListening, isTranscribing, callMode };
+  const status = {
+    isStreaming,
+    isSpeaking,
+    isListening,
+    isUserSpeaking,
+    isConnecting,
+    isTranscribing,
+    callMode
+  };
   const orbState = deriveOrbState(status);
   const statusLabel = deriveStatusLabel(status, messages.length);
   const visibleMessages = messages.filter((message) => !message.hidden);
@@ -129,7 +144,7 @@ export function TeacherPanel({
                   aria-checked={active}
                   className={`lang-pill${active ? " is-active" : ""}`}
                   onClick={() => onSpeechLanguageChange(option.value)}
-                  disabled={isListening || isTranscribing || micBlocked}
+                  disabled={isUserSpeaking || isTranscribing || micBlocked}
                 >
                   {option.label}
                 </button>
@@ -142,8 +157,9 @@ export function TeacherPanel({
       <div ref={logRef} className="call-transcript" aria-live="polite">
         {visibleMessages.length === 0 && !callMode ? (
           <p className="call-hint">
-            Press <strong>Call</strong>. Your teacher will introduce the lesson and listen for
-            your reply — no typing needed.
+            Press <strong>Call</strong>. Your teacher introduces the lesson, then just speak
+            naturally — it listens the whole time and replies on its own. No buttons, and you
+            can jump in any time, even while the teacher is talking.
           </p>
         ) : (
           visibleMessages.map((message) => (
@@ -194,15 +210,17 @@ export function TeacherPanel({
         </button>
 
         <button
-          className={`dock-btn${isListening ? " is-on" : ""}`}
+          className={`dock-btn${isUserSpeaking ? " is-on" : ""}${
+            callMode && !isListening ? " is-muted" : ""
+          }`}
           type="button"
-          aria-label={isListening ? "Mute microphone" : "Speak now"}
-          aria-pressed={isListening}
-          title={isListening ? "Mute microphone" : "Speak now"}
+          aria-label={isListening ? "Mute microphone" : "Unmute microphone"}
+          aria-pressed={!isListening}
+          title={isListening ? "Mute microphone" : "Unmute microphone"}
           onClick={handleMicClick}
-          disabled={!callMode || isStreaming || isTranscribing || micBlocked}
+          disabled={!callMode || isConnecting || micBlocked}
         >
-          {isTranscribing ? (
+          {isConnecting ? (
             <Loader2 className="spin" size={20} aria-hidden />
           ) : isListening ? (
             <Mic size={20} aria-hidden />
@@ -249,25 +267,36 @@ export function TeacherPanel({
 
 function deriveOrbState({
   isSpeaking,
-  isListening,
+  isUserSpeaking,
   isStreaming,
   isTranscribing,
   callMode
 }: TeacherStatus): string {
+  if (isUserSpeaking) return "listening";
   if (isSpeaking) return "speaking";
-  if (isListening) return "listening";
   if (isStreaming || isTranscribing) return "thinking";
   return callMode ? "idle-call" : "idle";
 }
 
 function deriveStatusLabel(
-  { isSpeaking, isListening, isStreaming, isTranscribing, callMode }: TeacherStatus,
+  {
+    isSpeaking,
+    isListening,
+    isUserSpeaking,
+    isConnecting,
+    isStreaming,
+    isTranscribing,
+    callMode
+  }: TeacherStatus,
   messageCount: number
 ): string {
-  if (isListening) return "Listening — speak now";
-  if (isTranscribing) return "Transcribing…";
+  if (isConnecting) return "Connecting…";
+  if (isUserSpeaking) return "Listening — go ahead";
+  if (isTranscribing) return "Got it…";
+  // Speaking wins over streaming: the answer keeps streaming in the background
+  // while sentences are read aloud, but the student is hearing speech.
+  if (isSpeaking) return "Speaking — talk any time to jump in";
   if (isStreaming) return "Thinking from the document…";
-  if (isSpeaking) return "Speaking";
-  if (callMode) return "On call";
+  if (callMode) return isListening ? "Listening… just speak" : "Microphone muted";
   return messageCount === 0 ? "Tap Call to start your lesson" : "Tap Call to keep going";
 }

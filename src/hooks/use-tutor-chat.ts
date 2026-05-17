@@ -156,8 +156,15 @@ export function useTutorChat({
         onAnswerComplete();
       } catch (error) {
         if (controller.signal.aborted) {
-          // Call ended mid-answer: drop the request silently and keep what
-          // streamed so far instead of surfacing an error.
+          // Call ended or the student barged in mid-answer. Keep any text that
+          // already streamed, but drop an assistant bubble that never received
+          // a single token — it would otherwise hang forever on the
+          // "thinking" dots (e.g. barging in during the opening greeting).
+          if (!assistantText) {
+            setMessages((current) =>
+              current.filter((message) => message.id !== assistantId)
+            );
+          }
           return;
         }
         onError(error instanceof Error ? error.message : "The teacher could not respond.");
