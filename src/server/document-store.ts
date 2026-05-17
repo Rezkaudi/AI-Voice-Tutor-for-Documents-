@@ -304,12 +304,8 @@ class SupabaseDocumentStore implements DocumentStore {
       return null;
     }
 
-    const signed = await this.client.storage.from(this.bucket).createSignedUrl(record.storagePath, 60 * 60);
-    if (signed.error) {
-      throw signed.error;
-    }
-
-    return signed.data.signedUrl;
+    const { data } = this.client.storage.from(this.bucket).getPublicUrl(record.storagePath);
+    return data.publicUrl;
   }
 }
 
