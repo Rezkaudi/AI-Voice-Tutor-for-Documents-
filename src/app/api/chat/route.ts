@@ -18,6 +18,7 @@ export async function POST(request: Request) {
   const message = typeof body?.message === "string" ? body.message.trim() : "";
   const language = typeof body?.language === "string" ? body.language.trim() : "";
   const history = Array.isArray(body?.messages) ? sanitizeMessages(body.messages) : [];
+  const saveCost = body?.saveCost === true;
 
   if (!documentId || !message) {
     return NextResponse.json({ error: "Document and message are required." }, { status: 400 });
@@ -48,7 +49,8 @@ export async function POST(request: Request) {
           language,
           history,
           pages,
-          chunks
+          chunks,
+          saveCost
         })) {
           if (event.type === "reference") {
             writeEvent(controller, encoder, "meta", { reference: event.reference });

@@ -2,6 +2,8 @@ export const appConfig = {
   accessCode: process.env.APP_ACCESS_CODE?.trim() || "",
   openaiApiKey: process.env.OPENAI_API_KEY?.trim() || "",
   tutorModel: process.env.OPENAI_TUTOR_MODEL?.trim() || "gpt-5.4-mini",
+  // Cheaper tutor model used when the learner turns on "save-cost mode".
+  tutorModelSaveCost: process.env.OPENAI_TUTOR_MODEL_SAVE_COST?.trim() || "gpt-5-nano",
   embeddingModel: process.env.OPENAI_EMBEDDING_MODEL?.trim() || "text-embedding-3-small",
   transcribeModel: process.env.OPENAI_TRANSCRIBE_MODEL?.trim() || "gpt-4o-mini-transcribe",
   speechModel: process.env.OPENAI_SPEECH_MODEL?.trim() || "gpt-4o-mini-tts",

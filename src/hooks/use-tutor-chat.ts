@@ -13,6 +13,8 @@ type UseTutorChatParams = {
   loadedDocument: LoadedDocument | null;
   speech: SpeechController;
   getLanguage: () => string;
+  /** Reads the latest "save-cost mode" choice when a message is sent. */
+  getSaveCost: () => boolean;
   onReference: (reference: Reference | null) => void;
   onError: (message: string | null) => void;
   onAnswerComplete: () => void;
@@ -36,6 +38,7 @@ export function useTutorChat({
   loadedDocument,
   speech,
   getLanguage,
+  getSaveCost,
   onReference,
   onError,
   onAnswerComplete
@@ -100,7 +103,8 @@ export function useTutorChat({
             documentId: loadedDocument.document.id,
             message: trimmed,
             language: getLanguage(),
-            messages: history
+            messages: history,
+            saveCost: getSaveCost()
           }),
           signal: controller.signal
         });
@@ -171,6 +175,7 @@ export function useTutorChat({
     },
     [
       getLanguage,
+      getSaveCost,
       isStreaming,
       loadedDocument,
       onAnswerComplete,

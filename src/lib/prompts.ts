@@ -22,10 +22,21 @@ export const TUTOR_GENERATION = {
    * (gpt-5.4-mini accepts: none, low, medium, high, xhigh.)
    */
   reasoningEffort: "none",
+  /**
+   * Reasoning effort for the save-cost model (gpt-5-nano). That model rejects
+   * "none" — its lowest setting is "minimal", which is the fastest it allows.
+   */
+  reasoningEffortSaveCost: "minimal",
   /** Cap replies so voice playback starts — and finishes — sooner. */
   maxOutputTokens: 700,
   /** How many prior conversation turns to send as history. */
   historyWindow: 8,
+  /**
+   * Smaller history window used in "save-cost mode": fewer prior turns are
+   * re-sent on every call, which cuts input tokens. The tutor still sees the
+   * recent conversation, so the lesson flow is preserved.
+   */
+  historyWindowSaveCost: 4,
   /**
    * Hard ceiling on agentic tool round-trips per question. The tutor fetches
    * document content with tools; this stops a runaway fetch loop.

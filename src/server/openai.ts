@@ -96,6 +96,11 @@ type TutorInput = {
   history: ChatMessage[];
   pages: DocumentPage[];
   chunks: DocumentChunk[];
+  /**
+   * "Save-cost mode": use the cheaper tutor model and a smaller history
+   * window. Defaults to off, so normal requests are unaffected.
+   */
+  saveCost?: boolean;
 };
 
 /**
@@ -115,10 +120,22 @@ export async function* streamTutorAnswer(input: TutorInput): AsyncGenerator<Tuto
     body: Record<string, unknown>
   ) => Promise<AsyncIterable<Record<string, unknown>>>;
 
+  // Save-cost mode swaps in the cheaper model and trims the history window.
+  // Both fall back to the normal values, so a request without the flag is
+  // identical to before.
+  const tutorModel = input.saveCost ? appConfig.tutorModelSaveCost : appConfig.tutorModel;
+  const historyWindow = input.saveCost
+    ? TUTOR_GENERATION.historyWindowSaveCost
+    : TUTOR_GENERATION.historyWindow;
+  // gpt-5-nano (save-cost model) rejects "none" — its floor is "minimal".
+  const reasoningEffort = input.saveCost
+    ? TUTOR_GENERATION.reasoningEffortSaveCost
+    : TUTOR_GENERATION.reasoningEffort;
+
   // First turn carries history + the student's message. Later turns chain off
   // `previous_response_id` and carry only the tool outputs.
   let pendingInput: Record<string, unknown>[] = [
-    ...input.history.slice(-TUTOR_GENERATION.historyWindow).map((message) => ({
+    ...input.history.slice(-historyWindow).map((message) => ({
       role: message.role,
       content: message.content
     })),
@@ -136,9 +153,9 @@ export async function* streamTutorAnswer(input: TutorInput): AsyncGenerator<Tuto
 
   for (let step = 0; step < TUTOR_GENERATION.maxToolSteps; step += 1) {
     const stream = await createResponse({
-      model: appConfig.tutorModel,
+      model: tutorModel,
       instructions: buildTutorInstructions(input.document.title, input.language),
-      reasoning: { effort: TUTOR_GENERATION.reasoningEffort },
+      reasoning: { effort: reasoningEffort },
       max_output_tokens: TUTOR_GENERATION.maxOutputTokens,
       tools: TUTOR_TOOLS,
       input: pendingInput,

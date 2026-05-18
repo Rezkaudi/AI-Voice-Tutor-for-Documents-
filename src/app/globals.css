@@ -502,19 +502,25 @@ button:disabled {
 }
 
 @keyframes listen-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 oklch(0.65 0.16 35 / 0.45);
   }
+
   50% {
     box-shadow: 0 0 0 6px oklch(0.65 0.16 35 / 0);
   }
 }
 
 @keyframes dot-bounce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
     opacity: 0.45;
   }
+
   50% {
     transform: translateY(-3px);
     opacity: 1;
@@ -561,8 +567,18 @@ button:disabled {
     background-color 160ms ease-out, border-color 160ms ease-out;
 }
 
-.call-corner-btn--transcript { left: 14px; }
-.call-corner-btn--restart { right: 14px; }
+.call-corner-btn--transcript {
+  left: 14px;
+}
+
+.call-corner-btn--restart {
+  right: 14px;
+}
+
+/* Save-cost toggle sits just left of the restart button. */
+.call-corner-btn--savecost {
+  right: 70px;
+}
 
 .call-corner-btn:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -620,7 +636,9 @@ button:disabled {
   pointer-events: none;
 }
 
-.halo--2 { inset: -18%; }
+.halo--2 {
+  inset: -18%;
+}
 
 .wave {
   position: absolute;
@@ -646,21 +664,44 @@ button:disabled {
 }
 
 /* head subtle breath */
-.head { transform-origin: 100px 110px; animation: head-breath 4.4s ease-in-out infinite; }
+.head {
+  transform-origin: 100px 110px;
+  animation: head-breath 4.4s ease-in-out infinite;
+}
 
 /* eyes blink (independent timer) */
-.eye { transform-origin: center; animation: blink 5.2s ease-in-out infinite; }
-.eye--right { animation-delay: 0.06s; }
+.eye {
+  transform-origin: center;
+  animation: blink 5.2s ease-in-out infinite;
+}
+
+.eye--right {
+  animation-delay: 0.06s;
+}
 
 /* mouth visual variants */
-.mouth-shape { opacity: 0; transform-box: fill-box; transform-origin: center; }
-.mouth-line { opacity: 1; transform-box: fill-box; transform-origin: center; }
-.tongue { opacity: 0; }
+.mouth-shape {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.mouth-line {
+  opacity: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.tongue {
+  opacity: 0;
+}
 
 /* ---- STATES ---- */
 
 /* idle (no call) — calm breath, occasional blink */
-.avatar--idle .teacher-svg { filter: drop-shadow(0 12px 22px oklch(0.18 0.04 244 / 0.45)) saturate(0.95); }
+.avatar--idle .teacher-svg {
+  filter: drop-shadow(0 12px 22px oklch(0.18 0.04 244 / 0.45)) saturate(0.95);
+}
 
 /* idle in call — teacher attentive, halo glow */
 .avatar--idle-call .halo--1,
@@ -676,30 +717,66 @@ button:disabled {
   background: radial-gradient(circle, oklch(0.78 0.14 150 / 0.45) 0%, transparent 65%);
   animation: halo-pulse 1.4s ease-out infinite;
 }
-.avatar--listening .halo--2 { animation-delay: 0.5s; }
-.avatar--listening .wave { opacity: 1; }
+
+.avatar--listening .halo--2 {
+  animation-delay: 0.5s;
+}
+
+.avatar--listening .wave {
+  opacity: 1;
+}
+
 .avatar--listening .wave span {
   background: linear-gradient(180deg, oklch(0.88 0.14 150), oklch(0.62 0.16 154));
 }
-.avatar--listening .head { animation: head-tilt 2.6s ease-in-out infinite; }
+
+.avatar--listening .head {
+  animation: head-tilt 2.6s ease-in-out infinite;
+}
 
 /* thinking — head tilts, slight shimmer */
-.avatar--thinking .teacher-svg { animation: think-bob 1.6s ease-in-out infinite; }
-.avatar--thinking .halo--1 { opacity: 0.7; animation: halo-spin 3s linear infinite; }
+.avatar--thinking .teacher-svg {
+  animation: think-bob 1.6s ease-in-out infinite;
+}
+
+.avatar--thinking .halo--1 {
+  opacity: 0.7;
+  animation: halo-spin 3s linear infinite;
+}
 
 /* speaking — mouth opens/closes rapidly, head bobs, halo pulses warm */
-.avatar--speaking .mouth-shape { opacity: 1; animation: mouth-open 280ms ease-in-out infinite; }
-.avatar--speaking .mouth-line { opacity: 0; }
-.avatar--speaking .tongue { opacity: 1; animation: tongue-show 280ms ease-in-out infinite; }
-.avatar--speaking .head { animation: speak-bob 280ms ease-in-out infinite; }
+.avatar--speaking .mouth-shape {
+  opacity: 1;
+  animation: mouth-open 280ms ease-in-out infinite;
+}
+
+.avatar--speaking .mouth-line {
+  opacity: 0;
+}
+
+.avatar--speaking .tongue {
+  opacity: 1;
+  animation: tongue-show 280ms ease-in-out infinite;
+}
+
+.avatar--speaking .head {
+  animation: speak-bob 280ms ease-in-out infinite;
+}
+
 .avatar--speaking .halo--1,
 .avatar--speaking .halo--2 {
   opacity: 1;
   background: radial-gradient(circle, oklch(0.85 0.13 90 / 0.4) 0%, transparent 65%);
   animation: halo-pulse 600ms ease-out infinite;
 }
-.avatar--speaking .halo--2 { animation-delay: 0.2s; }
-.avatar--speaking .wave { opacity: 1; }
+
+.avatar--speaking .halo--2 {
+  animation-delay: 0.2s;
+}
+
+.avatar--speaking .wave {
+  opacity: 1;
+}
 
 .call-meta {
   text-align: center;
@@ -780,6 +857,7 @@ button:disabled {
   opacity: 0.45;
 }
 
+
 .call-stream {
   width: 100%;
   max-width: 520px;
@@ -834,8 +912,15 @@ button:disabled {
 }
 
 @keyframes caption-rise {
-  from { opacity: 0; transform: translate(-50%, 10px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 /* Speaker tag — "Teacher" (warm) or "You" (green), same strip either way. */
@@ -884,7 +969,9 @@ button:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .call-caption { animation: none; }
+  .call-caption {
+    animation: none;
+  }
 }
 
 .call-transcript {
@@ -901,7 +988,10 @@ button:disabled {
   scrollbar-color: oklch(0.5 0.04 230) transparent;
 }
 
-.call-transcript::-webkit-scrollbar { width: 6px; }
+.call-transcript::-webkit-scrollbar {
+  width: 6px;
+}
+
 .call-transcript::-webkit-scrollbar-thumb {
   background: oklch(0.5 0.04 230 / 0.6);
   border-radius: 999px;
@@ -930,8 +1020,13 @@ button:disabled {
   white-space: pre-wrap;
 }
 
-.bubble p { margin: 0 0 6px; }
-.bubble p:last-child { margin-bottom: 0; }
+.bubble p {
+  margin: 0 0 6px;
+}
+
+.bubble p:last-child {
+  margin-bottom: 0;
+}
 
 .bubble.assistant {
   align-self: flex-start;
@@ -1106,58 +1201,139 @@ button:disabled {
 }
 
 @keyframes head-breath {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.015) translateY(-1px); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.015) translateY(-1px);
+  }
 }
 
 @keyframes head-tilt {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(-3deg); }
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(-3deg);
+  }
 }
 
 @keyframes speak-bob {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-1.2px) scale(1.008); }
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-1.2px) scale(1.008);
+  }
 }
 
 @keyframes think-bob {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50% { transform: translateY(-3px) rotate(1deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+
+  50% {
+    transform: translateY(-3px) rotate(1deg);
+  }
 }
 
 @keyframes blink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  95%, 98% { transform: scaleY(0.1); }
+
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+
+  95%,
+  98% {
+    transform: scaleY(0.1);
+  }
 }
 
 @keyframes mouth-open {
-  0%, 100% { transform: scaleY(0.35) scaleX(0.85); }
-  50% { transform: scaleY(1.4) scaleX(1.05); }
+
+  0%,
+  100% {
+    transform: scaleY(0.35) scaleX(0.85);
+  }
+
+  50% {
+    transform: scaleY(1.4) scaleX(1.05);
+  }
 }
 
 @keyframes tongue-show {
-  0%, 100% { opacity: 0; transform: translateY(2px); }
-  50% { opacity: 0.85; transform: translateY(0); }
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  50% {
+    opacity: 0.85;
+    transform: translateY(0);
+  }
 }
 
 @keyframes halo-pulse {
-  0% { transform: scale(0.85); opacity: 0.85; }
-  100% { transform: scale(1.25); opacity: 0; }
+  0% {
+    transform: scale(0.85);
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
 }
 
 @keyframes halo-breath {
-  0%, 100% { transform: scale(1); opacity: 0.7; }
-  50% { transform: scale(1.06); opacity: 1; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
 }
 
 @keyframes halo-spin {
-  0% { transform: rotate(0deg) scale(1); }
-  100% { transform: rotate(360deg) scale(1); }
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
 }
 
 @keyframes wave-bar {
-  0%, 100% { height: 6px; }
-  50% { height: 22px; }
+
+  0%,
+  100% {
+    height: 6px;
+  }
+
+  50% {
+    height: 22px;
+  }
 }
 
 /* ---------- Responsive: ≤920px switches to a single-pane tabbed view ---------- */
@@ -1294,17 +1470,30 @@ button:disabled {
 }
 
 @keyframes modal-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modal-pop {
-  from { opacity: 0; transform: translateY(8px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ---------- Reduced motion: disable decorative animation, keep loading spinner ---------- */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {

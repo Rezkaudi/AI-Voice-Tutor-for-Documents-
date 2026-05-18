@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   Captions,
+  Leaf,
   Loader2,
   Mic,
   MicOff,
@@ -36,8 +37,10 @@ type TeacherPanelProps = TeacherStatus & {
   micSupported: boolean;
   micBlocked: boolean;
   speechLanguage: string;
+  saveCost: boolean;
   error: string | null;
   onSpeechLanguageChange: (language: string) => void;
+  onSaveCostToggle: () => void;
   onMicToggle: () => void;
   onCallToggle: () => void;
   onClearChat: () => void;
@@ -56,8 +59,10 @@ export function TeacherPanel({
   micBlocked,
   callMode,
   speechLanguage,
+  saveCost,
   error,
   onSpeechLanguageChange,
+  onSaveCostToggle,
   onMicToggle,
   onCallToggle,
   onClearChat
@@ -143,6 +148,22 @@ export function TeacherPanel({
       >
         <Captions size={16} aria-hidden />
         <span>{showTranscript ? "Hide" : "Transcript"}</span>
+      </button>
+
+      <button
+        className={`call-corner-btn call-corner-btn--savecost${saveCost ? " is-active" : ""}`}
+        type="button"
+        aria-pressed={saveCost}
+        title={
+          saveCost
+            ? "Save-cost mode is on — using the lighter, cheaper tutor model"
+            : "Turn on save-cost mode to use a cheaper tutor model"
+        }
+        onClick={onSaveCostToggle}
+        disabled={isStreaming || isListening || isTranscribing}
+      >
+        <Leaf size={16} aria-hidden />
+        <span>Save-cost{saveCost ? " · On" : ""}</span>
       </button>
 
       <button

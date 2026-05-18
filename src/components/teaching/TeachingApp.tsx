@@ -29,11 +29,15 @@ export function TeachingApp() {
   const [hasIntroduced, setHasIntroduced] = useState(false);
   const [mobilePane, setMobilePane] = useState<MobilePane>("teacher");
   const [speechLanguage, setSpeechLanguage] = useState("ja");
+  // "Save-cost mode": cheaper tutor model + shorter history. Off by default;
+  // the learner's choice is restored from localStorage after mount.
+  const [saveCost, setSaveCost] = useState(false);
 
   // Refs mirror state for callbacks that must read the latest value without
   // being re-created (audio event handlers, deferred timers, the voice hook).
   const callModeRef = useRef(false);
   const speechLanguageRef = useRef(speechLanguage);
+  const saveCostRef = useRef(saveCost);
   const isStreamingRef = useRef(false);
   const sendMessageRef = useRef<(content: string, options?: { hidden?: boolean }) => void>(
     () => {}
@@ -45,8 +49,23 @@ export function TeachingApp() {
   useEffect(() => {
     callModeRef.current = callMode;
   }, [callMode]);
+  useEffect(() => {
+    saveCostRef.current = saveCost;
+  }, [saveCost]);
+  // Restore the saved choice once, on the client, to avoid a hydration mismatch.
+  useEffect(() => {
+    setSaveCost(window.localStorage.getItem("saveCostMode") === "1");
+  }, []);
 
   const getLanguage = useCallback(() => speechLanguageRef.current, []);
+  const getSaveCost = useCallback(() => saveCostRef.current, []);
+  const handleSaveCostToggle = useCallback(() => {
+    setSaveCost((on) => {
+      const next = !on;
+      window.localStorage.setItem("saveCostMode", next ? "1" : "0");
+      return next;
+    });
+  }, []);
 
   const speech = useSpeech();
   const access = useAccess({ onError: setError });
@@ -79,6 +98,7 @@ export function TeachingApp() {
     loadedDocument: documentWorkspace.loadedDocument,
     speech,
     getLanguage,
+    getSaveCost,
     onReference: documentWorkspace.applyReference,
     onError: setError,
     onAnswerComplete: maybeContinueCall
@@ -261,8 +281,10 @@ export function TeachingApp() {
                 micBlocked={voice.permission === "denied"}
                 callMode={callMode}
                 speechLanguage={speechLanguage}
+                saveCost={saveCost}
                 error={error}
                 onSpeechLanguageChange={setSpeechLanguage}
+                onSaveCostToggle={handleSaveCostToggle}
                 onMicToggle={handleMicToggle}
                 onCallToggle={handleCallToggle}
                 onClearChat={clearChat}
