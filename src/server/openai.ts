@@ -126,6 +126,14 @@ export async function* streamTutorAnswer(input: TutorInput): AsyncGenerator<Tuto
   ];
   let previousResponseId: string | undefined;
 
+  // Every page the tools surface this turn, keyed by page number. The reference
+  // shown to the student is chosen from here once the final answer is known —
+  // matched to the page the answer actually cites, not the last tool's top hit.
+  const referencesByPage = new Map<number, Reference>();
+  // Top reference of the most recent tool result, used when the answer cites
+  // no page at all.
+  let fallbackReference: Reference | null = null;
+
   for (let step = 0; step < TUTOR_GENERATION.maxToolSteps; step += 1) {
     const stream = await createResponse({
       model: appConfig.tutorModel,
@@ -164,11 +172,16 @@ export async function* streamTutorAnswer(input: TutorInput): AsyncGenerator<Tuto
       }
     }
 
-    // No tool calls means the model has given its final spoken answer: emit
-    // the buffered text now. Earlier steps that called tools are discarded —
-    // their text is preamble the model repeats in this final answer.
+    // No tool calls means the model has given its final spoken answer. Pick the
+    // reference to match the page the answer cites, then emit it before the
+    // text. Earlier steps that called tools are discarded — their text is
+    // preamble the model repeats in this final answer.
     if (toolCalls.length === 0) {
       if (stepText) {
+        const reference = pickCitedReference(stepText, referencesByPage, fallbackReference, input);
+        if (reference) {
+          yield { type: "reference", reference };
+        }
         yield { type: "delta", text: stepText };
       }
       return;
@@ -177,8 +190,15 @@ export async function* streamTutorAnswer(input: TutorInput): AsyncGenerator<Tuto
     pendingInput = [];
     for (const call of toolCalls) {
       const result = await runTutorTool(call.name, call.args, input);
-      if (result.reference) {
-        yield { type: "reference", reference: result.reference };
+      for (const reference of result.references) {
+        // Keep the first snippet seen for a page — later tool calls add pages
+        // without overwriting an already-surfaced one.
+        if (!referencesByPage.has(reference.pageNumber)) {
+          referencesByPage.set(reference.pageNumber, reference);
+        }
+      }
+      if (result.references[0]) {
+        fallbackReference = result.references[0];
       }
       pendingInput.push({
         type: "function_call_output",
@@ -189,12 +209,56 @@ export async function* streamTutorAnswer(input: TutorInput): AsyncGenerator<Tuto
   }
 }
 
-/** Runs one tutor tool call and returns its text output plus an optional citation. */
+/**
+ * Chooses the reference to show the student. Prefers the first page the answer
+ * explicitly cites ("on page 4, ...") so the document panel always matches what
+ * the tutor is talking about; falls back to the last tool's top hit otherwise.
+ */
+function pickCitedReference(
+  answer: string,
+  referencesByPage: Map<number, Reference>,
+  fallback: Reference | null,
+  input: TutorInput
+): Reference | null {
+  for (const match of answer.matchAll(/\bpages?\s+(\d+)\b/gi)) {
+    const pageNumber = Number(match[1]);
+    const surfaced = referencesByPage.get(pageNumber);
+    if (surfaced) {
+      return surfaced;
+    }
+    // The answer cites a valid page the tools never returned a reference for —
+    // build one so the panel still follows the answer.
+    const built = buildPageReference(pageNumber, input);
+    if (built) {
+      return built;
+    }
+  }
+  return fallback;
+}
+
+/** Builds a page reference (number, snippet, chunk id) for one page number. */
+function buildPageReference(pageNumber: number, input: TutorInput): Reference | null {
+  const page = input.pages.find((item) => item.pageNumber === pageNumber);
+  if (!page) {
+    return null;
+  }
+  return {
+    pageNumber: page.pageNumber,
+    snippet: buildReferenceSnippet(page.text, input.message),
+    chunkId: input.chunks.find((chunk) => chunk.pageNumber === page.pageNumber)?.id
+  };
+}
+
+/**
+ * Runs one tutor tool call and returns its text output plus every page it
+ * surfaced as a candidate reference. The caller picks which one the student
+ * sees, matched to the page the final answer cites.
+ */
 async function runTutorTool(
   name: string,
   rawArgs: string,
   input: TutorInput
-): Promise<{ output: string; reference: Reference | null }> {
+): Promise<{ output: string; references: Reference[] }> {
   let args: Record<string, unknown> = {};
   try {
     args = JSON.parse(rawArgs || "{}");
@@ -206,7 +270,7 @@ async function runTutorTool(
     const outline = input.pages
       .map((page) => `Page ${page.pageNumber}: ${previewLine(page.text)}`)
       .join("\n");
-    return { output: outline || "The document has no readable pages.", reference: null };
+    return { output: outline || "The document has no readable pages.", references: [] };
   }
 
   if (name === "get_page") {
@@ -215,16 +279,13 @@ async function runTutorTool(
     if (!page) {
       return {
         output: `There is no page ${pageNumber}. The document has ${input.pages.length} page(s).`,
-        reference: null
+        references: []
       };
     }
+    const reference = buildPageReference(page.pageNumber, input);
     return {
       output: `[Page ${page.pageNumber}]\n${page.text}`,
-      reference: {
-        pageNumber: page.pageNumber,
-        snippet: buildReferenceSnippet(page.text, input.message),
-        chunkId: input.chunks.find((chunk) => chunk.pageNumber === page.pageNumber)?.id
-      }
+      references: reference ? [reference] : []
     };
   }
 
@@ -233,24 +294,32 @@ async function runTutorTool(
     const embedding = await embedQuery(query).catch(() => null);
     const ranked = rankChunks(query, input.chunks, embedding).slice(0, 6);
     if (!ranked.length) {
-      return { output: "No matching passages were found in the document.", reference: null };
+      return { output: "No matching passages were found in the document.", references: [] };
     }
 
     const output = ranked
       .map((item) => `[Page ${item.chunk.pageNumber}] ${item.chunk.text}`)
       .join("\n\n");
-    const top = ranked[0].chunk;
-    return {
-      output,
-      reference: {
-        pageNumber: top.pageNumber,
-        snippet: buildReferenceSnippet(top.text, query),
-        chunkId: top.id
+
+    // One reference per page, in rank order — so a search that returns chunks
+    // from pages 3 and 4 lets the answer cite either and still match.
+    const references: Reference[] = [];
+    const seenPages = new Set<number>();
+    for (const item of ranked) {
+      if (seenPages.has(item.chunk.pageNumber)) {
+        continue;
       }
-    };
+      seenPages.add(item.chunk.pageNumber);
+      references.push({
+        pageNumber: item.chunk.pageNumber,
+        snippet: buildReferenceSnippet(item.chunk.text, query),
+        chunkId: item.chunk.id
+      });
+    }
+    return { output, references };
   }
 
-  return { output: `Unknown tool: ${name}`, reference: null };
+  return { output: `Unknown tool: ${name}`, references: [] };
 }
 
 /** One-line preview of a page, used by the get_outline tool. */
