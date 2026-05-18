@@ -139,10 +139,14 @@ export async function* streamTutorAnswer(input: TutorInput): AsyncGenerator<Tuto
     });
 
     const toolCalls: { callId: string; name: string; args: string }[] = [];
+    // Buffer this step's spoken text instead of streaming it live. A step that
+    // also calls a tool is just a preamble the model restates on the next step,
+    // so its text would otherwise be shown (and spoken) twice.
+    let stepText = "";
 
     for await (const event of stream) {
       if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
-        yield { type: "delta", text: event.delta };
+        stepText += event.delta;
       } else if (event.type === "response.output_item.done") {
         const item = event.item as Record<string, unknown> | undefined;
         if (item?.type === "function_call") {
@@ -160,8 +164,13 @@ export async function* streamTutorAnswer(input: TutorInput): AsyncGenerator<Tuto
       }
     }
 
-    // No tool calls means the model has given its final spoken answer.
+    // No tool calls means the model has given its final spoken answer: emit
+    // the buffered text now. Earlier steps that called tools are discarded —
+    // their text is preamble the model repeats in this final answer.
     if (toolCalls.length === 0) {
+      if (stepText) {
+        yield { type: "delta", text: stepText };
+      }
       return;
     }
 

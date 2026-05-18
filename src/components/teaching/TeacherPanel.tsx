@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  Download,
   Loader2,
   Mic,
   MicOff,
@@ -9,7 +8,7 @@ import {
   RotateCcw
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { downloadChatPdf } from "@/lib/chat-pdf";
+// import { downloadChatPdf } from "@/lib/chat-pdf";
 import { renderMessageBody } from "@/lib/message-format";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { MicPermissionDialog } from "./MicPermissionDialog";
@@ -83,7 +82,7 @@ export function TeacherPanel({
   const statusLabel = deriveStatusLabel(status, messages.length);
   const visibleMessages = messages.filter((message) => !message.hidden);
   const hasMessages = messages.length > 0;
-  const canExport = visibleMessages.some((message) => message.content.trim());
+  // const canExport = visibleMessages.some((message) => message.content.trim());
 
   const handleClearClick = () => {
     if (!hasMessages) {
@@ -95,7 +94,7 @@ export function TeacherPanel({
 
   return (
     <div className={`call-stage${callMode ? " in-call" : ""}`}>
-      <button
+      {/* <button
         className="call-export"
         type="button"
         aria-label="Download chat as PDF"
@@ -105,6 +104,16 @@ export function TeacherPanel({
       >
         <Download size={16} aria-hidden />
         <span>PDF</span>
+      </button> */}
+      <button
+        className="call-export"
+        type="button"
+        aria-label="Clear chat and restart"
+        title="Clear chat and restart"
+        onClick={handleClearClick}
+        disabled={!hasMessages && !callMode}
+      >
+        <RotateCcw size={16} aria-hidden />
       </button>
 
       <TeacherAvatar state={orbState} />
@@ -180,17 +189,6 @@ export function TeacherPanel({
         >
           {callMode ? <PhoneOff size={26} aria-hidden /> : <Phone size={26} aria-hidden />}
           <span>{callMode ? "End" : "Call"}</span>
-        </button>
-
-        <button
-          className="dock-btn"
-          type="button"
-          aria-label="Clear chat and restart"
-          title="Clear chat and restart"
-          onClick={handleClearClick}
-          disabled={(!hasMessages && !callMode) || micBlocked}
-        >
-          <RotateCcw size={20} aria-hidden />
         </button>
 
         <button
