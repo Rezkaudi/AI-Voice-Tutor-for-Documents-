@@ -430,16 +430,6 @@ button:disabled {
   padding: 1px 3px;
 }
 
-.reference-note {
-  margin-top: 14px;
-  padding: 12px;
-  border-radius: 8px;
-  background: oklch(0.92 0.03 154);
-  border: 1px solid oklch(0.74 0.045 154);
-  color: var(--accent-ink);
-  line-height: 1.55;
-}
-
 .thinking-dots {
   display: inline-flex;
   gap: 4px;

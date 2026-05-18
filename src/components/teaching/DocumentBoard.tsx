@@ -81,9 +81,6 @@ function DocumentBoardComponent({
             {page
               ? renderHighlightedText(page.text, highlightOnThisPage ? highlight.snippet : null)
               : "No page text."}
-            {highlightOnThisPage ? (
-              <aside className="reference-note">{highlight.snippet}</aside>
-            ) : null}
           </article>
         )}
       </div>
