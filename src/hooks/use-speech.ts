@@ -10,14 +10,18 @@ export type CaptionSpeaker = "teacher" | "user";
 
 /**
  * Live caption for the sentence currently being spoken: who is speaking, the
- * full word list, and how many of those words have been voiced so far. The
- * last spoken word is the "active" one — see `TeacherPanel` for the rolling
- * one-line render.
+ * word list, and how many of those words have been voiced so far. The last
+ * spoken word is the "active" one. `spaced` is false for languages written
+ * without spaces (Japanese, Chinese, …) so the renderer can drop word gaps;
+ * `rtl` is true for right-to-left scripts (Arabic, Hebrew, …).
+ * See `TeacherPanel` for the rolling one-line render.
  */
 export type SpeechCaption = {
   speaker: CaptionSpeaker;
   words: string[];
   spoken: number;
+  spaced: boolean;
+  rtl: boolean;
 };
 
 /**
@@ -129,12 +133,12 @@ export function useSpeech(): SpeechController {
 
   const showUserCaption = useCallback(
     (text: string) => {
-      const words = splitWords(text);
-      if (words.length === 0) return;
+      const segmented = segmentText(text);
+      if (segmented.words.length === 0) return;
       startWordReveal(
         { setCaption, captionTimerRef, clearCaptionTimer },
-        words,
-        words.length * ESTIMATED_WORD_SECONDS * 1000,
+        segmented,
+        segmented.words.length * ESTIMATED_WORD_SECONDS * 1000,
         "user"
       );
     },
@@ -150,8 +154,69 @@ type CaptionApi = {
   clearCaptionTimer: () => void;
 };
 
-function splitWords(text: string): string[] {
-  return text.split(/\s+/).filter(Boolean);
+/** A sentence broken into display words, with each word's start char index. */
+type SegmentedText = {
+  words: string[];
+  offsets: number[];
+  spaced: boolean;
+  rtl: boolean;
+};
+
+// Strong right-to-left scripts: Hebrew (+ presentation forms), Arabic
+// (+ supplement / extended / presentation forms), Syriac, Thaana, NKo.
+// Their presence flips the caption to RTL.
+const RTL_PATTERN =
+  /[\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0750-\u077F\u0780-\u07BF\u07C0-\u07FF\u0860-\u08FF\uFB1D-\uFB4F\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+/** True when the text is written in a right-to-left script. */
+function isRtlText(text: string): boolean {
+  return RTL_PATTERN.test(text);
+}
+
+/**
+ * Splits a sentence into caption words. Whitespace languages split on spaces;
+ * languages written without spaces (Japanese, Chinese, …) are segmented with
+ * `Intl.Segmenter` so the caption reveals and scrolls token-by-token instead
+ * of as one unbreakable blob that overflows the strip.
+ */
+function segmentText(text: string): SegmentedText {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { words: [], offsets: [], spaced: true, rtl: false };
+  }
+
+  const rtl = isRtlText(trimmed);
+
+  if (/\s/.test(trimmed)) {
+    const words: string[] = [];
+    const offsets: number[] = [];
+    for (const match of trimmed.matchAll(/\S+/g)) {
+      words.push(match[0]);
+      offsets.push(match.index ?? 0);
+    }
+    return { words, offsets, spaced: true, rtl };
+  }
+
+  if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {
+    try {
+      const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+      const words: string[] = [];
+      const offsets: number[] = [];
+      for (const part of segmenter.segment(trimmed)) {
+        if (part.segment.trim()) {
+          words.push(part.segment);
+          offsets.push(part.index);
+        }
+      }
+      if (words.length > 0) {
+        return { words, offsets, spaced: false, rtl };
+      }
+    } catch {
+      // Older browsers without Intl.Segmenter — fall through to the whole line.
+    }
+  }
+
+  return { words: [trimmed], offsets: [0], spaced: false, rtl };
 }
 
 /**
@@ -160,7 +225,7 @@ function splitWords(text: string): string[] {
  */
 function startWordReveal(
   { setCaption, captionTimerRef, clearCaptionTimer }: CaptionApi,
-  words: string[],
+  { words, spaced, rtl }: SegmentedText,
   durationMs: number,
   speaker: CaptionSpeaker
 ): void {
@@ -171,7 +236,7 @@ function startWordReveal(
   }
 
   let spoken = 1;
-  setCaption({ speaker, words, spoken });
+  setCaption({ speaker, words, spoken, spaced, rtl });
   if (words.length === 1) {
     return;
   }
@@ -179,7 +244,7 @@ function startWordReveal(
   const step = Math.max(140, durationMs / words.length);
   captionTimerRef.current = window.setInterval(() => {
     spoken += 1;
-    setCaption({ speaker, words, spoken: Math.min(spoken, words.length) });
+    setCaption({ speaker, words, spoken: Math.min(spoken, words.length), spaced, rtl });
     if (spoken >= words.length) {
       clearCaptionTimer();
     }
@@ -210,7 +275,7 @@ function playClip(
     audioRef.current = audio;
     revokeBlobUrl(audio.src);
 
-    const words = splitWords(text);
+    const segmented = segmentText(text);
     let settled = false;
     const finish = () => {
       if (settled) return;
@@ -226,8 +291,8 @@ function playClip(
       const seconds =
         Number.isFinite(audio.duration) && audio.duration > 0
           ? audio.duration
-          : words.length * ESTIMATED_WORD_SECONDS;
-      startWordReveal(captionApi, words, seconds * 1000, "teacher");
+          : segmented.words.length * ESTIMATED_WORD_SECONDS;
+      startWordReveal(captionApi, segmented, seconds * 1000, "teacher");
     };
     audio.onended = finish;
     audio.onerror = finish;
@@ -257,7 +322,8 @@ function playWithSpeechSynthesis(
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = SPEECH_SYNTHESIS_RATE;
 
-    const words = splitWords(text);
+    const segmented = segmentText(text);
+    const { words, offsets, spaced, rtl } = segmented;
     let settled = false;
     const finish = () => {
       if (settled) return;
@@ -271,7 +337,7 @@ function playWithSpeechSynthesis(
       // The browser reports real word boundaries, so estimate as a safety net only.
       startWordReveal(
         captionApi,
-        words,
+        segmented,
         words.length * ESTIMATED_WORD_SECONDS * 1000,
         "teacher"
       );
@@ -279,13 +345,15 @@ function playWithSpeechSynthesis(
     // Boundary events give exact word timing — far better than the estimate.
     utterance.onboundary = (event) => {
       if (event.name !== "word") return;
-      const spoken = countWordsUpTo(text, event.charIndex);
+      const spoken = countWordsUpTo(offsets, event.charIndex);
       if (spoken > 0) {
         captionApi.clearCaptionTimer();
         captionApi.setCaption({
           speaker: "teacher",
           words,
-          spoken: Math.min(spoken, words.length)
+          spoken: Math.min(spoken, words.length),
+          spaced,
+          rtl
         });
       }
     };
@@ -295,10 +363,17 @@ function playWithSpeechSynthesis(
   });
 }
 
-/** Counts how many whitespace-delimited words begin at or before `charIndex`. */
-function countWordsUpTo(text: string, charIndex: number): number {
-  const matched = text.slice(0, charIndex + 1).match(/\S+/g);
-  return matched ? matched.length : 0;
+/** Counts how many words begin at or before `charIndex`. */
+function countWordsUpTo(offsets: number[], charIndex: number): number {
+  let count = 0;
+  for (const offset of offsets) {
+    if (offset <= charIndex) {
+      count += 1;
+    } else {
+      break;
+    }
+  }
+  return count;
 }
 
 function revokeBlobUrl(url: string): void {

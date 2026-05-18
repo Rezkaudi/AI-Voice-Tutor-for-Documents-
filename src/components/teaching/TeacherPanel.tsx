@@ -17,8 +17,9 @@ import { MicPermissionDialog } from "./MicPermissionDialog";
 import { TeacherAvatar } from "./TeacherAvatar";
 import { SPEECH_LANGUAGES, type UiMessage } from "./types";
 
-// How many trailing words the live caption keeps on screen at once.
-const CAPTION_WINDOW = 7;
+// Trailing words kept on the one-line caption; older words drop off as the
+// teacher speaks, so the strip always fits without clipping.
+const CAPTION_WINDOW = 6;
 
 type TeacherStatus = {
   isStreaming: boolean;
@@ -94,16 +95,19 @@ export function TeacherPanel({
   const statusLabel = deriveStatusLabel(status, messages.length);
   const visibleMessages = messages.filter((message) => !message.hidden);
   const hasMessages = messages.length > 0;
-  // Keep only the last few words on screen so the caption stays on one line.
+  // Only the last few voiced words, so the one-line strip always fits.
+  const captionStart =
+    caption && caption.spoken > 0 ? Math.max(0, caption.spoken - CAPTION_WINDOW) : 0;
   const captionWords =
     caption && caption.spoken > 0
       ? caption.words
-          .slice(0, caption.spoken)
-          .map((text, index) => ({ text, index }))
-          .slice(-CAPTION_WINDOW)
+          .slice(captionStart, caption.spoken)
+          .map((text, i) => ({ text, index: captionStart + i }))
       : [];
   const captionActiveIndex = caption ? caption.spoken - 1 : -1;
   const captionSpeaker = caption?.speaker ?? "teacher";
+  const captionSpaced = caption?.spaced ?? true;
+  const captionRtl = caption?.rtl ?? false;
   // const canExport = visibleMessages.some((message) => message.content.trim());
 
   const handleClearClick = () => {
@@ -227,20 +231,29 @@ export function TeacherPanel({
           dock. Decorative: word-by-word updates would flood a screen reader,
           and the status label in `.call-meta` already carries the live region. */}
       {captionWords.length > 0 ? (
-        <div className={`call-caption call-caption--${captionSpeaker}`} aria-hidden="true">
+        <div
+          className={`call-caption call-caption--${captionSpeaker}${
+            captionSpaced ? "" : " call-caption--dense"
+          }`}
+          dir={captionRtl ? "rtl" : "ltr"}
+          aria-hidden="true"
+        >
           <span className="caption-speaker">
             {captionSpeaker === "user" ? "You" : "Teacher"}
           </span>
-          {captionWords.map((word) => (
-            <span
-              key={word.index}
-              className={`caption-word${
-                word.index === captionActiveIndex ? " is-active" : ""
-              }`}
-            >
-              {word.text}
-            </span>
-          ))}
+          <span className="caption-line">
+            {captionWords.map((word, i) => (
+              <span
+                key={word.index}
+                className={`caption-word${
+                  word.index === captionActiveIndex ? " is-active" : ""
+                }`}
+              >
+                {captionSpaced && i > 0 ? " " : ""}
+                {word.text}
+              </span>
+            ))}
+          </span>
         </div>
       ) : null}
 

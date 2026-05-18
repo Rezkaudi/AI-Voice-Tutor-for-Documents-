@@ -535,36 +535,39 @@ button:disabled {
   padding: clamp(12px, 2vh, 22px) 8px 4px;
 }
 
-/* Quiet corner controls — transcript toggle (left) and restart (right). */
+/* Corner controls — transcript toggle (left) and restart (right). A defined
+   dark-glass chip: the top of the stage is light, so it needs a clear border
+   and shadow to read as a button. */
 .call-corner-btn {
   position: absolute;
-  top: 12px;
+  top: 14px;
   z-index: 20;
   display: inline-flex;
   align-items: center;
   gap: 7px;
   min-height: 40px;
-  padding: 0 14px;
+  padding: 0 15px;
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: oklch(0.93 0.012 215);
-  background: oklch(0.22 0.03 244 / 0.9);
-  border: 1px solid oklch(1 0 0 / 0.1);
-  backdrop-filter: blur(8px);
+  color: oklch(0.97 0.01 215);
+  background: oklch(0.17 0.025 244 / 0.74);
+  border: 1px solid oklch(1 0 0 / 0.26);
+  box-shadow: 0 6px 18px oklch(0.1 0.03 244 / 0.5);
+  backdrop-filter: blur(10px);
   cursor: pointer;
   transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
     background-color 160ms ease-out, border-color 160ms ease-out;
 }
 
-.call-corner-btn--transcript { left: 12px; }
-.call-corner-btn--restart { right: 12px; }
+.call-corner-btn--transcript { left: 14px; }
+.call-corner-btn--restart { right: 14px; }
 
 .call-corner-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: oklch(0.3 0.035 244 / 0.95);
-  border-color: oklch(1 0 0 / 0.18);
+  background: oklch(0.22 0.03 244 / 0.85);
+  border-color: oklch(0.78 0.13 165 / 0.7);
 }
 
 .call-corner-btn:focus-visible {
@@ -800,22 +803,34 @@ button:disabled {
   bottom: clamp(104px, 17vh, 152px);
   transform: translateX(-50%);
   z-index: 30;
-  max-width: min(560px, calc(100% - 40px));
+  max-width: min(580px, calc(100% - 32px));
   display: flex;
   flex-wrap: nowrap;
-  justify-content: center;
-  align-items: baseline;
-  gap: 0.42ch;
-  padding: 11px 20px;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 14px;
   border-radius: 16px;
-  background: oklch(0.13 0.022 244 / 0.88);
-  border: 1px solid oklch(1 0 0 / 0.09);
+  background: oklch(0.13 0.022 244 / 0.9);
+  border: 1px solid oklch(1 0 0 / 0.1);
   box-shadow: 0 14px 36px oklch(0.05 0.02 244 / 0.6);
   backdrop-filter: blur(10px);
   overflow: hidden;
-  white-space: nowrap;
   pointer-events: none;
   animation: caption-rise 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/*
+ * The word region — plain inline text on one line. Real space characters
+ * (added by the renderer for spaced scripts) handle word spacing, so Arabic,
+ * Latin and CJK all space correctly, and `dir` on the strip handles RTL.
+ */
+.caption-line {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
 }
 
 @keyframes caption-rise {
@@ -826,14 +841,13 @@ button:disabled {
 /* Speaker tag — "Teacher" (warm) or "You" (green), same strip either way. */
 .caption-speaker {
   flex: none;
-  align-self: center;
-  margin-right: 4px;
   padding: 3px 9px;
   border-radius: 999px;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .call-caption--teacher .caption-speaker {
