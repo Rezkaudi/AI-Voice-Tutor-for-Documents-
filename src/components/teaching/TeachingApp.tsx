@@ -52,12 +52,17 @@ export function TeachingApp() {
   const access = useAccess({ onError: setError });
   const documentWorkspace = useDocument({ onError: setError });
 
-  const handleVoiceTranscript = useCallback((transcript: string) => {
-    const trimmed = transcript.trim();
-    if (trimmed) {
-      sendMessageRef.current(trimmed);
-    }
-  }, []);
+  const handleVoiceTranscript = useCallback(
+    (transcript: string) => {
+      const trimmed = transcript.trim();
+      if (trimmed) {
+        // Play the learner's words back as a caption before the teacher replies.
+        speech.showUserCaption(trimmed);
+        sendMessageRef.current(trimmed);
+      }
+    },
+    [speech]
+  );
 
   const voice = useVoiceRecorder(handleVoiceTranscript, setError, getLanguage);
 
@@ -247,6 +252,7 @@ export function TeachingApp() {
               <TeacherPanel
                 messages={chat.messages}
                 documentTitle={loadedDocument.document.title}
+                caption={speech.caption}
                 isStreaming={chat.isStreaming}
                 isSpeaking={speech.isSpeaking}
                 isListening={voice.isListening}

@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Captions,
   Loader2,
   Mic,
   MicOff,
@@ -9,11 +10,15 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 // import { downloadChatPdf } from "@/lib/chat-pdf";
+import type { SpeechCaption } from "@/hooks/use-speech";
 import { renderMessageBody } from "@/lib/message-format";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { MicPermissionDialog } from "./MicPermissionDialog";
 import { TeacherAvatar } from "./TeacherAvatar";
 import { SPEECH_LANGUAGES, type UiMessage } from "./types";
+
+// How many trailing words the live caption keeps on screen at once.
+const CAPTION_WINDOW = 7;
 
 type TeacherStatus = {
   isStreaming: boolean;
@@ -26,6 +31,7 @@ type TeacherStatus = {
 type TeacherPanelProps = TeacherStatus & {
   messages: UiMessage[];
   documentTitle: string;
+  caption: SpeechCaption | null;
   micSupported: boolean;
   micBlocked: boolean;
   speechLanguage: string;
@@ -40,6 +46,7 @@ type TeacherPanelProps = TeacherStatus & {
 export function TeacherPanel({
   messages,
   documentTitle,
+  caption,
   isStreaming,
   isSpeaking,
   isListening,
@@ -57,10 +64,15 @@ export function TeacherPanel({
   const logRef = useRef<HTMLDivElement>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [micDialogOpen, setMicDialogOpen] = useState(false);
+  // Transcript starts hidden — the call leads with the avatar and live caption;
+  // the learner opts into the full text history.
+  const [showTranscript, setShowTranscript] = useState(false);
 
   useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
-  }, [messages]);
+    if (showTranscript) {
+      logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+    }
+  }, [messages, showTranscript]);
 
   // Pop the dialog up the moment a block is detected; close it automatically
   // once the user re-enables the mic (micBlocked flips back to false).
@@ -82,6 +94,16 @@ export function TeacherPanel({
   const statusLabel = deriveStatusLabel(status, messages.length);
   const visibleMessages = messages.filter((message) => !message.hidden);
   const hasMessages = messages.length > 0;
+  // Keep only the last few words on screen so the caption stays on one line.
+  const captionWords =
+    caption && caption.spoken > 0
+      ? caption.words
+          .slice(0, caption.spoken)
+          .map((text, index) => ({ text, index }))
+          .slice(-CAPTION_WINDOW)
+      : [];
+  const captionActiveIndex = caption ? caption.spoken - 1 : -1;
+  const captionSpeaker = caption?.speaker ?? "teacher";
   // const canExport = visibleMessages.some((message) => message.content.trim());
 
   const handleClearClick = () => {
@@ -106,7 +128,21 @@ export function TeacherPanel({
         <span>PDF</span>
       </button> */}
       <button
-        className="call-export"
+        className={`call-corner-btn call-corner-btn--transcript${
+          showTranscript ? " is-active" : ""
+        }`}
+        type="button"
+        aria-pressed={showTranscript}
+        aria-expanded={showTranscript}
+        title={showTranscript ? "Hide the lesson transcript" : "Show the lesson transcript"}
+        onClick={() => setShowTranscript((open) => !open)}
+      >
+        <Captions size={16} aria-hidden />
+        <span>{showTranscript ? "Hide" : "Transcript"}</span>
+      </button>
+
+      <button
+        className="call-corner-btn call-corner-btn--restart"
         type="button"
         aria-label="Clear chat and restart"
         title="Clear chat and restart"
@@ -148,35 +184,65 @@ export function TeacherPanel({
         </div>
       </div>
 
-      <div ref={logRef} className="call-transcript" aria-live="polite">
-        {visibleMessages.length === 0 && !callMode ? (
-          <p className="call-hint">
-            Press <strong>Call</strong>. Your teacher will introduce the lesson and listen for
-            your reply — no typing needed.
-          </p>
-        ) : (
-          visibleMessages.map((message) => (
-            <div key={message.id} className={`bubble ${message.role}`}>
-              {message.content ? (
-                renderMessageBody(message.content)
-              ) : message.role === "assistant" ? (
-                <span className="thinking-dots" aria-label="Thinking">
-                  <i />
-                  <i />
-                  <i />
-                </span>
-              ) : (
-                ""
-              )}
-            </div>
-          ))
-        )}
+      <div className="call-stream">
         {error ? (
           <div className="bubble assistant error-text" role="alert">
             {error}
           </div>
         ) : null}
+
+        {showTranscript ? (
+          <div ref={logRef} className="call-transcript" aria-live="polite">
+            {visibleMessages.length === 0 ? (
+              <p className="call-hint">
+                No conversation yet — your lesson transcript will appear here.
+              </p>
+            ) : (
+              visibleMessages.map((message) => (
+                <div key={message.id} className={`bubble ${message.role}`}>
+                  {message.content ? (
+                    renderMessageBody(message.content)
+                  ) : message.role === "assistant" ? (
+                    <span className="thinking-dots" aria-label="Thinking">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  ) : (
+                    ""
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        ) : !callMode && !error ? (
+          <p className="call-hint call-hint--idle">
+            Press <strong>Call</strong>. Your teacher will introduce the lesson and
+            listen for your reply — no typing needed.
+          </p>
+        ) : null}
       </div>
+
+      {/* Live caption — a video-style subtitle strip overlaid above the call
+          dock. Decorative: word-by-word updates would flood a screen reader,
+          and the status label in `.call-meta` already carries the live region. */}
+      {captionWords.length > 0 ? (
+        <div className={`call-caption call-caption--${captionSpeaker}`} aria-hidden="true">
+          <span className="caption-speaker">
+            {captionSpeaker === "user" ? "You" : "Teacher"}
+          </span>
+          {captionWords.map((word) => (
+            <span
+              key={word.index}
+              className={`caption-word${
+                word.index === captionActiveIndex ? " is-active" : ""
+              }`}
+            >
+              {word.text}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div className="call-dock" role="group" aria-label="Call controls">
         <button
