@@ -545,40 +545,58 @@ button:disabled {
   padding: clamp(12px, 2vh, 22px) 8px 4px;
 }
 
-.call-export {
+/* Quiet corner controls — transcript toggle (left) and restart (right). */
+.call-corner-btn {
   position: absolute;
   top: 12px;
-  right: 12px;
-  z-index: 5;
+  z-index: 20;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 38px;
+  gap: 7px;
+  min-height: 40px;
   padding: 0 14px;
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: oklch(0.94 0.012 100);
-  background: oklch(0.32 0.035 232);
-  border: 1px solid oklch(0.46 0.04 230);
-  transition: transform 140ms ease-out, background 160ms ease-out, border-color 160ms ease-out;
+  color: oklch(0.93 0.012 215);
+  background: oklch(0.22 0.03 244 / 0.9);
+  border: 1px solid oklch(1 0 0 / 0.1);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 160ms ease-out, border-color 160ms ease-out;
 }
 
-.call-export:hover:not(:disabled) {
+.call-corner-btn--transcript { left: 12px; }
+.call-corner-btn--restart { right: 12px; }
+
+.call-corner-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: oklch(0.38 0.04 232);
-  border-color: oklch(0.78 0.13 165);
+  background: oklch(0.3 0.035 244 / 0.95);
+  border-color: oklch(1 0 0 / 0.18);
 }
 
-.call-export:focus-visible {
+.call-corner-btn:focus-visible {
   outline: 2px solid oklch(0.78 0.13 165);
   outline-offset: 2px;
 }
 
-.call-export:disabled {
+.call-corner-btn:disabled {
   opacity: 0.42;
   cursor: not-allowed;
+}
+
+/* Transcript toggle reads as "on" when the panel is open. */
+.call-corner-btn.is-active {
+  color: oklch(0.18 0.04 230);
+  background: oklch(0.82 0.13 165);
+  border-color: transparent;
+}
+
+.call-corner-btn.is-active:hover:not(:disabled) {
+  background: oklch(0.86 0.13 165);
+  border-color: transparent;
 }
 
 .avatar-stage {
@@ -769,10 +787,105 @@ button:disabled {
   opacity: 0.45;
 }
 
-.call-transcript {
+.call-stream {
   width: 100%;
   max-width: 520px;
   height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/*
+ * Live caption — a video-style subtitle strip overlaid above the call dock.
+ * It floats over the stage (not in flow) so it never shifts the layout, and
+ * renders only while the teacher is speaking.
+ */
+.call-caption {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(104px, 17vh, 152px);
+  transform: translateX(-50%);
+  z-index: 30;
+  max-width: min(560px, calc(100% - 40px));
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.42ch;
+  padding: 11px 20px;
+  border-radius: 16px;
+  background: oklch(0.13 0.022 244 / 0.88);
+  border: 1px solid oklch(1 0 0 / 0.09);
+  box-shadow: 0 14px 36px oklch(0.05 0.02 244 / 0.6);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: caption-rise 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes caption-rise {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Speaker tag — "Teacher" (warm) or "You" (green), same strip either way. */
+.caption-speaker {
+  flex: none;
+  align-self: center;
+  margin-right: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.call-caption--teacher .caption-speaker {
+  color: oklch(0.18 0.04 60);
+  background: oklch(0.82 0.13 90);
+}
+
+.call-caption--user {
+  border-color: oklch(0.78 0.14 150 / 0.34);
+}
+
+.call-caption--user .caption-speaker {
+  color: oklch(0.17 0.04 150);
+  background: oklch(0.8 0.14 150);
+}
+
+.caption-word {
+  font-size: clamp(1.02rem, 2.5vh, 1.32rem);
+  font-weight: 600;
+  line-height: 1.35;
+  color: oklch(0.68 0.015 215);
+  transition: color 160ms ease-out;
+}
+
+/* The word being voiced right now — highlighted in the speaker's colour. */
+.call-caption--teacher .caption-word.is-active {
+  color: oklch(0.97 0.035 95);
+  text-shadow: 0 0 12px oklch(0.85 0.13 90 / 0.5);
+}
+
+.call-caption--user .caption-word.is-active {
+  color: oklch(0.92 0.12 150);
+  text-shadow: 0 0 12px oklch(0.78 0.14 150 / 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .call-caption { animation: none; }
+}
+
+.call-transcript {
+  flex: 1 1 auto;
+  width: 100%;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -796,6 +909,11 @@ button:disabled {
   font-size: 0.92rem;
   line-height: 1.55;
   padding: 0 12px;
+}
+
+.call-hint--idle {
+  max-width: 340px;
+  margin: 0 auto;
 }
 
 .bubble {
