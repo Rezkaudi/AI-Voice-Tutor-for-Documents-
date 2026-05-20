@@ -112,16 +112,22 @@ export class OpenAiTutorService implements TutorService {
       );
 
       const toolCalls: PendingToolCall[] = [];
-      // Buffer this step's text: a step that also calls a tool is just a
-      // preamble the model restates next step, so streaming it would double it.
-      let stepText = "";
+      // Buffer text per output item. The model can emit multiple message items
+      // in one response (e.g. an interim restatement plus the final answer);
+      // concatenating every delta indiscriminately would double the reply.
+      const textByOutputIndex = new Map<number, string>();
 
       for await (const event of stream) {
         if (
           event.type === "response.output_text.delta" &&
           typeof event.delta === "string"
         ) {
-          stepText += event.delta;
+          const index =
+            typeof event.output_index === "number" ? event.output_index : 0;
+          textByOutputIndex.set(
+            index,
+            (textByOutputIndex.get(index) ?? "") + event.delta
+          );
         } else if (event.type === "response.output_item.done") {
           const item = event.item as Record<string, unknown> | undefined;
           if (item?.type === "function_call") {
@@ -138,6 +144,13 @@ export class OpenAiTutorService implements TutorService {
           }
         }
       }
+
+      // Pick the last message item — earlier items are interim restatements
+      // the final item already contains. A step with tool calls is preamble
+      // the model restates next step, so its text is dropped below anyway.
+      const lastIndex = [...textByOutputIndex.keys()].sort((a, b) => a - b).pop();
+      const stepText =
+        lastIndex === undefined ? "" : (textByOutputIndex.get(lastIndex) ?? "");
 
       // No tool calls → the model has given its final spoken answer.
       if (toolCalls.length === 0) {
