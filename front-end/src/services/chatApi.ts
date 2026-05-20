@@ -1,32 +1,29 @@
 import type { ChatPayload } from "@/lib/types";
+import { api, extractErrorMessage } from "@/services/apiBase";
 
 /**
  * Tutor chat transport. Opens the streaming `/api/chat` SSE response.
- */
-
-/**
- * Starts a tutor answer stream and returns the raw SSE body for the caller to
- * read with `readEventStream`. Throws with the server's message on failure.
  *
- * @param {object} payload
- * @param {AbortSignal} signal
- * @returns {Promise<ReadableStream<Uint8Array>>}
+ * Uses axios's fetch adapter with responseType "stream" so we get the raw
+ * ReadableStream — the default XHR adapter buffers the whole body.
  */
 export async function streamChat(
   payload: ChatPayload,
   signal: AbortSignal
 ): Promise<ReadableStream<Uint8Array>> {
-  const response = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
-    signal
-  });
+  try {
+    const response = await api.post<ReadableStream<Uint8Array>>("/api/chat", payload, {
+      headers: { "content-type": "application/json" },
+      adapter: "fetch",
+      responseType: "stream",
+      signal
+    });
 
-  if (!response.ok || !response.body) {
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error || "The teacher could not respond.");
+    if (!response.data) {
+      throw new Error("The teacher could not respond.");
+    }
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, "The teacher could not respond."));
   }
-
-  return response.body;
 }

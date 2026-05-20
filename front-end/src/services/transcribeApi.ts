@@ -1,16 +1,8 @@
 import type { SpeechLanguage } from "@/lib/types";
+import { api, extractErrorMessage } from "@/services/apiBase";
 
 /**
- * Speech-to-text transport. Talks to the original backend's `/api/transcribe`.
- */
-
-/**
- * Uploads a recorded clip and returns the transcribed text.
- *
- * @param {Blob} blob
- * @param {string} [language]
- * @param {AbortSignal} [signal]
- * @returns {Promise<string>}
+ * Speech-to-text transport. Talks to the backend's `/api/transcribe`.
  */
 export async function transcribeRecording(
   blob: Blob,
@@ -32,14 +24,10 @@ export async function transcribeRecording(
     formData.append("language", language);
   }
 
-  const response = await fetch("/api/transcribe", {
-    method: "POST",
-    body: formData,
-    signal
-  });
-  const data = (await response.json().catch(() => ({}))) as { text?: string; error?: string };
-  if (!response.ok) {
-    throw new Error(data.error || "Transcription failed.");
+  try {
+    const { data } = await api.post<{ text?: string }>("/api/transcribe", formData, { signal });
+    return typeof data.text === "string" ? data.text.trim() : "";
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, "Transcription failed."));
   }
-  return typeof data.text === "string" ? data.text.trim() : "";
 }

@@ -1,22 +1,23 @@
-/**
- * Text-to-speech transport. Talks to the original backend's `/api/speak`.
- */
+import { api } from "@/services/apiBase";
 
 /**
- * Synthesizes one sentence. Resolves to an audio `Blob`, or `null` when the
- * server has no TTS configured — the caller then falls back to browser speech.
+ * Text-to-speech transport. Talks to the backend's `/api/speak`.
  *
- * @param {string} text
- * @param {AbortSignal} [signal]
- * @returns {Promise<Blob | null>}
+ * Resolves to an audio Blob, or null when the server has no TTS configured —
+ * the caller then falls back to browser speech.
  */
-export function fetchSpeechClip(text: string, signal?: AbortSignal): Promise<Blob | null> {
-  return fetch("/api/speak", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ text }),
-    signal
-  })
-    .then((response) => (response.ok ? response.blob() : null))
-    .catch(() => null);
+export async function fetchSpeechClip(
+  text: string,
+  signal?: AbortSignal
+): Promise<Blob | null> {
+  try {
+    const { data } = await api.post<Blob>(
+      "/api/speak",
+      { text },
+      { responseType: "blob", signal }
+    );
+    return data;
+  } catch {
+    return null;
+  }
 }

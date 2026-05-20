@@ -24,9 +24,9 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-In development, every `/api/*` request is proxied to the backend. If the
-backend is not on `http://localhost:5000`, set `VITE_API_TARGET`
-(see `.env.example`).
+The browser calls the backend directly. Set `VITE_API_BASE_URL` in `.env`
+(see `.env.example`) — defaults to `http://localhost:5000`. The backend
+must allow this frontend's origin via its `CORS_ORIGINS` setting.
 
 ## Project structure
 
