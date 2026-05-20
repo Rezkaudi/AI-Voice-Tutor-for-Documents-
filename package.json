@@ -2,35 +2,9 @@
   "name": "ai-voice-tutor-for-documents",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": "24.x"
-  },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@napi-rs/canvas": "^0.1.100",
-    "@supabase/supabase-js": "^2.105.4",
-    "jspdf": "^4.2.1",
-    "lucide-react": "^0.468.0",
-    "next": "^16.2.6",
-    "openai": "^6.10.0",
-    "pdfjs-dist": "^5.7.284",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.0.0",
-    "@types/node": "^22.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "tailwindcss": "^4.0.0",
-    "typescript": "^5.7.0",
-    "vitest": "^2.1.0"
+    "dev": "bash -c 'npm run dev:back & backend=$!; npm run dev:front & frontend=$!; trap \"kill $backend $frontend 2>/dev/null\" INT TERM EXIT; wait -n $backend $frontend; status=$?; kill $backend $frontend 2>/dev/null; wait $backend $frontend 2>/dev/null; exit $status'",
+    "dev:back": "PORT=5000 npm --prefix back-end run dev",
+    "dev:front": "VITE_API_TARGET=http://localhost:5000 npm --prefix front-end run dev"
   }
 }

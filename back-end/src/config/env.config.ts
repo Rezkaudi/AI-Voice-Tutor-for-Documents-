@@ -1,0 +1,61 @@
+import dotenv from "dotenv";
+
+dotenv.config();
+
+export type EnvConfig = {
+  NODE_ENV: string;
+  PORT: number;
+  CORS_ORIGINS: string[];
+  DATABASE_URL: string;
+  DB_SYNCHRONIZE: boolean;
+  DB_LOGGING: boolean;
+  S3_BUCKET: string;
+  S3_REGION: string;
+  S3_ACCESS_KEY_ID: string;
+  S3_SECRET_ACCESS_KEY: string;
+  OPENAI_API_KEY: string;
+  OPENAI_TUTOR_MODEL: string;
+  OPENAI_TUTOR_MODEL_SAVE_COST: string;
+  OPENAI_EMBEDDING_MODEL: string;
+  OPENAI_TRANSCRIBE_MODEL: string;
+  OPENAI_SPEECH_MODEL: string;
+  OPENAI_SPEECH_VOICE: string;
+};
+
+type EnvKey = keyof EnvConfig;
+
+const getEnv = (key: EnvKey): string | undefined => process.env[key];
+
+const csv = (value: string | undefined): string[] =>
+  (value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
+  NODE_ENV: getEnv("NODE_ENV") || "development",
+  PORT: Number(getEnv("PORT") || 5000),
+
+  CORS_ORIGINS: csv(getEnv("CORS_ORIGINS")),
+
+  DATABASE_URL: getEnv("DATABASE_URL") || "",
+  DB_SYNCHRONIZE:
+    getEnv("DB_SYNCHRONIZE") === "true" || getEnv("DB_SYNCHRONIZE") === "1",
+  DB_LOGGING: getEnv("DB_LOGGING") === "true" || getEnv("DB_LOGGING") === "1",
+
+  S3_BUCKET: getEnv("S3_BUCKET") || "",
+  S3_REGION: getEnv("S3_REGION") || "us-east-1",
+  S3_ACCESS_KEY_ID: getEnv("S3_ACCESS_KEY_ID") || "",
+  S3_SECRET_ACCESS_KEY: getEnv("S3_SECRET_ACCESS_KEY") || "",
+
+  OPENAI_API_KEY: getEnv("OPENAI_API_KEY") || "",
+  OPENAI_TUTOR_MODEL: getEnv("OPENAI_TUTOR_MODEL") || "gpt-5.4-mini",
+  OPENAI_TUTOR_MODEL_SAVE_COST:
+    getEnv("OPENAI_TUTOR_MODEL_SAVE_COST") || "gpt-5-nano",
+  OPENAI_EMBEDDING_MODEL:
+    getEnv("OPENAI_EMBEDDING_MODEL") || "text-embedding-3-small",
+  OPENAI_TRANSCRIBE_MODEL:
+    getEnv("OPENAI_TRANSCRIBE_MODEL") || "gpt-4o-mini-transcribe",
+  OPENAI_SPEECH_MODEL: getEnv("OPENAI_SPEECH_MODEL") || "gpt-4o-mini-tts",
+  OPENAI_SPEECH_VOICE: getEnv("OPENAI_SPEECH_VOICE") || "alloy"
+});
