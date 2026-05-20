@@ -16,6 +16,7 @@ export function buildDocumentRoutes(controller: DocumentsController): Router {
     limits: { fileSize: DOCUMENT_LIMIT_BYTES }
   });
 
+  router.get("/documents", asyncHandler(controller.list));
   router.post(
     "/documents",
     upload.single("file"),
@@ -31,6 +32,11 @@ export function buildDocumentRoutes(controller: DocumentsController): Router {
     "/documents/:id/file",
     documentIdParamValidation,
     asyncHandler(controller.file)
+  );
+  router.delete(
+    "/documents/:id",
+    documentIdParamValidation,
+    asyncHandler(controller.remove)
   );
 
   return router;

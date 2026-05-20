@@ -6,6 +6,7 @@ import { useSessionStore } from "@/store/sessionStore";
 import { useSpeechStore } from "@/store/speechStore";
 import { useVoiceStore } from "@/store/voiceStore";
 import { DocumentBoard } from "./DocumentBoard";
+import { LibraryMenu } from "./LibraryMenu";
 import { Splitter } from "./Splitter";
 import { TeacherPanel } from "./TeacherPanel";
 import { UploadPanel } from "./UploadPanel";
@@ -17,10 +18,11 @@ import { cx, ui } from "@/lib/uiClasses";
  * orchestration lives in the session store — this component only renders.
  */
 export function TeachingApp() {
-  // One-time bootstrap: probe microphone support and saved settings.
+  // One-time bootstrap: probe microphone support, saved settings, and library.
   useEffect(() => {
     useVoiceStore.getState().init();
     useSessionStore.getState().initSaveCost();
+    void useDocumentStore.getState().initLibrary();
   }, []);
 
   const error = useSessionStore((s) => s.error);
@@ -34,6 +36,9 @@ export function TeachingApp() {
   const activePage = useDocumentStore((s) => s.activePage);
   const highlight = useDocumentStore((s) => s.highlight);
   const currentPage = useDocumentStore(selectCurrentPage);
+  const library = useDocumentStore((s) => s.library);
+  const libraryLoading = useDocumentStore((s) => s.libraryLoading);
+  const deletingId = useDocumentStore((s) => s.deletingId);
 
   const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
@@ -81,6 +86,16 @@ export function TeachingApp() {
               {`${loadedDocument.document.pageCount} pages`}
             </span>
           ) : null}
+          <LibraryMenu
+            library={library}
+            libraryLoading={libraryLoading}
+            activeId={loadedDocument?.document.id ?? null}
+            uploadState={uploadState}
+            deletingId={deletingId}
+            onSelect={session.handleSwitchDocument}
+            onFile={session.handleUpload}
+            onDelete={documentStore.deleteDocument}
+          />
         </div>
       </header>
 
@@ -170,7 +185,16 @@ export function TeachingApp() {
         <main
           className="h-full min-w-0 overflow-hidden p-[clamp(14px,2vw,26px)] [background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0_/_36px_36px,var(--color-panel)]"
         >
-          <UploadPanel uploadState={uploadState} error={error} onFile={session.handleUpload} />
+          <UploadPanel
+            uploadState={uploadState}
+            error={error}
+            library={library}
+            libraryLoading={libraryLoading}
+            deletingId={deletingId}
+            onFile={session.handleUpload}
+            onSelect={session.handleSwitchDocument}
+            onDelete={documentStore.deleteDocument}
+          />
         </main>
       )}
     </div>

@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client
@@ -42,6 +43,21 @@ export class S3FileStorage implements FileStorage {
     } catch (error) {
       throw new UpstreamError(
         `Failed to store the document file: ${describe(error)}`
+      );
+    }
+  }
+
+  async delete(key: string): Promise<void> {
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key })
+      );
+    } catch (error) {
+      if (isNotFound(error)) {
+        return;
+      }
+      throw new UpstreamError(
+        `Failed to delete the document file: ${describe(error)}`
       );
     }
   }

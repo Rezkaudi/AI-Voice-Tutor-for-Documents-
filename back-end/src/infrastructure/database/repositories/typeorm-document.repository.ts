@@ -71,6 +71,18 @@ export class TypeOrmDocumentRepository implements DocumentRepository {
     return row ? toDocumentRecord(row) : null;
   }
 
+  async delete(id: string): Promise<void> {
+    // Pages and chunks cascade via the FK ON DELETE CASCADE.
+    await this.dataSource.getRepository(DocumentOrmEntity).delete({ id });
+  }
+
+  async listReady(): Promise<DocumentRecord[]> {
+    const rows = await this.dataSource
+      .getRepository(DocumentOrmEntity)
+      .find({ where: { status: "ready" }, order: { updatedAt: "DESC" } });
+    return rows.map(toDocumentRecord);
+  }
+
   async getPages(documentId: string): Promise<DocumentPage[]> {
     const rows = await this.dataSource
       .getRepository(DocumentPageOrmEntity)

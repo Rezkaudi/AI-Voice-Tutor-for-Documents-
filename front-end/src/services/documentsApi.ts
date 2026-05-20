@@ -1,5 +1,22 @@
-import type { LoadedDocument } from "@/lib/types";
-import { api, extractErrorMessage } from "@/services/apiBase";
+import type { DocumentSummary, LoadedDocument } from "@/lib/types";
+import { api, extractErrorMessage, resolveApiUrl } from "@/services/apiBase";
+
+export async function deleteDocument(documentId: string): Promise<void> {
+  try {
+    await api.delete(`/api/documents/${documentId}`);
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, "The document could not be deleted."));
+  }
+}
+
+export async function listDocuments(): Promise<DocumentSummary[]> {
+  try {
+    const { data } = await api.get<{ documents: DocumentSummary[] }>("/api/documents");
+    return data.documents ?? [];
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, "Your documents could not be loaded."));
+  }
+}
 
 /**
  * Document transport. Talks to the backend's `/api/documents`.
@@ -23,7 +40,7 @@ export async function uploadDocument(file: File): Promise<{ documentId: string }
 export async function fetchDocument(documentId: string): Promise<LoadedDocument> {
   try {
     const { data } = await api.get<LoadedDocument>(`/api/documents/${documentId}`);
-    return data;
+    return { ...data, fileUrl: resolveApiUrl(data.fileUrl) };
   } catch (error) {
     throw new Error(extractErrorMessage(error, "The processed document could not be loaded."));
   }

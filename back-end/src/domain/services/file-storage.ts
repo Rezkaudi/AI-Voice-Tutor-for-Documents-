@@ -24,4 +24,7 @@ export interface FileStorage {
 
   /** Fetches an object, or `null` when the key does not exist. */
   get(key: string): Promise<RetrievedFile | null>;
+
+  /** Deletes an object. A no-op when the key does not exist. */
+  delete(key: string): Promise<void>;
 }

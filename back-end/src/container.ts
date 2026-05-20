@@ -1,7 +1,9 @@
 import type { DataSource } from "typeorm";
 
+import { DeleteDocumentUseCase } from "@/application/use-cases/documents/delete-document.use-case";
 import { GetDocumentUseCase } from "@/application/use-cases/documents/get-document.use-case";
 import { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";
+import { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
 import { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
 import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
@@ -65,6 +67,8 @@ export async function buildContainer(): Promise<Container> {
     documentRepository,
     fileStorage
   );
+  const listDocuments = new ListDocumentsUseCase(documentRepository);
+  const deleteDocument = new DeleteDocumentUseCase(documentRepository, fileStorage);
   const streamChat = new StreamChatUseCase(documentRepository, tutorService);
   const synthesizeSpeech = new SynthesizeSpeechUseCase(speechService);
   const transcribeAudio = new TranscribeAudioUseCase(transcriptionService);
@@ -74,7 +78,9 @@ export async function buildContainer(): Promise<Container> {
     documents: new DocumentsController(
       uploadDocument,
       getDocument,
-      getDocumentFile
+      getDocumentFile,
+      listDocuments,
+      deleteDocument
     ),
     chat: new ChatController(streamChat),
     speech: new SpeechController(synthesizeSpeech),

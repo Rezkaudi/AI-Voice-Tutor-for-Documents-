@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
+import type { DeleteDocumentUseCase } from "@/application/use-cases/documents/delete-document.use-case";
 import type { GetDocumentUseCase } from "@/application/use-cases/documents/get-document.use-case";
 import type { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";
+import type { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
 import type { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
 
 /** HTTP adapter for document upload, retrieval, and file proxy. */
@@ -8,8 +10,21 @@ export class DocumentsController {
   constructor(
     private readonly uploadDocument: UploadDocumentUseCase,
     private readonly getDocument: GetDocumentUseCase,
-    private readonly getDocumentFile: GetDocumentFileUseCase
+    private readonly getDocumentFile: GetDocumentFileUseCase,
+    private readonly listDocuments: ListDocumentsUseCase,
+    private readonly deleteDocument: DeleteDocumentUseCase
   ) {}
+
+  /** GET /api/documents — returns the library of processed documents. */
+  list = async (_req: Request, res: Response): Promise<void> => {
+    res.json({ documents: await this.listDocuments.execute() });
+  };
+
+  /** DELETE /api/documents/:id — removes the document and its file. */
+  remove = async (req: Request, res: Response): Promise<void> => {
+    await this.deleteDocument.execute(req.params.id);
+    res.status(204).end();
+  };
 
   /** POST /api/documents — accepts a multipart `file` field. */
   upload = async (req: Request, res: Response): Promise<void> => {

@@ -29,6 +29,12 @@ export interface DocumentRepository {
   /** Loads a document record by id, or `null` when it does not exist. */
   findById(id: string): Promise<DocumentRecord | null>;
 
+  /** Returns every ready document, newest first. */
+  listReady(): Promise<DocumentRecord[]>;
+
+  /** Deletes a document and its pages/chunks. A no-op when missing. */
+  delete(id: string): Promise<void>;
+
   /** Returns a document's pages, ordered by page number. */
   getPages(documentId: string): Promise<DocumentPage[]>;
 

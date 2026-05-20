@@ -16,7 +16,15 @@ export interface DocumentRecord {
   title: string;
   pageCount: number;
   mimeType: string;
+  fileName?: string;
+  fileType?: "pdf" | "text" | "markdown";
+  fileSize?: number;
+  status?: "ready" | "failed";
+  updatedAt?: string;
+  createdAt?: string;
 }
+
+export type DocumentSummary = DocumentRecord;
 
 export interface DocumentPage {
   pageNumber: number;

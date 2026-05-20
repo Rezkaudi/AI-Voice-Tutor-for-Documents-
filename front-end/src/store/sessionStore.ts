@@ -26,6 +26,7 @@ interface SessionStore {
   handleMicToggle: () => void;
   handleCallToggle: () => Promise<void>;
   handleUpload: (file: File | null) => void;
+  handleSwitchDocument: (documentId: string) => Promise<void>;
 }
 
 /**
@@ -143,5 +144,21 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   handleUpload: (file) => {
     useChatStore.getState().resetMessages();
     useDocumentStore.getState().uploadFile(file);
+  },
+
+  /** Library switch: reset the chat, then load an existing document. */
+  handleSwitchDocument: async (documentId) => {
+    const docs = useDocumentStore.getState();
+    if (docs.loadedDocument?.document.id === documentId) {
+      return;
+    }
+    useChatStore.getState().resetMessages();
+    useSpeechStore.getState().stopSpeaking();
+    if (get().callMode) {
+      set({ callMode: false });
+      useVoiceStore.getState().cancel();
+    }
+    set({ hasIntroduced: false });
+    await docs.selectDocument(documentId);
   }
 }));
