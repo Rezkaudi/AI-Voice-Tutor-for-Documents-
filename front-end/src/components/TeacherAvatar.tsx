@@ -101,7 +101,7 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
         <g className={cx("[transform-origin:100px_110px]", headAnimation)}>
           <circle cx="100" cy="100" r="52" fill="url(#face)" />
           <path
-            d="M52 92 C 55 55, 95 40, 130 50 C 152 56, 153 80, 150 96 C 138 80, 120 76, 100 78 C 82 80, 68 86, 56 100 Z"
+            d="M50 104 C 46 60, 72 42, 100 42 C 132 42, 156 62, 150 104 C 146 92, 138 86, 132 86 C 122 78, 108 76, 94 78 C 82 80, 74 80, 68 84 C 60 86, 54 94, 50 104 Z"
             fill="url(#hair)"
           />
           <ellipse cx="51" cy="104" rx="6" ry="9" fill="#e5b489" />
