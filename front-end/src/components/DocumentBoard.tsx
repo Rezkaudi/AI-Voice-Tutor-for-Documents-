@@ -76,8 +76,8 @@ function DocumentBoardComponent({
       </div>
       <div
         className={cx(
-          "min-h-0 overflow-auto p-[clamp(12px,2vw,22px)]",
-          isPdf && "overflow-hidden p-0"
+          "min-h-0",
+          isPdf ? "overflow-hidden p-0" : "overflow-auto p-[clamp(12px,2vw,22px)]"
         )}
       >
         {isPdf ? (
