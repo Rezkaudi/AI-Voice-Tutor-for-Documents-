@@ -143,6 +143,7 @@ export function TeachingApp() {
                 pageCount={loadedDocument.document.pageCount}
                 activePage={activePage}
                 highlight={highlight}
+                isLoading={uploadState === "processing"}
                 onPageChange={documentStore.setActivePage}
               />
             </section>

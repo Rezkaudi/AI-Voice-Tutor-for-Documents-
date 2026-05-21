@@ -1,8 +1,9 @@
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { renderHighlightedText } from "@/lib/messageFormat";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentPage, DocumentReference } from "@/lib/types";
+import { DocumentLoadingOverlay } from "./DocumentLoadingOverlay";
 
 interface DocumentBoardProps {
   fileUrl: string | null;
@@ -11,6 +12,7 @@ interface DocumentBoardProps {
   pageCount: number;
   activePage: number;
   highlight: DocumentReference | null;
+  isLoading?: boolean;
   onPageChange: (page: number) => void;
 }
 
@@ -22,6 +24,7 @@ function DocumentBoardComponent({
   pageCount,
   activePage,
   highlight,
+  isLoading = false,
   onPageChange
 }: DocumentBoardProps) {
   const isPdf = mimeType === "application/pdf" && !!fileUrl;
@@ -29,6 +32,13 @@ function DocumentBoardComponent({
     ? `${fileUrl}#page=${activePage}&view=FitH&toolbar=0&navpanes=0`
     : null;
   const highlightOnThisPage = highlight && highlight.pageNumber === page?.pageNumber;
+
+  const [iframeLoading, setIframeLoading] = useState(isPdf);
+  useEffect(() => {
+    if (isPdf) setIframeLoading(true);
+  }, [isPdf, fileUrl]);
+
+  const showOverlay = isLoading || (isPdf && iframeLoading);
 
   return (
     <div className="grid h-full grid-rows-[auto_1fr] gap-3.5">
@@ -76,17 +86,18 @@ function DocumentBoardComponent({
       </div>
       <div
         className={cx(
-          "min-h-0",
+          "relative min-h-0",
           isPdf ? "overflow-hidden p-0" : "overflow-auto p-[clamp(12px,2vw,22px)]"
         )}
       >
         {isPdf ? (
           <div className="relative h-full w-full overflow-hidden rounded-md border border-[oklch(0.82_0.016_86)] bg-[oklch(0.92_0.012_86)] shadow-[0_16px_28px_oklch(0.25_0.018_245/0.1)]">
             <iframe
-              key={activePage}
+              key={`${fileUrl}-${activePage}`}
               src={pdfSrc ?? undefined}
               title={`Document page ${activePage}`}
               className="block h-full w-full border-0 bg-[oklch(0.94_0.01_86)]"
+              onLoad={() => setIframeLoading(false)}
             />
           </div>
         ) : (
@@ -96,6 +107,7 @@ function DocumentBoardComponent({
               : "No page text."}
           </article>
         )}
+        {showOverlay ? <DocumentLoadingOverlay /> : null}
       </div>
     </div>
   );
