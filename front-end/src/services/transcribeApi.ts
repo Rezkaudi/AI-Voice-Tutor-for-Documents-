@@ -28,6 +28,8 @@ export async function transcribeRecording(
     const { data } = await api.post<{ text?: string }>("/api/transcribe", formData, { signal });
     return typeof data.text === "string" ? data.text.trim() : "";
   } catch (error) {
-    throw new Error(extractErrorMessage(error, "Transcription failed."));
+    throw new Error(extractErrorMessage(error, "Transcription failed."), {
+      cause: error
+    });
   }
 }

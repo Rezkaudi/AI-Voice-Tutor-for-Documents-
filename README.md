@@ -1,552 +1,552 @@
 # AI Voice Tutor for Documents
 
-Upload a document, then **learn it by talking to an AI teacher**. The app extracts and chunks
-the text, retrieves the most relevant passages for every question, streams a grounded answer,
-and speaks it out loud sentence-by-sentence — all in a split-screen workspace where the source
-document follows along and highlights what the teacher is referring to.
+> **In one sentence:** Upload a PDF (or a text/markdown file), and an AI tutor reads it for you — answering your questions by voice or text, but **only** using what is written inside that file.
+
+Think of it like hiring a private teacher who is given a single book to study. The teacher will only answer from that book. If something isn't in the book, the teacher will say so — they won't make things up from the internet.
 
 ---
 
 ## Table of Contents
 
-1. [What It Does](#what-it-does)
-2. [Tech Stack](#tech-stack)
-3. [Architecture](#architecture)
-4. [Project Structure](#project-structure)
-5. [How the Teacher Works — End to End](#how-the-teacher-works--end-to-end)
-   - [1. Upload & Processing](#1-upload--processing-what-happens-after-you-upload-a-file)
-   - [2. Loading the Document](#2-loading-the-document)
-   - [3. Asking a Question → Answer](#3-asking-a-question--answer)
-   - [4. Voice In → Voice Out](#4-voice-in--voice-out)
-   - [5. Call Mode (Hands-free Loop)](#5-call-mode-hands-free-loop)
-6. [Retrieval (RAG) Explained](#retrieval-rag-explained)
-7. [API Reference](#api-reference)
-8. [Data Model](#data-model)
-9. [Run Locally](#run-locally)
-10. [Configuration](#configuration)
-11. [Supabase Setup](#supabase-setup)
-12. [Operating Modes](#operating-modes)
-13. [Limits & Roadmap](#limits--roadmap)
+- [What Can It Do?](#what-can-it-do)
+- [Who Is This For?](#who-is-this-for)
+- [How It Works (The Simple Picture)](#how-it-works-the-simple-picture)
+- [Workflows — Step by Step](#workflows--step-by-step)
+  - [Workflow 1: Uploading a Document](#workflow-1-uploading-a-document)
+  - [Workflow 2: Asking a Question (Text)](#workflow-2-asking-a-question-text)
+  - [Workflow 3: Asking a Question (Voice)](#workflow-3-asking-a-question-voice)
+  - [Workflow 4: Hearing the Tutor Speak](#workflow-4-hearing-the-tutor-speak)
+  - [Workflow 5: Quiz / Lesson Modes](#workflow-5-quiz--lesson-modes)
+- [The Two Apps Inside This Project](#the-two-apps-inside-this-project)
+- [The Tech (In Plain Words)](#the-tech-in-plain-words)
+- [Project Structure](#project-structure)
+- [Setup — From Zero to Running](#setup--from-zero-to-running)
+- [Running the App](#running-the-app)
+- [How the AI Tutor Thinks (For the Curious)](#how-the-ai-tutor-thinks-for-the-curious)
+- [How the App Finds the Right Answer (RAG, Explained Simply)](#how-the-app-finds-the-right-answer-rag-explained-simply)
+- [API Reference](#api-reference)
+- [Database Tables](#database-tables)
+- [Deployment](#deployment)
+- [Common Questions](#common-questions)
 
 ---
 
-## What It Does
+## What Can It Do?
 
-- **Upload** searchable PDF, `.txt`, or `.md` files (up to 25 MB, up to 300 PDF pages).
-- **Extract** PDF text page-by-page (text PDFs only — scanned/OCR PDFs are rejected).
-- **Chunk** text into overlapping passages and **embed** them (when an OpenAI key is set).
-- **Ask** questions by typing *or by voice* — the answer streams back token-by-token.
-- **Ground** every answer in the document via hybrid keyword + vector retrieval.
-- **Speak** the answer aloud, synthesizing each sentence as it arrives for low latency.
-- **Follow along** — the document board jumps to the cited page and highlights the passage.
-- **Call mode** — a hands-free loop: teacher speaks → listens → you reply → repeat.
-- **Multi-language** tutoring — pin replies to Japanese, English, Arabic, or auto-detect.
-- **Two runtime modes** — full cloud (OpenAI + Supabase) or a zero-dependency **local demo mode**.
+- 📄 **Read any PDF, `.txt`, or `.md` file** you give it (up to 25 MB).
+- 💬 **Chat with you in writing** about what's inside.
+- 🎙️ **Listen to you talk** (record with your microphone) and turn your voice into a question.
+- 🔊 **Talk back to you out loud** using a natural AI voice.
+- 📍 **Show you exactly where** the answer came from in the document (page number + a quote).
+- 📚 **Remember your documents** so you can come back to them later.
+- 🎓 **Switch modes** — normal chat, quiz me, or run a guided lesson.
+- 🧪 **Work without an API key** in "demo mode" so you can try it offline.
 
 ---
 
-## Tech Stack
+## Who Is This For?
 
-| Layer | Technology |
-|-------|------------|
-| Framework | Next.js 16 (App Router, RSC + Route Handlers) |
-| Language | TypeScript 5.7 (strict) |
-| UI | React 19, Tailwind CSS 4, `lucide-react` icons |
-| AI | OpenAI SDK 6 — tutor (`gpt-5.4-mini`), embeddings (`text-embedding-3-small`), STT (`gpt-4o-mini-transcribe`), TTS (`gpt-4o-mini-tts`) |
-| PDF | `pdfjs-dist` (legacy build) + `@napi-rs/canvas` polyfills |
-| Storage | Supabase (Postgres + `pgvector` + Storage) **or** local `.data/` JSON files |
-| Streaming | Server-Sent Events (SSE) over `ReadableStream` |
-| Tests | Vitest |
-| Runtime | Node.js 24.x |
+- 🧑‍🎓 **Students** revising notes, textbooks, or research papers.
+- 👩‍🏫 **Teachers** preparing material from PDFs.
+- 🧑‍💻 **Developers** learning Clean Architecture + RAG (retrieval-augmented generation) by example.
+- 🧐 **Anyone** who has a long PDF and wants to "talk" to it instead of scrolling through it.
 
 ---
 
-## Architecture
+## How It Works (The Simple Picture)
 
 ```mermaid
-graph TB
-    subgraph Browser["Browser - React 19 Client"]
-        UI["TeachingApp (composition root)"]
-        H1["useDocument"]
-        H2["useTutorChat"]
-        H3["useSpeech"]
-        H4["useVoiceRecorder"]
-        H5["useAccess"]
-        UI --> H1 & H2 & H3 & H4 & H5
-    end
-
-    subgraph Server["Next.js Route Handlers (Node runtime)"]
-        R1["/api/documents"]
-        R2["/api/documents/:id"]
-        R3["/api/chat (SSE)"]
-        R4["/api/transcribe"]
-        R5["/api/speak"]
-        R6["/api/access"]
-    end
-
-    subgraph Core["Server Modules"]
-        EX["extract-text.ts - PDF / text extraction"]
-        DS["document-store.ts - Local | Supabase"]
-        OA["openai.ts - embed / tutor / STT / TTS"]
-        AC["access-control.ts"]
-    end
-
-    subgraph Lib["Pure Lib (framework-free, testable)"]
-        L1["documents.ts - chunking"]
-        L2["retrieval.ts - ranking"]
-        L3["prompts.ts - LLM copy"]
-        L4["sentences.ts - sentence split"]
-        L5["sse.ts - stream parsing"]
-    end
-
-    subgraph External["External"]
-        OPENAI["OpenAI API"]
-        SUPA["Supabase - Postgres + Storage"]
-    end
-
-    H1 --> R1 & R2
-    H2 --> R3
-    H4 --> R4
-    H3 --> R5
-    H5 --> R6
-
-    R1 --> EX & DS & OA
-    R3 --> DS & OA & L2
-    R4 --> OA
-    R5 --> OA
-    R1 & R3 --> L1 & L3
-    R2 & R3 & R4 & R5 --> AC
-    DS --> SUPA
-    OA --> OPENAI
+flowchart LR
+    A[👤 You] -- "upload PDF" --> B[🌐 Web App]
+    A -- "ask question (text/voice)" --> B
+    B -- "saves & processes" --> C[🧠 Back End Server]
+    C -- "stores file" --> D[(☁️ Cloud Storage)]
+    C -- "stores text + index" --> E[(🗄️ Database)]
+    C -- "asks AI" --> F[🤖 OpenAI]
+    F -- "answer" --> C
+    C -- "streams answer" --> B
+    B -- "shows text + speaks aloud" --> A
 ```
 
-**Layering rule:** `lib/` is pure and framework-free (unit-tested in isolation) → `server/`
-holds I/O and side effects → `app/api/` route handlers orchestrate → `hooks/` own client
-state → `components/` render. Dependencies only point downward.
+Three main pieces:
+
+| Piece | What it is | What it does |
+|---|---|---|
+| **Front end** | The website you see in the browser | Lets you upload files, talk, listen, and chat |
+| **Back end** | A server running on your computer | Reads the PDF, talks to OpenAI, sends answers back |
+| **OpenAI** | An external AI service | Understands questions, writes answers, transcribes voice, generates speech |
+
+---
+
+## Workflows — Step by Step
+
+### Workflow 1: Uploading a Document
+
+```mermaid
+sequenceDiagram
+    participant You
+    participant App as 🌐 Web App
+    participant Server as 🧠 Server
+    participant S3 as ☁️ Storage
+    participant DB as 🗄️ Database
+    participant AI as 🤖 OpenAI
+
+    You->>App: Drag & drop a PDF
+    App->>Server: Send the file
+    Server->>Server: Check file type & size (≤25 MB)
+    Server->>S3: Save the original file
+    Server->>Server: Extract the text from each page
+    Server->>Server: Split text into small chunks (~1600 chars)
+    Server->>DB: Save the document + pages + chunks
+    Server-->>App: ✅ "Document ready!"
+    Note over Server,AI: In the background...
+    Server->>AI: "Convert each chunk into numbers" (embeddings)
+    AI-->>Server: Vectors
+    Server->>DB: Save the vectors
+```
+
+**Plain English:** You drop a PDF. The server saves it, pulls all the words out, cuts them into bite-sized pieces, and asks the AI to make a "fingerprint" of each piece so it can find them later. Done — ready to chat.
+
+---
+
+### Workflow 2: Asking a Question (Text)
+
+```mermaid
+sequenceDiagram
+    participant You
+    participant App as 🌐 Web App
+    participant Server as 🧠 Server
+    participant AI as 🤖 OpenAI
+
+    You->>App: Type "What does page 3 say about apples?"
+    App->>Server: Send question + document ID
+    Server->>Server: Load all pages & chunks into memory
+    Server->>AI: "You are a tutor for THIS document. Question: ..."
+    AI->>Server: "I need to search the doc"
+    Server-->>AI: Top matching chunks
+    AI-->>Server: Answer (word by word, streaming)
+    Server-->>App: Stream words live (SSE)
+    App-->>You: See answer appear letter by letter
+    App-->>You: 📍 Auto-scroll PDF to the cited page
+```
+
+**Plain English:** Your question goes to the AI along with the document. The AI is allowed to use three "tools" — read the outline, read a specific page, or search for keywords. It decides which one to use, finds the answer, and writes it back to you word by word.
+
+---
+
+### Workflow 3: Asking a Question (Voice)
+
+```mermaid
+sequenceDiagram
+    participant You
+    participant Mic as 🎙️ Browser Mic
+    participant App as 🌐 Web App
+    participant Server as 🧠 Server
+    participant Whisper as 🤖 Whisper (OpenAI)
+
+    You->>Mic: Click record, speak
+    Mic->>App: Audio blob
+    App->>Server: POST /api/transcribe
+    Server->>Whisper: Transcribe this audio
+    Whisper-->>Server: "What does page 3 say about apples?"
+    Server-->>App: The text
+    App->>App: Auto-send as a chat message
+    Note over App,Server: → continues like Workflow 2
+```
+
+**Plain English:** You hold the record button and talk. The recording is sent to OpenAI's Whisper service, which turns it into text. From there it's just like typing.
+
+---
+
+### Workflow 4: Hearing the Tutor Speak
+
+```mermaid
+sequenceDiagram
+    participant App as 🌐 Web App
+    participant Server as 🧠 Server
+    participant TTS as 🔊 OpenAI TTS
+
+    App->>Server: POST /api/speak (the answer text)
+    Server->>TTS: Make this sound like speech
+    TTS-->>Server: Audio bytes
+    Server-->>App: Audio stream
+    App-->>App: 🔊 Play it
+```
+
+**Plain English:** Once the answer is written, the app asks OpenAI to read it aloud, then plays the audio in your browser.
+
+---
+
+### Workflow 5: Quiz / Lesson Modes
+
+The tutor isn't just for Q&A. Three quick-action chips switch its personality:
+
+| Mode | What happens |
+|---|---|
+| 💬 **Chat** | Normal Q&A — you ask, it answers |
+| 🧪 **Quiz** | The tutor asks YOU questions about the document and checks your answers |
+| 🎓 **Lesson** | The tutor walks you through the document section by section, like a teacher |
+
+All three use the same underlying engine — only the instructions to the AI change.
+
+---
+
+## The Two Apps Inside This Project
+
+```
+AI Voice Tutor for Documents/
+│
+├── front-end/    ← The website (what you see in the browser)
+│
+└── back-end/     ← The server (the brain doing the work)
+```
+
+You run them **both at the same time**. The website talks to the server over HTTP.
+
+---
+
+## The Tech (In Plain Words)
+
+| Layer | Tool | Why it's here |
+|---|---|---|
+| **Website UI** | React 19 + Vite | Modern, fast web framework |
+| **Styling** | Tailwind CSS 4 | Pretty designs without writing CSS files |
+| **State (memory in browser)** | Zustand | Keeps track of your chat, document, voice settings |
+| **Server** | Node.js + Express | Handles HTTP requests |
+| **Language** | TypeScript everywhere | Catches bugs before you run the code |
+| **Database** | PostgreSQL + TypeORM | Stores documents and chunks |
+| **File storage** | S3-compatible (AWS / R2 / MinIO) | Stores the actual PDF files |
+| **AI brain** | OpenAI (chat + embeddings) | Understands and answers questions |
+| **Speech-to-text** | OpenAI Whisper | Turns your voice into text |
+| **Text-to-speech** | OpenAI TTS | Turns answers into voice |
+| **PDF parsing** | `pdfjs-dist` | Pulls text out of PDFs |
+| **Live streaming** | Server-Sent Events (SSE) | Sends the answer word-by-word as it's written |
 
 ---
 
 ## Project Structure
 
+```text
+.
+├── back-end/                              The server (Clean Architecture)
+│   └── src/
+│       ├── domain/         ← Pure business rules (no frameworks)
+│       │   ├── entities/                  Document, Chat — "what is a document?"
+│       │   ├── repositories/              "What can we do with documents?" (interfaces)
+│       │   ├── services/                  "What can AI do?" (interfaces)
+│       │   └── errors/                    Custom error types
+│       │
+│       ├── application/    ← The "use cases" — one file per feature
+│       │   ├── use-cases/                 chat, documents, speech, transcription
+│       │   ├── services/                  Helpers like chunking and retrieval
+│       │   └── dto/                       Request/response shapes
+│       │
+│       ├── infrastructure/ ← The actual tech (Express, OpenAI, S3, Postgres)
+│       │   ├── http/                      The web server itself
+│       │   ├── database/                  TypeORM setup & migrations
+│       │   └── services/                  Real implementations (OpenAI, S3 adapters)
+│       │
+│       ├── config/                        Reads .env file
+│       ├── container.ts                   Wires everything together
+│       └── main.ts                        Starts the server
+│
+├── front-end/                             The website
+│   └── src/
+│       ├── components/    ← The visual building blocks
+│       ├── services/      ← Talks to the back end (chatApi, documentsApi, …)
+│       ├── store/         ← In-browser memory (Zustand)
+│       └── App.tsx        ← The root of the website
+│
+├── package.json           ← One command runs both apps
+└── README.md              ← You are here 👋
 ```
-src/
-├── app/
-│   ├── layout.tsx                 Root layout + metadata
-│   ├── page.tsx                   Renders <TeachingApp/>
-│   ├── globals.css                Tailwind + app styling
-│   └── api/
-│       ├── access/route.ts        GET status · POST submit access code
-│       ├── documents/route.ts     POST upload + process a file
-│       ├── documents/[id]/route.ts        GET metadata + pages + file URL
-│       ├── documents/[id]/file/route.ts   GET original file (inline)
-│       ├── chat/route.ts          POST → SSE stream of the tutor answer
-│       ├── transcribe/route.ts    POST audio → text (speech-to-text)
-│       └── speak/route.ts         POST text → MP3 audio (text-to-speech)
-├── server/                        Node-only side-effecting modules
-│   ├── access-control.ts          Cookie-based access gate
-│   ├── extract-text.ts            PDF (pdf.js) + plain-text page extraction
-│   ├── document-store.ts          DocumentStore: Local | Supabase impls
-│   └── openai.ts                  embed · streamTutorAnswer · STT · TTS
-├── lib/                           Pure, framework-free logic (+ unit tests)
-│   ├── types.ts                   Shared domain types
-│   ├── documents.ts               Upload validation + overlap chunking
-│   ├── retrieval.ts               Hybrid keyword + cosine ranking
-│   ├── prompts.ts                 Centralized LLM prompts + tuning
-│   ├── sentences.ts               Streaming sentence-boundary splitter
-│   ├── sse.ts                     SSE frame parsing
-│   ├── config.ts                  Env var resolution
-│   └── message-format.tsx         Chat markdown + highlight rendering
-├── hooks/
-│   ├── use-access.ts              Access gate state
-│   ├── use-document.ts            Upload, processing, active page, highlight
-│   ├── use-tutor-chat.ts          Chat stream → messages + TTS feed
-│   ├── use-speech.ts              Ordered sentence-by-sentence TTS playback
-│   └── use-voice-recorder.ts      Mic capture → transcription
-└── components/teaching/
-    ├── TeachingApp.tsx            Composition root, wires all hooks
-    ├── AccessScreen.tsx           Access-code lock screen
-    ├── UploadPanel.tsx            Drag-and-drop upload surface
-    ├── DocumentBoard.tsx          PDF iframe / extracted-text viewer
-    ├── TeacherPanel.tsx           Avatar, transcript, call controls
-    ├── TeacherAvatar.tsx          Animated SVG teacher
-    ├── Splitter.tsx               Draggable pane divider
-    └── ConfirmDialog.tsx          Accessible confirm modal
 
-supabase/schema.sql                Postgres + pgvector schema
+> **Clean Architecture in 10 seconds:** the inner layers (domain, application) don't know the outer layers exist. That means you could swap PostgreSQL for MongoDB, or OpenAI for another provider, without changing your business logic. The cost is more folders. The benefit is you can test everything without spinning up a database.
+
+---
+
+## Setup — From Zero to Running
+
+### 1. What You Need First
+
+- **Node.js** version 20.19 or newer
+- **PostgreSQL** running somewhere (locally or in the cloud)
+- An **S3 bucket** (AWS S3, Cloudflare R2, or MinIO all work)
+- An **OpenAI API key** — *optional* (without it, the app runs in demo mode)
+
+### 2. Install Both Apps
+
+```bash
+npm --prefix front-end install
+npm --prefix back-end install
+```
+
+### 3. Create Your `.env` Files
+
+```bash
+cp front-end/.env.example front-end/.env
+cp back-end/.env.example back-end/.env
+```
+
+Open `back-end/.env` and fill it in:
+
+```text
+DATABASE_URL=postgres://tutor:tutor@localhost:5432/ai_voice_tutor
+S3_BUCKET=your-bucket-name
+S3_REGION=us-east-1
+S3_ACCESS_KEY_ID=your-access-key
+S3_SECRET_ACCESS_KEY=your-secret-key
+OPENAI_API_KEY=your-openai-key            # optional — demo mode works without it
+DB_SYNCHRONIZE=true                       # OK for development; use migrations in prod
 ```
 
 ---
 
-## How the Teacher Works — End to End
+## Running the App
 
-This is the heart of the project: the full path from **uploading a file** to **hearing a
-spoken, document-grounded answer**.
+From the project root, one command starts everything:
 
-```mermaid
-graph LR
-    A["Upload file"] --> B["Extract text"]
-    B --> C["Chunk passages"]
-    C --> D["Store document"]
-    D --> E["Embed chunks (background)"]
-    D --> F["Load into UI"]
-    F --> G["Ask a question (text / voice)"]
-    G --> H["Retrieve passages"]
-    H --> I["Stream tutor answer"]
-    I --> J["Speak sentences"]
-    I --> K["Highlight source page"]
-    J --> L["Listen for reply (call mode)"]
-    L --> G
+```bash
+npm run dev
 ```
 
-### 1. Upload & Processing (*what happens after you upload a file*)
+Or run them separately in two terminals:
 
-When you drop a file on `UploadPanel`, `useDocument.uploadFile()` POSTs it to
-`/api/documents`. The server runs this pipeline:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant UP as UploadPanel
-    participant UD as useDocument
-    participant API as POST /api/documents
-    participant EX as extract-text.ts
-    participant CH as documents.ts (chunk)
-    participant DS as document-store.ts
-    participant OA as openai.ts
-    participant EXT as OpenAI / Supabase
-
-    User->>UP: Drop or pick a file
-    UP->>UD: uploadFile(file)
-    UD->>API: multipart/form-data { file }
-    API->>API: requireAccess() - cookie gate
-    API->>API: validateUploadFile() (<=25MB, .pdf/.txt/.md)
-    API->>EX: extractPagesFromUpload(buffer, kind)
-    alt PDF
-        EX->>EX: pdf.js text per page, reject scanned or over 300 pages
-    else Text / Markdown
-        EX->>EX: split into ~5000-char pages
-    end
-    EX-->>API: DocumentPage[]
-    API->>CH: chunkDocumentPages(pages)
-    CH-->>API: DocumentChunk[] (~1600 chars, 220 overlap)
-    API->>DS: saveProcessedDocument() (embeddings = null)
-    DS->>EXT: write file + rows (Supabase) or .data/ JSON
-    API-->>UD: 200 { documentId, status }
-    Note over API,OA: after() - runs AFTER the response is sent
-    API->>OA: embedTexts(chunk texts)
-    OA->>EXT: OpenAI embeddings (batched, concurrent)
-    OA-->>DS: updateChunkEmbeddings()
+```bash
+npm --prefix back-end run dev          # Terminal 1
+npm --prefix front-end run dev         # Terminal 2
 ```
 
-**Key design choices:**
+Then open:
 
-- **Validation first** — file size (≤ 25 MB), type (`.pdf` / `.txt` / `.md`), and — for
-  PDFs — page count (≤ 300) and the presence of extractable text. Scanned/image-only PDFs
-  are rejected (no OCR in the MVP).
-- **Page extraction** — PDFs go through `pdf.js`; plain text/markdown is sliced into
-  ~5000-char "pages" on paragraph/sentence boundaries so the viewer still paginates.
-- **Overlap chunking** — pages are split into ~1600-char chunks with ~220-char overlap,
-  cutting on sentence boundaries where possible so retrieved passages stay coherent.
-- **Embeddings are deferred** — the document is saved *immediately* with `embedding: null`
-  and the response returns right away. Embeddings are computed in a Next.js `after()`
-  background task. **You can start learning before embeddings finish** — retrieval simply
-  falls back to keyword ranking until the vectors land.
+- 🌐 Website: **http://localhost:5173**
+- 🧠 API:    **http://localhost:5000**
 
-### 2. Loading the Document
+### Useful Scripts
 
-After upload, `useDocument` calls `GET /api/documents/:id`, which returns the document
-record, every extracted page, and a `fileUrl`. The UI swaps from `UploadPanel` to the
-split-screen workspace:
+```bash
+# Front end
+npm --prefix front-end run build
+npm --prefix front-end run lint
+npm --prefix front-end run typecheck
 
-- **Left — `DocumentBoard`:** the original PDF in an `<iframe>` (`#page=N` deep-link), or
-  the extracted page text for `.txt`/`.md`, with a paragraph that the teacher can highlight.
-- **Right — `TeacherPanel`:** the animated avatar, the conversation transcript, the
-  language picker, and the **Call** / mic / restart controls.
-
-### 3. Asking a Question → Answer
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant TC as useTutorChat
-    participant API as POST /api/chat
-    participant DS as document-store
-    participant RET as retrieval.ts
-    participant OA as openai.ts
-    participant LLM as OpenAI tutor model
-    participant SP as useSpeech
-
-    User->>TC: sendMessage("Explain section 2")
-    TC->>TC: append user + empty assistant bubble
-    TC->>API: { documentId, message, language, history }
-    API->>API: requireAccess()
-    API->>DS: getDocument() + getChunks()
-    API->>OA: embedQuery(message)
-    API->>RET: rankChunks(query, chunks, queryEmbedding)
-    RET-->>API: top-5 passages + page reference
-    API-->>TC: SSE event: meta { reference }
-    TC->>TC: highlight cited page in DocumentBoard
-    API->>OA: streamTutorAnswer(context + history)
-    OA->>LLM: instructions + document context + question
-    loop token stream
-        LLM-->>OA: text delta
-        OA-->>API: yield delta
-        API-->>TC: SSE event: delta { text }
-        TC->>TC: append to assistant bubble
-        TC->>SP: push completed sentences to TTS
-    end
-    API-->>TC: SSE event: done
-    TC->>SP: await playback finished
+# Back end
+npm --prefix back-end run build
+npm --prefix back-end run typecheck
+npm --prefix back-end run migration:generate
+npm --prefix back-end run migration:run
+npm --prefix back-end run migration:revert
 ```
-
-**What makes the answer trustworthy and fast:**
-
-- **Grounded:** the system prompt (`prompts.ts`) instructs the tutor to teach *only* from
-  the supplied document context and to say so plainly when the document lacks the answer.
-- **Cited:** the top-ranked chunk becomes a `reference` (page number + snippet), sent as
-  the first SSE `meta` event so the document board can jump and highlight *before* the
-  answer text even starts.
-- **Streamed:** the answer arrives token-by-token over SSE; the UI renders it live and the
-  speech layer starts talking after the *first sentence*, not the whole reply.
-- **Tuned for voice:** `reasoningEffort: "none"` and a 700-token cap (`prompts.ts`) keep
-  time-to-first-word low — critical for a conversational feel.
-
-### 4. Voice In → Voice Out
-
-**Speech → text (`useVoiceRecorder`):** the mic records one clip with `MediaRecorder`, uploads
-it to `/api/transcribe`, and OpenAI STT returns text — which is auto-sent as a question.
-
-**Text → speech (`useSpeech`):** as the answer streams, `sentences.ts` pulls each *complete*
-sentence out of the buffer. Each sentence is POSTed to `/api/speak`, which returns an MP3.
-The clever part:
-
-- Synthesis for sentence *N+1* **starts while sentence *N* is still playing** (overlapped).
-- A promise **chain** guarantees clips play **strictly in order**, even if a later fetch
-  resolves first.
-- A **monotonic session id** + `AbortController` invalidate every in-flight fetch and clip
-  the instant the user interrupts or ends the call.
-- If no OpenAI key is configured, playback **falls back** to the browser's
-  `SpeechSynthesis`.
-
-### 5. Call Mode (Hands-free Loop)
-
-Pressing **Call** starts a continuous, no-typing conversation loop:
-
-```mermaid
-stateDiagram-v2
-    [*] --> Idle
-    Idle --> Greeting: press Call
-    Greeting --> Speaking: teacher introduces the lesson
-    Speaking --> Listening: answer finished (onAnswerComplete)
-    Listening --> Transcribing: you stop speaking
-    Transcribing --> Thinking: transcript auto-sent
-    Thinking --> Speaking: answer streams + speaks
-    Speaking --> Listening: loop continues
-    Listening --> Idle: press End
-    Speaking --> Idle: press End
-    Thinking --> Idle: press End (aborts stream)
-```
-
-On the first call the teacher speaks a hidden **greeting prompt**; after each answer
-finishes, `onAnswerComplete` re-opens the mic (after a 350 ms gap so the audio device is
-released). Pressing **End** aborts the chat stream, the transcription, and TTS in one shot.
 
 ---
 
-## Retrieval (RAG) Explained
+## How the AI Tutor Thinks (For the Curious)
 
-`retrieval.ts` ranks every chunk with a **hybrid score** so the app works with *or* without
-embeddings:
+The tutor is **not** a single prompt. It's a small **agent loop** — meaning the AI can take multiple steps and use "tools" to read the document. Here's what happens behind the scenes when you ask a question:
 
-| Component | How | When |
-|-----------|-----|------|
-| **Keyword score** | Tokenize the query (drop stop-words), count term occurrences in the chunk, with a phrase-match bonus | Always |
-| **Vector score** | Cosine similarity between the query embedding and the chunk embedding, weighted ×2 | Only when both embeddings exist |
+```mermaid
+flowchart TD
+    Start([Question arrives]) --> Validate{Document exists?}
+    Validate -- No --> Error1[Return 404]
+    Validate -- Yes --> Load[Load all pages + chunks into memory]
+    Load --> Trim[Trim chat history to last 10 turns]
+    Trim --> Open[Open SSE stream to browser]
+    Open --> Loop{Ask OpenAI}
+    Loop -- "Wants to use a tool" --> Tool[Run tool locally:<br/>get_outline<br/>get_page<br/>search_document]
+    Tool --> Loop
+    Loop -- "Final answer" --> Stream[Stream words to browser]
+    Stream --> Cite[Find cited page number]
+    Cite --> Done([Send 'done' event])
+```
 
-`final = keyword + (vector × 2)` when a vector is available, else `keyword` alone. The top
-5 chunks become the LLM context; the top 1 becomes the highlighted page reference. This is
-why the app stays useful in local demo mode and *before* background embeddings finish.
+**Key tricks:**
 
-> **Note:** `supabase/schema.sql` also ships a `match_document_chunks` pgvector RPC and an
-> `ivfflat` index. The current code does in-memory JS ranking and does **not** call that
-> RPC — see the code review (`ARCH-001`). It is reserved for a future DB-side retrieval path.
+1. **AbortController** — if you close the browser tab, the abort signal travels all the way to OpenAI so you don't keep paying for tokens you won't read.
+2. **History trimming** — only the last 10 turns are sent, each capped at 4000 chars, so the prompt size is predictable.
+3. **Per-output buffering** — the model can emit several message items in one response (interim restatement + final). The code groups tokens by `output_index` to avoid duplicating text.
+4. **Citation picking** — after the answer is done, the code scans for `"page N"` mentions and emits that as a `meta` event so the PDF viewer can scroll to the right page.
+5. **Demo mode** — no API key? The tutor returns a canned answer using the first chunk of the document. The app stays usable.
+6. **Save cost mode** — a toggle that switches to a cheaper model with shorter history and lower reasoning effort.
+
+---
+
+## How the App Finds the Right Answer (RAG, Explained Simply)
+
+**RAG** = **R**etrieval-**A**ugmented **G**eneration. In normal English: *"Look up the relevant bits of the document first, THEN ask the AI."*
+
+### The 3-Step RAG Recipe
+
+```mermaid
+flowchart LR
+    Q[Your question] --> E[Turn it into a vector<br/>'fingerprint']
+    E --> M[Compare with every chunk's<br/>fingerprint in the DB]
+    M --> T[Take top 6 most similar chunks]
+    T --> P[Send chunks + question to OpenAI]
+    P --> A[Answer]
+```
+
+### How Chunks Are Made
+
+1. **Extract** all text from the PDF (one page at a time).
+2. **Split** each page into ~1600-character chunks with ~220 characters of overlap. Overlap prevents losing context at the cut point.
+3. **Save** each chunk with its page number so we can cite it later.
+
+### How Search Works (Hybrid Scoring)
+
+For every chunk we compute:
+
+- **Keyword score** — how many times your question's words appear in the chunk
+- **Vector score** — how "semantically similar" the chunk is to your question (using embeddings)
+
+Then: `final_score = keyword_score + vector_score × 2`
+
+This is **hybrid retrieval**. If the embeddings haven't been computed yet (they're done in the background), search falls back gracefully to keywords only.
+
+### Why "Agentic" Instead of Classic RAG?
+
+Most apps do this once: grab top-k chunks, jam them into the prompt, get an answer. This app is smarter — the AI gets **three tools** and decides:
+
+- 📋 **`get_outline`** — "Show me the table of contents."
+- 📄 **`get_page(N)`** — "Give me page 5 in full."
+- 🔍 **`search_document(q)`** — "Find chunks about X."
+
+So for short docs it reads pages directly; for long docs it searches. Same engine, different strategy per document.
+
+> **Why JSONB instead of pgvector?** Embeddings are stored as JSON in Postgres and ranked in Node memory. This avoids requiring the `pgvector` extension, so you can deploy on any Postgres host. The trade-off: it won't scale past tens of thousands of chunks per document. Fine for an MVP.
 
 ---
 
 ## API Reference
 
-All routes run on the **Node.js runtime**. Mutating/data routes are gated by `requireAccess()`.
+All endpoints live under `/api` (except `/health`).
 
-| Method | Route | Purpose |
-|--------|-------|---------|
-| `POST` | `/api/documents` | Upload one file → validate, extract, chunk, store; embed in background. Returns `{ documentId, status }`. |
-| `GET` | `/api/documents/:id` | Fetch `{ document, pages, fileUrl }`. |
-| `GET` | `/api/documents/:id/file` | Serve the original file inline (local buffer or redirect to a signed Supabase URL). |
-| `POST` | `/api/chat` | Stream the tutor answer as SSE. Body: `{ documentId, message, language, messages[] }`. |
-| `POST` | `/api/transcribe` | `multipart/form-data` audio (≤ 8 MB) → `{ text }`. |
-| `POST` | `/api/speak` | `{ text }` (≤ 4000 chars) → `audio/mpeg` MP3. |
-| `GET` | `/api/access` | `{ required, granted }`. |
-| `POST` | `/api/access` | `{ code }` → sets the access cookie. |
+| Method   | Path                       | What it does                              |
+| -------- | -------------------------- | ----------------------------------------- |
+| `GET`    | `/health`                  | Is the server alive? Returns `{status:"ok"}` |
+| `GET`    | `/api/documents`           | List your documents                       |
+| `POST`   | `/api/documents`           | Upload a new document (multipart)         |
+| `GET`    | `/api/documents/:id`       | Get a document + its pages and chunks     |
+| `DELETE` | `/api/documents/:id`       | Delete a document and its file            |
+| `GET`    | `/api/documents/:id/file`  | Download the original PDF                 |
+| `POST`   | `/api/chat`                | Ask a question — streams the answer (SSE) |
+| `POST`   | `/api/speak`               | Turn text into spoken audio               |
+| `POST`   | `/api/transcribe`          | Turn audio into text                      |
 
-**`/api/chat` SSE events:** `meta` (page reference) → `delta`* (text tokens) → `done`, or
-`error` on failure.
+### Example: `POST /api/chat`
+
+**Request body:**
+
+```json
+{
+  "documentId": "uuid-of-your-document",
+  "message": "What does the author say about apples?",
+  "language": "en",
+  "messages": [
+    { "role": "user", "content": "Earlier question..." },
+    { "role": "assistant", "content": "Earlier answer..." }
+  ],
+  "saveCost": false
+}
+```
+
+**Response:** `text/event-stream`. You'll receive a stream of events:
+
+| Event | Payload | Meaning |
+|---|---|---|
+| `meta` | `{ reference: null }` | Start of stream — clear any old citation |
+| `delta` | `{ text: "..." }` | A piece of the answer (token) |
+| `meta` | `{ reference: { pageNumber, snippet } }` | Cited page found — UI should scroll |
+| `done` | `{}` | Answer complete |
+| `error` | `{ error: "..." }` | Something failed mid-stream |
 
 ---
 
-## Data Model
+## Database Tables
 
 ```mermaid
 erDiagram
-    documents ||--o{ document_pages : "has"
-    documents ||--o{ document_chunks : "has"
-    documents ||--o{ teaching_sessions : "has"
-    teaching_sessions ||--o{ messages : "has"
+    DOCUMENTS ||--o{ DOCUMENT_PAGES : "has"
+    DOCUMENTS ||--o{ DOCUMENT_CHUNKS : "has"
 
-    documents {
+    DOCUMENTS {
         uuid id PK
         text title
         text file_name
-        text file_type "pdf|text|markdown"
-        text status "ready|failed"
+        varchar mime_type
+        varchar file_type "pdf | text | markdown"
+        bigint file_size
+        varchar status "ready | failed"
         int page_count
-        text storage_path
+        text storage_path "S3 key"
+        timestamptz created_at
+        timestamptz updated_at
+        text error
     }
-    document_pages {
+
+    DOCUMENT_PAGES {
         uuid id PK
         uuid document_id FK
         int page_number
         text text
     }
-    document_chunks {
+
+    DOCUMENT_CHUNKS {
         uuid id PK
         uuid document_id FK
         int page_number
         int chunk_index
         text text
         text snippet
-        vector embedding "1536-dim"
-    }
-    teaching_sessions {
-        uuid id PK
-        uuid document_id FK
-    }
-    messages {
-        uuid id PK
-        uuid session_id FK
-        text role
-        text content
+        jsonb embedding "vector or null"
     }
 ```
 
-In **local mode** the same shape is stored as JSON files under `.data/` (`documents.json`,
-`pages/<id>.json`, `chunks/<id>.json`) with the raw file under `.data/uploads/`.
-
-> `teaching_sessions` and `messages` exist in the schema but are not yet read/written by the
-> app — chat history currently lives only in client memory (see code review `ARCH-002`).
+- Delete a document → its pages and chunks delete automatically (`ON DELETE CASCADE`).
+- `storage_path` is the S3 object key, never a URL — the server streams the file so your credentials don't leak.
+- `embedding: null` is a valid state — it means the background job hasn't run yet. Search still works via keywords.
 
 ---
 
-## Run Locally
+## Deployment
+
+The back end ships with a `Dockerfile`:
 
 ```bash
-npm install
-cp .env.example .env.local
-npm run dev
+docker build -t ai-voice-tutor-backend ./back-end
+docker run --env-file ./back-end/.env -p 5000:5000 ai-voice-tutor-backend
 ```
 
-Open `http://localhost:3000`.
+For production:
 
-Without an `OPENAI_API_KEY` the app still demonstrates the full upload → retrieval →
-highlight flow and returns a **deterministic demo answer** spoken via the browser's voice.
-
-| Script | Purpose |
-|--------|---------|
-| `npm run dev` | Start the dev server |
-| `npm run build` | Production build |
-| `npm start` | Run the production build |
-| `npm test` | Run Vitest once |
-| `npm run test:watch` | Vitest in watch mode |
-| `npm run typecheck` | `tsc --noEmit` |
+- Use **TypeORM migrations** (`npm run migration:run`) instead of `DB_SYNCHRONIZE=true` — otherwise schema changes happen automatically and can erase data.
+- Set `OPENAI_API_KEY` as a real secret (don't commit it).
+- Put a reverse proxy (nginx/Caddy) in front of the Node server.
 
 ---
 
-## Configuration
+## Common Questions
 
-All config resolves through `src/lib/config.ts`.
+**Q: Will the tutor answer from the internet?**
+No. By design it only uses the document you uploaded. If the answer isn't in the file, it will say so.
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `OPENAI_API_KEY` | — | Enables real AI (tutor, embeddings, STT, TTS). Omit → demo mode. |
-| `OPENAI_TUTOR_MODEL` | `gpt-5.4-mini` | Tutor chat model |
-| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | Chunk/query embeddings |
-| `OPENAI_TRANSCRIBE_MODEL` | `gpt-4o-mini-transcribe` | Speech-to-text |
-| `OPENAI_SPEECH_MODEL` | `gpt-4o-mini-tts` | Text-to-speech |
-| `OPENAI_SPEECH_VOICE` | `alloy` | TTS voice |
-| `SUPABASE_URL` | — | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | — | Service-role / secret key (**not** the anon key) |
-| `SUPABASE_STORAGE_BUCKET` | `teaching-documents` | Storage bucket name |
-| `APP_ACCESS_CODE` | — | If set, all API routes require this code |
+**Q: Do I really need an OpenAI API key?**
+No — there's a demo mode that returns canned answers. But for real Q&A, voice in (Whisper), and voice out (TTS), you need a key.
 
-If only one of the two Supabase variables is set, or the key is not a service-role key,
-the app refuses to start with a clear error.
+**Q: How big can my PDF be?**
+25 MB max. Larger files are rejected.
 
----
+**Q: Can I use a different AI provider?**
+Yes, but you'd write a new adapter. The `domain` layer doesn't know about OpenAI — only `infrastructure/services/ai/` does. Swap that out and you're good.
 
-## Supabase Setup
+**Q: Where does the recorded audio go?**
+Straight to OpenAI's Whisper API for transcription. It isn't stored on the server.
 
-1. Create a Supabase project.
-2. Run [`supabase/schema.sql`](./supabase/schema.sql) in the SQL editor.
-3. Create a **private** storage bucket named `teaching-documents`.
-4. Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET`.
+**Q: Can I run this 100% offline?**
+The app starts and runs in demo mode without OpenAI. But you'll lose: real AI answers, voice input, and voice output.
 
-If the Supabase variables are absent, the app automatically uses local `.data/` storage.
+**Q: Why do uploads finish quickly but search feels weak at first?**
+Embeddings are computed in the background after upload. Until they're ready, search runs on keywords only. Refresh in ~30 seconds for full hybrid search.
 
 ---
 
-## Operating Modes
-
-```mermaid
-graph TD
-    Start{Env vars?} -->|No OpenAI key| Demo
-    Start -->|OpenAI key| AI
-    Start -->|No Supabase| Local
-    Start -->|Supabase set| Cloud
-
-    Demo["Demo mode: deterministic answer, browser SpeechSynthesis, keyword retrieval only"]
-    AI["AI mode: real tutor, STT, TTS, vector + keyword retrieval"]
-    Local["Local storage: .data/ JSON files"]
-    Cloud["Cloud storage: Supabase Postgres + Storage"]
-```
-
-The two axes are independent: you can run **AI mode + local storage**, **demo mode + cloud
-storage**, etc. — whatever the configured env vars support.
-
----
-
-## Limits & Roadmap
-
-**Current limits**
-
-- Max file size: **25 MB**.
-- Max PDF length: **300 pages**.
-- PDF support is **text extraction only** — no OCR for scanned documents.
-- Chat history lives in client memory; sessions are not yet persisted.
-
-**Phase 2 (not yet built)**
-
-- Realtime always-on microphone, DOCX support, video/lip-sync avatars.
-- In-app quizzes and progress tracking.
-- Multi-user document libraries and persisted teaching sessions.
-- DB-side pgvector retrieval via the `match_document_chunks` RPC.
-
----
-
-## Code Quality
-
-A full multi-dimensional code review lives at
-[`.workflow/.scratchpad/review-report.md`](./.workflow/.scratchpad/review-report.md):
-**0 critical, 1 high, 6 medium** — quality gate **PASS**. Headline items: add tests for the
-server/API/hook layers, and reconcile schema/code drift (`match_document_chunks`,
-`teaching_sessions`/`messages` are defined but unused).
+*Made with Clean Architecture, a love for documents, and a strong belief that AI should cite its sources.*

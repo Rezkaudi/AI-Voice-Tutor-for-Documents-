@@ -24,6 +24,8 @@ export async function streamChat(
     }
     return response.data;
   } catch (error) {
-    throw new Error(extractErrorMessage(error, "The teacher could not respond."));
+    throw new Error(extractErrorMessage(error, "The teacher could not respond."), {
+      cause: error
+    });
   }
 }
