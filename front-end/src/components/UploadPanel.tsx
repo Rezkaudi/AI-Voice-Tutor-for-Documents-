@@ -107,7 +107,7 @@ export function UploadPanel({
           )}
           <div
             className={cx(
-              "grid min-h-[180px] place-items-center gap-3 rounded-lg border border-dashed border-[oklch(0.66_0.035_154)] bg-[oklch(0.965_0.018_138)] p-[clamp(16px,4vw,28px)] text-center transition-[background,border-color,transform] duration-[160ms] ease-out",
+              "grid min-h-[180px] place-items-center gap-3 rounded-lg border border-dashed border-[oklch(0.66_0.035_154)] bg-[oklch(0.965_0.018_138)] p-[clamp(16px,4vw,28px)] text-center transition-[background,border-color,transform] duration-160 ease-out",
               isDragOver && "scale-[1.01] border-accent bg-[oklch(0.93_0.05_154)]"
             )}
             onDragOver={(event) => {

@@ -1,5 +1,5 @@
 import { BookOpen, FileText, Phone } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { useChatStore } from "@/store/chatStore";
 import { selectCurrentPage, useDocumentStore } from "@/store/documentStore";
 import { useSessionStore } from "@/store/sessionStore";
@@ -55,7 +55,7 @@ export function TeachingApp() {
   const documentStore = useDocumentStore.getState();
 
   const documentPaneClass = cx(
-    "h-full min-w-0 overflow-hidden border-r border-line p-[clamp(14px,2vw,26px)] [background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0_/_36px_36px,var(--color-panel)] max-[920px]:border-r-0",
+    "h-full min-w-0 overflow-hidden border-r border-line p-[clamp(14px,2vw,26px)] [background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0/36px_36px,var(--color-panel)] max-[920px]:border-r-0",
     loadedDocument && mobilePane === "teacher" && "max-[920px]:hidden"
   );
   const teacherPaneClass = cx(
@@ -65,7 +65,7 @@ export function TeachingApp() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <header className="flex min-h-16 items-center justify-between gap-3 border-b border-line bg-[oklch(0.985_0.009_86_/_0.92)] px-[clamp(12px,3vw,34px)] py-2.5 sm:py-3">
+      <header className="flex min-h-16 items-center justify-between gap-3 border-b border-line bg-[oklch(0.985_0.009_86/0.92)] px-[clamp(12px,3vw,34px)] py-2.5 sm:py-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="grid h-[38px] w-[38px] flex-none place-items-center rounded-lg bg-teacher text-paper-strong">
             <BookOpen size={21} aria-hidden />
@@ -106,7 +106,7 @@ export function TeachingApp() {
               id="tab-document"
               aria-selected={mobilePane === "document"}
               aria-controls="pane-document"
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-[7px] rounded-lg border border-line bg-panel text-[0.9rem] font-[650] text-muted transition-[background,color,border-color] duration-[140ms] ease-out aria-selected:border-teacher aria-selected:bg-teacher aria-selected:text-paper-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-[7px] rounded-lg border border-line bg-panel text-[0.9rem] font-[650] text-muted transition-[background,color,border-color] duration-140 ease-out aria-selected:border-teacher aria-selected:bg-teacher aria-selected:text-paper-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               onClick={() => session.setMobilePane("document")}
             >
               <FileText size={16} aria-hidden />
@@ -118,7 +118,7 @@ export function TeachingApp() {
               id="tab-teacher"
               aria-selected={mobilePane === "teacher"}
               aria-controls="pane-teacher"
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-[7px] rounded-lg border border-line bg-panel text-[0.9rem] font-[650] text-muted transition-[background,color,border-color] duration-[140ms] ease-out aria-selected:border-teacher aria-selected:bg-teacher aria-selected:text-paper-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-[7px] rounded-lg border border-line bg-panel text-[0.9rem] font-[650] text-muted transition-[background,color,border-color] duration-140 ease-out aria-selected:border-teacher aria-selected:bg-teacher aria-selected:text-paper-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               onClick={() => session.setMobilePane("teacher")}
             >
               <Phone size={16} aria-hidden />
@@ -177,7 +177,8 @@ export function TeachingApp() {
         </>
       ) : (
         <main
-          className="h-full min-w-0 overflow-hidden p-[clamp(14px,2vw,26px)] [background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0_/_36px_36px,var(--color-panel)]"
+          className="h-full min-w-0 overflow-hidden p-[clamp(14px,2vw,26px)] [background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0/36px_36px,var(--color-panel)]"
+          style={{ "--color-panel": "oklch(0.96 0.01 84)" } as CSSProperties}
         >
           <UploadPanel
             uploadState={uploadState}

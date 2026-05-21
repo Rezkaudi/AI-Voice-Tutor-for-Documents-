@@ -81,7 +81,7 @@ function DocumentBoardComponent({
         )}
       >
         {isPdf ? (
-          <div className="relative h-full w-full overflow-hidden rounded-md border border-[oklch(0.82_0.016_86)] bg-[oklch(0.92_0.012_86)] shadow-[0_16px_28px_oklch(0.25_0.018_245_/_0.1)]">
+          <div className="relative h-full w-full overflow-hidden rounded-md border border-[oklch(0.82_0.016_86)] bg-[oklch(0.92_0.012_86)] shadow-[0_16px_28px_oklch(0.25_0.018_245/0.1)]">
             <iframe
               key={activePage}
               src={pdfSrc ?? undefined}
@@ -90,7 +90,7 @@ function DocumentBoardComponent({
             />
           </div>
         ) : (
-          <article className="mx-auto min-h-[min(980px,calc(100dvh-190px))] w-[min(100%,840px)] whitespace-pre-wrap rounded border border-[oklch(0.86_0.016_86)] bg-[oklch(0.994_0.006_92)] p-[clamp(22px,4vw,46px)] text-[clamp(0.95rem,1.3vw,1.05rem)] leading-[1.72] shadow-[0_16px_28px_oklch(0.25_0.018_245_/_0.1)]">
+          <article className="mx-auto min-h-[min(980px,calc(100dvh-190px))] w-[min(100%,840px)] whitespace-pre-wrap rounded border border-[oklch(0.86_0.016_86)] bg-[oklch(0.994_0.006_92)] p-[clamp(22px,4vw,46px)] text-[clamp(0.95rem,1.3vw,1.05rem)] leading-[1.72] shadow-[0_16px_28px_oklch(0.25_0.018_245/0.1)]">
             {page
               ? renderHighlightedText(page.text, highlightOnThisPage ? highlight.snippet : null)
               : "No page text."}

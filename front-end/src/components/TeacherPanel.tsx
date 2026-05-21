@@ -30,15 +30,15 @@ import { TeacherAvatar } from "./TeacherAvatar";
 const CAPTION_WINDOW = 6;
 
 const cornerButton =
-  "absolute top-3 z-20 inline-flex min-h-10 min-w-10 items-center justify-center gap-[7px] rounded-full border border-[oklch(1_0_0_/_0.26)] bg-[oklch(0.17_0.025_244_/_0.74)] px-3 max-[480px]:px-2.5 sm:px-[15px] text-[0.8rem] font-semibold tracking-[0.01em] text-[oklch(0.97_0.01_215)] shadow-[0_6px_18px_oklch(0.1_0.03_244_/_0.5)] backdrop-blur-[10px] [transition:transform_160ms_cubic-bezier(0.16,1,0.3,1),background-color_160ms_ease-out,border-color_160ms_ease-out] disabled:cursor-not-allowed disabled:opacity-[0.42] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:border-[oklch(0.78_0.13_165_/_0.7)] [&:hover:not(:disabled)]:bg-[oklch(0.22_0.03_244_/_0.85)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.78_0.13_165)]";
+  "absolute top-3 z-20 inline-flex min-h-10 min-w-10 items-center justify-center gap-[7px] rounded-full border border-[oklch(1_0_0/0.26)] bg-[oklch(0.17_0.025_244/0.74)] px-3 max-[480px]:px-2.5 sm:px-[15px] text-[0.8rem] font-semibold tracking-[0.01em] text-[oklch(0.97_0.01_215)] shadow-[0_6px_18px_oklch(0.1_0.03_244/0.5)] backdrop-blur-[10px] [transition:transform_160ms_cubic-bezier(0.16,1,0.3,1),background-color_160ms_ease-out,border-color_160ms_ease-out] disabled:cursor-not-allowed disabled:opacity-[0.42] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:border-[oklch(0.78_0.13_165/0.7)] [&:hover:not(:disabled)]:bg-[oklch(0.22_0.03_244/0.85)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.78_0.13_165)]";
 const cornerLabel = "hidden sm:inline";
 const cornerButtonActive =
-  "!border-transparent !bg-[oklch(0.82_0.13_165)] !text-[oklch(0.18_0.04_230)] [&:hover:not(:disabled)]:!border-transparent [&:hover:not(:disabled)]:!bg-[oklch(0.86_0.13_165)]";
+  "border-transparent! bg-[oklch(0.82_0.13_165)]! text-[oklch(0.18_0.04_230)]! [&:hover:not(:disabled)]:border-transparent! [&:hover:not(:disabled)]:bg-[oklch(0.86_0.13_165)]!";
 const bubbleBase =
   "w-fit max-w-[92%] whitespace-pre-wrap rounded-[14px] px-[13px] py-2.5 text-[0.94rem] leading-[1.55] [&_p]:mb-1.5 [&_p]:mt-0 [&_p:last-child]:mb-0";
 const callHint = "text-center text-[0.92rem] leading-[1.55] text-[oklch(0.82_0.02_215)] px-3";
 const captionBase =
-  "pointer-events-none absolute bottom-[clamp(96px,15vh,148px)] left-1/2 z-30 flex max-w-[min(580px,calc(100%_-_24px))] -translate-x-1/2 flex-nowrap items-center gap-[9px] overflow-hidden rounded-2xl border border-[oklch(1_0_0_/_0.1)] bg-[oklch(0.13_0.022_244_/_0.9)] px-3.5 py-[9px] shadow-[0_14px_36px_oklch(0.05_0.02_244_/_0.6)] backdrop-blur-[10px] animate-caption-rise motion-reduce:animate-none";
+  "pointer-events-none absolute bottom-[clamp(96px,15vh,148px)] left-1/2 z-30 flex max-w-[min(580px,calc(100%_-_24px))] -translate-x-1/2 flex-nowrap items-center gap-[9px] overflow-hidden rounded-2xl border border-[oklch(1_0_0/0.1)] bg-[oklch(0.13_0.022_244/0.9)] px-3.5 py-[9px] shadow-[0_14px_36px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[10px] animate-caption-rise motion-reduce:animate-none";
 
 interface TeacherPanelProps {
   messages: ChatMessage[];
@@ -206,7 +206,7 @@ export function TeacherPanel({
             I speak
           </span>
           <div
-            className="inline-flex max-w-full flex-nowrap justify-start gap-0.5 overflow-x-auto rounded-full border border-[oklch(0.4_0.03_220_/_0.7)] bg-[oklch(0.22_0.03_230)] p-[3px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="inline-flex max-w-full flex-nowrap justify-start gap-0.5 overflow-x-auto rounded-full border border-[oklch(0.4_0.03_220/0.7)] bg-[oklch(0.22_0.03_230)] p-[3px] scrollbar-none [&::-webkit-scrollbar]:hidden"
             role="radiogroup"
             aria-labelledby="lang-picker-label"
           >
@@ -219,9 +219,9 @@ export function TeacherPanel({
                   role="radio"
                   aria-checked={active}
                   className={cx(
-                    "min-h-[38px] appearance-none rounded-full border-0 bg-transparent px-4 py-2 text-[0.8rem] font-semibold leading-none text-[oklch(0.78_0.02_215)] transition-colors duration-[160ms] ease-out disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.78_0.13_165)] [&:hover:not(:disabled)]:bg-[oklch(0.3_0.03_230)] [&:hover:not(:disabled)]:text-[oklch(0.92_0.01_215)]",
+                    "min-h-[38px] appearance-none rounded-full border-0 bg-transparent px-4 py-2 text-[0.8rem] font-semibold leading-none text-[oklch(0.78_0.02_215)] transition-colors duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.78_0.13_165)] [&:hover:not(:disabled)]:bg-[oklch(0.3_0.03_230)] [&:hover:not(:disabled)]:text-[oklch(0.92_0.01_215)]",
                     active &&
-                      "!bg-[oklch(0.78_0.13_165)] !text-[oklch(0.18_0.04_230)]"
+                      "bg-[oklch(0.78_0.13_165)]! text-[oklch(0.18_0.04_230)]!"
                   )}
                   onClick={() => onSpeechLanguageChange(option.value)}
                   disabled={isListening || isTranscribing || micBlocked}
@@ -250,7 +250,7 @@ export function TeacherPanel({
         {showTranscript ? (
           <div
             ref={logRef}
-            className="flex min-h-0 w-full flex-auto flex-col gap-2.5 overflow-y-auto overscroll-contain px-1 pb-3 pt-1 [scrollbar-color:oklch(0.5_0.04_230)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[oklch(0.5_0.04_230_/_0.6)] [&::-webkit-scrollbar]:w-1.5"
+            className="flex min-h-0 w-full flex-auto flex-col gap-2.5 overflow-y-auto overscroll-contain px-1 pb-3 pt-1 [scrollbar-color:oklch(0.5_0.04_230)_transparent] scrollbar-thin [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[oklch(0.5_0.04_230/0.6)] [&::-webkit-scrollbar]:w-1.5"
             aria-live="polite"
           >
             {visibleMessages.length === 0 ? (
@@ -298,7 +298,7 @@ export function TeacherPanel({
         <div
           className={cx(
             captionBase,
-            captionSpeaker === "user" && "border-[oklch(0.78_0.14_150_/_0.34)]"
+            captionSpeaker === "user" && "border-[oklch(0.78_0.14_150/0.34)]"
           )}
           dir={captionRtl ? "rtl" : "ltr"}
           aria-hidden="true"
@@ -318,11 +318,11 @@ export function TeacherPanel({
               <span
                 key={word.index}
                 className={cx(
-                  "text-[clamp(1.02rem,2.5vh,1.32rem)] font-semibold leading-[1.35] text-[oklch(0.68_0.015_215)] transition-colors duration-[160ms] ease-out",
+                  "text-[clamp(1.02rem,2.5vh,1.32rem)] font-semibold leading-[1.35] text-[oklch(0.68_0.015_215)] transition-colors duration-160 ease-out",
                   word.index === captionActiveIndex &&
                     (captionSpeaker === "user"
-                      ? "text-[oklch(0.92_0.12_150)] [text-shadow:0_0_12px_oklch(0.78_0.14_150_/_0.5)]"
-                      : "text-[oklch(0.97_0.035_95)] [text-shadow:0_0_12px_oklch(0.85_0.13_90_/_0.5)]")
+                      ? "text-[oklch(0.92_0.12_150)] [text-shadow:0_0_12px_oklch(0.78_0.14_150/0.5)]"
+                      : "text-[oklch(0.97_0.035_95)] [text-shadow:0_0_12px_oklch(0.85_0.13_90/0.5)]")
                 )}
               >
                 {captionSpaced && i > 0 ? " " : ""}
@@ -336,7 +336,7 @@ export function TeacherPanel({
       <div className="flex items-center justify-center gap-[clamp(14px,3vw,26px)] pb-1 pt-1.5" role="group" aria-label="Call controls">
         <button
           className={cx(
-            "inline-flex h-16 min-w-[116px] items-center gap-2.5 rounded-full border-0 px-[22px] text-base font-bold tracking-[0.02em] text-[oklch(0.99_0.005_100)] shadow-[0_14px_32px_oklch(0.18_0.04_244_/_0.55)] transition-[transform,box-shadow,filter] duration-[160ms] ease-out disabled:cursor-not-allowed disabled:opacity-50 [&:active:not(:disabled)]:translate-y-0 [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]",
+            "inline-flex h-16 min-w-[116px] items-center gap-2.5 rounded-full border-0 px-[22px] text-base font-bold tracking-[0.02em] text-[oklch(0.99_0.005_100)] shadow-[0_14px_32px_oklch(0.18_0.04_244/0.55)] transition-[transform,box-shadow,filter] duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-50 [&:active:not(:disabled)]:translate-y-0 [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]",
             callMode
               ? "animate-listen-pulse-slow bg-[linear-gradient(140deg,oklch(0.62_0.18_28),oklch(0.5_0.18_22))]"
               : "bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))]"
@@ -353,7 +353,7 @@ export function TeacherPanel({
 
         <button
           className={cx(
-            "grid h-[52px] w-[52px] place-items-center rounded-full border border-[oklch(0.46_0.04_230)] bg-[oklch(0.32_0.035_232)] text-[oklch(0.94_0.012_100)] transition-[transform,background,border-color] duration-[160ms] ease-out disabled:cursor-not-allowed disabled:opacity-[0.42] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:bg-[oklch(0.38_0.04_232)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]",
+            "grid h-[52px] w-[52px] place-items-center rounded-full border border-[oklch(0.46_0.04_230)] bg-[oklch(0.32_0.035_232)] text-[oklch(0.94_0.012_100)] transition-[transform,background,border-color] duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-[0.42] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:bg-[oklch(0.38_0.04_232)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]",
             isListening &&
               "animate-listen-pulse border-[oklch(0.7_0.13_154)] bg-[oklch(0.55_0.11_154)] text-[oklch(0.99_0.008_138)]"
           )}
@@ -381,7 +381,7 @@ export function TeacherPanel({
       ) : micBlocked ? (
         <button
           type="button"
-          className="m-0 inline-flex max-w-lg cursor-pointer items-center gap-1.5 rounded-full border border-[oklch(0.55_0.13_45_/_0.6)] bg-[oklch(0.28_0.07_40_/_0.55)] px-3.5 py-2 text-left text-[0.82rem] leading-[1.4] text-[oklch(0.9_0.07_60)] transition-[background] duration-150 ease-out hover:bg-[oklch(0.32_0.08_40_/_0.7)] [&_svg]:shrink-0"
+          className="m-0 inline-flex max-w-lg cursor-pointer items-center gap-1.5 rounded-full border border-[oklch(0.55_0.13_45/0.6)] bg-[oklch(0.28_0.07_40/0.55)] px-3.5 py-2 text-left text-[0.82rem] leading-[1.4] text-[oklch(0.9_0.07_60)] transition-[background] duration-150 ease-out hover:bg-[oklch(0.32_0.08_40/0.7)] [&_svg]:shrink-0"
           onClick={() => setMicDialogOpen(true)}
         >
           <AlertTriangle size={14} aria-hidden />

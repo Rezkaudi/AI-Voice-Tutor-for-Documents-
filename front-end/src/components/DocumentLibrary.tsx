@@ -66,7 +66,7 @@ export function DocumentLibrary({
             <li key={doc.id}>
               <div
                 className={cx(
-                  "group relative flex w-full items-stretch gap-1 rounded-lg border border-line bg-paper-strong transition-[background,border-color] duration-[140ms] ease-out",
+                  "group relative flex w-full items-stretch gap-1 rounded-lg border border-line bg-paper-strong transition-[background,border-color] duration-140 ease-out",
                   "hover:border-accent",
                   isActive && "border-accent bg-[oklch(0.96_0.04_154)]",
                   isDeleting && "opacity-60"

@@ -95,7 +95,7 @@ export function LibraryMenu({
           className={cx(
             "absolute right-0 z-50 mt-2 w-[min(360px,calc(100vw-32px))] origin-top-right",
             ui.surface,
-            "p-3 shadow-[0_18px_50px_oklch(0.18_0.03_244_/_0.22)] animate-modal-pop"
+            "p-3 shadow-[0_18px_50px_oklch(0.18_0.03_244/0.22)] animate-modal-pop"
           )}
         >
           <div className="mb-2 flex items-center justify-between">

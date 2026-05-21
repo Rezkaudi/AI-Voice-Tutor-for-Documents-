@@ -17,10 +17,10 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
   const thinking = state === "thinking";
   const activeHalo = state === "idle-call" || listening || speaking;
   const haloTone = listening
-    ? "bg-[radial-gradient(circle,oklch(0.78_0.14_150_/_0.45)_0%,transparent_65%)]"
+    ? "bg-[radial-gradient(circle,oklch(0.78_0.14_150/0.45)_0%,transparent_65%)]"
     : speaking
-      ? "bg-[radial-gradient(circle,oklch(0.85_0.13_90_/_0.4)_0%,transparent_65%)]"
-      : "bg-[radial-gradient(circle,oklch(0.78_0.12_200_/_0.35)_0%,transparent_65%)]";
+      ? "bg-[radial-gradient(circle,oklch(0.85_0.13_90/0.4)_0%,transparent_65%)]"
+      : "bg-[radial-gradient(circle,oklch(0.78_0.12_200/0.35)_0%,transparent_65%)]";
   const haloAnimation = listening
     ? "animate-halo-pulse"
     : speaking
@@ -39,7 +39,7 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
     >
       <span
         className={cx(
-          "pointer-events-none absolute -inset-[6%] z-[1] rounded-full opacity-0",
+          "pointer-events-none absolute inset-[-6%] z-1 rounded-full opacity-0",
           haloTone,
           activeHalo && "opacity-100",
           activeHalo && haloAnimation,
@@ -48,7 +48,7 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
       />
       <span
         className={cx(
-          "pointer-events-none absolute -inset-[18%] z-[1] rounded-full opacity-0",
+          "pointer-events-none absolute inset-[-18%] z-1 rounded-full opacity-0",
           haloTone,
           activeHalo && "opacity-100",
           activeHalo && haloAnimation,
@@ -58,9 +58,9 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
       />
       <svg
         className={cx(
-          "relative z-[2] h-full w-full transition-[transform,filter] duration-[220ms] ease-out [filter:drop-shadow(0_14px_26px_oklch(0.18_0.04_244_/_0.55))]",
+          "relative z-2 h-full w-full transition-[transform,filter] duration-220 ease-out filter-[drop-shadow(0_14px_26px_oklch(0.18_0.04_244/0.55))]",
           state === "idle" &&
-            "[filter:drop-shadow(0_12px_22px_oklch(0.18_0.04_244_/_0.45))_saturate(0.95)]",
+            "filter-[drop-shadow(0_12px_22px_oklch(0.18_0.04_244/0.45))_saturate(0.95)]",
           thinking && "animate-think-bob"
         )}
         viewBox="0 0 200 220"
@@ -98,7 +98,7 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
         <rect x="88" y="148" width="24" height="18" rx="6" fill="#e5b489" />
 
         {/* head */}
-        <g className={cx("[transform-origin:100px_110px]", headAnimation)}>
+        <g className={cx("origin-[100px_110px]", headAnimation)}>
           <circle cx="100" cy="100" r="52" fill="url(#face)" />
           <path
             d="M50 104 C 46 60, 72 42, 100 42 C 132 42, 156 62, 150 104 C 146 92, 138 86, 132 86 C 122 78, 108 76, 94 78 C 82 80, 74 80, 68 84 C 60 86, 54 94, 50 104 Z"
@@ -110,12 +110,12 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
           <circle cx="74" cy="116" r="9" fill="url(#cheek)" />
           <circle cx="126" cy="116" r="9" fill="url(#cheek)" />
 
-          <g className="animate-blink [transform-origin:center]">
+          <g className="animate-blink origin-center">
             <ellipse cx="82" cy="102" rx="6.5" ry="7.5" fill="#fff" />
             <circle cx="82" cy="103" r="3.4" fill="#1c1a17" />
             <circle cx="83.5" cy="101" r="1.1" fill="#fff" />
           </g>
-          <g className="animate-blink [animation-delay:0.06s] [transform-origin:center]">
+          <g className="animate-blink [animation-delay:0.06s] origin-center">
             <ellipse cx="118" cy="102" rx="6.5" ry="7.5" fill="#fff" />
             <circle cx="118" cy="103" r="3.4" fill="#1c1a17" />
             <circle cx="119.5" cy="101" r="1.1" fill="#fff" />
@@ -155,7 +155,7 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
           <g className="mouth">
             <ellipse
               className={cx(
-                "opacity-0 [transform-box:fill-box] [transform-origin:center]",
+                "opacity-0 transform-fill origin-center",
                 speaking && "animate-mouth-open opacity-100"
               )}
               cx="100"
@@ -166,7 +166,7 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
             />
             <rect
               className={cx(
-                "opacity-100 [transform-box:fill-box] [transform-origin:center]",
+                "opacity-100 transform-fill origin-center",
                 speaking && "opacity-0"
               )}
               x="92"
@@ -195,7 +195,7 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
 
       <div
         className={cx(
-          "absolute bottom-[-2px] left-1/2 z-[3] flex h-[22px] -translate-x-1/2 items-end gap-1 opacity-0 transition-opacity duration-200 ease-out",
+          "absolute bottom-[-2px] left-1/2 z-3 flex h-[22px] -translate-x-1/2 items-end gap-1 opacity-0 transition-opacity duration-200 ease-out",
           (listening || speaking) && "opacity-100"
         )}
         aria-hidden

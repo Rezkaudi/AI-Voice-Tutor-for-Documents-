@@ -79,7 +79,7 @@ function SplitterComponent() {
   return (
     <div
       className={cx(
-        "group relative flex cursor-col-resize touch-none items-center justify-center bg-line transition-[background] duration-[140ms] ease-out before:absolute before:inset-y-0 before:-inset-x-2 before:content-[''] hover:bg-accent focus-visible:bg-accent focus-visible:outline-none max-[920px]:hidden",
+        "group relative flex cursor-col-resize touch-none items-center justify-center bg-line transition-[background] duration-140 ease-out before:absolute before:inset-y-0 before:-inset-x-2 before:content-[''] hover:bg-accent focus-visible:bg-accent focus-visible:outline-none max-[920px]:hidden",
         dragging && "bg-accent"
       )}
       role="separator"
@@ -95,7 +95,7 @@ function SplitterComponent() {
     >
       <span
         className={cx(
-          "h-9 w-[3px] rounded-full bg-[oklch(0.55_0.02_240_/_0.6)] shadow-[-5px_0_0_oklch(0.55_0.02_240_/_0.4),5px_0_0_oklch(0.55_0.02_240_/_0.4)] group-hover:bg-white group-hover:shadow-[-5px_0_0_white,5px_0_0_white] group-focus-visible:bg-white group-focus-visible:shadow-[-5px_0_0_white,5px_0_0_white]",
+          "h-9 w-[3px] rounded-full bg-[oklch(0.55_0.02_240/0.6)] shadow-[-5px_0_0_oklch(0.55_0.02_240/0.4),5px_0_0_oklch(0.55_0.02_240/0.4)] group-hover:bg-white group-hover:shadow-[-5px_0_0_white,5px_0_0_white] group-focus-visible:bg-white group-focus-visible:shadow-[-5px_0_0_white,5px_0_0_white]",
           dragging && "bg-white shadow-[-5px_0_0_white,5px_0_0_white]"
         )}
         aria-hidden
