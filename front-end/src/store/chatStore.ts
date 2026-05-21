@@ -1,11 +1,10 @@
 import { create } from "zustand";
 import { streamChat } from "@/services/chatApi";
-import { extractSentences } from "@/lib/sentences";
-import { readEventStream } from "@/lib/sse";
+import { runChatStream } from "./chatStreamRunner";
 import { useDocumentStore } from "./documentStore";
 import { useSessionStore } from "./sessionStore";
 import { useSpeechStore } from "./speechStore";
-import type { ChatMessage } from "@/lib/types";
+import type { ChatMessage, DocumentReference } from "@/lib/types";
 
 interface SendMessageOptions {
   hidden?: boolean;
@@ -31,13 +30,21 @@ function patchMessage(
 }
 
 /**
- * Chat store: streams answers from `/api/chat`, mirrors page
- * references to the document store, and feeds finished sentences to TTS as
- * they arrive.
+ * Chat store: streams answers from `/api/chat`, mirrors page references to
+ * the document store, and feeds finished sentences to TTS as they arrive.
  */
 export const useChatStore = create<ChatStore>((set, get) => {
   // Kept outside store state — it is transport plumbing, not UI state.
   let abortController: AbortController | null = null;
+
+  const patchAssistant = (id: string, patch: Partial<ChatMessage>) => {
+    set({ messages: patchMessage(get().messages, id, patch) });
+  };
+
+  const applyReference = (id: string, reference: DocumentReference | null) => {
+    useDocumentStore.getState().applyReference(reference);
+    patchAssistant(id, { reference });
+  };
 
   return {
     messages: [],
@@ -62,9 +69,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
     sendMessage: async (content, options = {}) => {
       const trimmed = content.trim();
       const loadedDocument = useDocumentStore.getState().loadedDocument;
-      if (!loadedDocument || get().isStreaming || !trimmed) {
-        return;
-      }
+      if (!loadedDocument || get().isStreaming || !trimmed) return;
 
       const session = useSessionStore.getState();
       session.setError(null);
@@ -86,7 +91,6 @@ export const useChatStore = create<ChatStore>((set, get) => {
       const history = get().messages.map(({ role, content }) => ({ role, content }));
       set({ messages: [...get().messages, userMessage, assistantMessage] });
 
-      let assistantText = "";
       const controller = new AbortController();
       abortController = controller;
 
@@ -102,48 +106,12 @@ export const useChatStore = create<ChatStore>((set, get) => {
           controller.signal
         );
 
-        const speechSession = useSpeechStore.getState().createSpeechSession();
-        let spokenChars = 0;
-
-        await readEventStream(body, (event) => {
-          if (event.event === "meta") {
-            useDocumentStore.getState().applyReference(event.data.reference);
-            set({
-              messages: patchMessage(get().messages, assistantId, {
-                reference: event.data.reference
-              })
-            });
-          }
-
-          if (event.event === "delta") {
-            assistantText += event.data.text;
-            set({
-              messages: patchMessage(get().messages, assistantId, {
-                content: assistantText
-              })
-            });
-
-            // Speak each finished sentence as soon as it arrives, instead of
-            // waiting for the whole answer to finish streaming.
-            const { sentences, consumed } = extractSentences(
-              assistantText.slice(spokenChars)
-            );
-            if (consumed > 0) {
-              spokenChars += consumed;
-              sentences.forEach((sentence) => speechSession.push(sentence));
-            }
-          }
-
-          if (event.event === "error") {
-            throw new Error(event.data.error);
-          }
+        await runChatStream({
+          body,
+          speechSession: useSpeechStore.getState().createSpeechSession(),
+          onText: (text) => patchAssistant(assistantId, { content: text }),
+          onReference: (reference) => applyReference(assistantId, reference)
         });
-
-        const tail = assistantText.slice(spokenChars).trim();
-        if (tail) {
-          speechSession.push(tail);
-        }
-        await speechSession.finished();
 
         useSessionStore.getState().maybeContinueCall();
       } catch (error) {
@@ -155,13 +123,9 @@ export const useChatStore = create<ChatStore>((set, get) => {
         useSessionStore
           .getState()
           .setError(error instanceof Error ? error.message : "The teacher could not respond.");
-        set({
-          messages: get().messages.filter((message) => message.id !== assistantId)
-        });
+        set({ messages: get().messages.filter((message) => message.id !== assistantId) });
       } finally {
-        if (abortController === controller) {
-          abortController = null;
-        }
+        if (abortController === controller) abortController = null;
         set({ isStreaming: false });
       }
     }

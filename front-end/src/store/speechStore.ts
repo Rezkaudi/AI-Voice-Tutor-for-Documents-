@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { SpeechEngine } from "@/services/speechEngine";
+import { SpeechEngine } from "@/services/speech";
 import type { SpeechCaption, SpeechSession } from "@/lib/types";
 
 interface SpeechStore {

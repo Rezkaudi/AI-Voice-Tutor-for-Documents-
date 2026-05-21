@@ -1,11 +1,10 @@
-import { AlertTriangle, Library, Loader2, Plus, UploadCloud } from "lucide-react";
-import { useRef, useState } from "react";
+import { AlertTriangle, Library, Plus } from "lucide-react";
+import { useState } from "react";
 import { cx, ui } from "@/lib/uiClasses";
-import { DocumentLibrary } from "./DocumentLibrary";
 import type { DocumentSummary, UploadState } from "@/lib/types";
-
-const ACCEPTED_TYPES =
-  ".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/markdown";
+import { DocumentLibrary } from "../DocumentLibrary";
+import { DropZone } from "./DropZone";
+import { ProcessingState } from "./ProcessingState";
 
 interface UploadPanelProps {
   uploadState: UploadState;
@@ -37,30 +36,11 @@ export function UploadPanel({
   onSelect,
   onDelete
 }: UploadPanelProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
 
   if (uploadState === "processing") {
-    return (
-      <div
-        className={cx(surface, "grid min-h-[330px] place-items-center gap-3 text-center")}
-        role="status"
-        aria-live="polite"
-      >
-        <Loader2 className={ui.spin} size={42} aria-hidden />
-        <h2>Preparing your document</h2>
-        <p>Extracting pages, building lesson passages, and warming up the teacher.</p>
-      </div>
-    );
+    return <ProcessingState surfaceClass={surface} />;
   }
-
-  const handleFile = (file: File | null) => {
-    onFile(file);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
 
   const hasLibrary = library.length > 0;
   const uploaderOpen = showUploader || !hasLibrary;
@@ -105,51 +85,11 @@ export function UploadPanel({
               Or upload a new file
             </h3>
           )}
-          <div
-            className={cx(
-              "grid min-h-[180px] place-items-center gap-3 rounded-lg border border-dashed border-[oklch(0.66_0.035_154)] bg-[oklch(0.965_0.018_138)] p-[clamp(16px,4vw,28px)] text-center transition-[background,border-color,transform] duration-160 ease-out",
-              isDragOver && "scale-[1.01] border-accent bg-[oklch(0.93_0.05_154)]"
-            )}
-            onDragOver={(event) => {
-              event.preventDefault();
-              if (!isDragOver) setIsDragOver(true);
-            }}
-            onDragLeave={() => setIsDragOver(false)}
-            onDrop={(event) => {
-              event.preventDefault();
-              setIsDragOver(false);
-              handleFile(event.dataTransfer.files.item(0));
-            }}
-          >
-            <UploadCloud size={36} aria-hidden />
-            <p className="m-0 text-[0.92rem] text-muted">Drop a file here, or</p>
-            <div className={ui.buttonRow}>
-              <button
-                type="button"
-                className={cx(ui.button, ui.buttonPrimary)}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <UploadCloud size={18} aria-hidden />
-                Choose file
-              </button>
-              {hasLibrary ? (
-                <button
-                  type="button"
-                  className={ui.button}
-                  onClick={() => setShowUploader(false)}
-                >
-                  Cancel
-                </button>
-              ) : null}
-            </div>
-            <input
-              ref={fileInputRef}
-              className="sr-only"
-              type="file"
-              accept={ACCEPTED_TYPES}
-              onChange={(event) => handleFile(event.target.files?.item(0) ?? null)}
-            />
-          </div>
+          <DropZone
+            onFile={onFile}
+            showCancel={hasLibrary}
+            onCancel={() => setShowUploader(false)}
+          />
         </section>
       ) : null}
 

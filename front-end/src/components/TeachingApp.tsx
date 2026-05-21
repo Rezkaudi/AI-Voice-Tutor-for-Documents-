@@ -10,7 +10,7 @@ import { LibraryMenu } from "./LibraryMenu";
 import { Splitter } from "./Splitter";
 import { TeacherPanel } from "./TeacherPanel";
 import { UploadPanel } from "./UploadPanel";
-import { cx, ui } from "@/lib/uiClasses";
+import { cx } from "@/lib/uiClasses";
 
 /**
  * Root of the voice tutor workspace. Reads state from the Zustand stores and

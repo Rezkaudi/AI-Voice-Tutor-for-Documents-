@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { VoiceRecorder } from "@/services/voiceRecorder";
+import { VoiceRecorder } from "@/services/voice";
 import { useSessionStore } from "./sessionStore";
 import type { MicPermission } from "@/lib/types";
 
