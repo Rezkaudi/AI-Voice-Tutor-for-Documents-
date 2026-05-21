@@ -26,8 +26,6 @@ import type { ServerDependencies } from "@/infrastructure/http/server";
 
 import { ENV_CONFIG } from "@/config/env.config";
 
-import { logger } from "@/shared/logger";
-
 /**
  * Composition root — the single place that knows every concrete class.
  *
@@ -52,8 +50,6 @@ export async function buildContainer(): Promise<Container> {
   const tutorService = new OpenAiTutorService(ENV_CONFIG, embeddingService);
   const speechService = new OpenAiSpeechSynthesisService(ENV_CONFIG);
   const transcriptionService = new OpenAiTranscriptionService(ENV_CONFIG);
-
-  logger.info(`Capabilities — openai: ${embeddingService.isAvailable()}`);
 
   // ─── Application use cases ───────────────────────────────────────────────
   const uploadDocument = new UploadDocumentUseCase(

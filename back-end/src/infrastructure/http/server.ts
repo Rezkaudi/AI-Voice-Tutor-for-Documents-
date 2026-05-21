@@ -2,18 +2,19 @@ import cors from "cors";
 import express, { Router, type Application } from "express";
 import type { Server as HttpServer } from "node:http";
 import { corsOptions } from "@/config/cors.config";
-import {
-  errorHandler,
-  notFoundHandler
-} from "@/infrastructure/http/middleware/error-handler";
+
+import { errorHandler, notFoundHandler } from "@/infrastructure/http/middleware/error-handler";
+
 import type { ChatController } from "@/infrastructure/http/controllers/chat.controller";
 import type { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
 import type { SpeechController } from "@/infrastructure/http/controllers/speech.controller";
 import type { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
+
 import { buildChatRoutes } from "@/infrastructure/http/routes/chat.routes";
 import { buildDocumentRoutes } from "@/infrastructure/http/routes/documents.routes";
 import { buildSpeechRoutes } from "@/infrastructure/http/routes/speech.routes";
 import { buildTranscriptionRoutes } from "@/infrastructure/http/routes/transcription.routes";
+
 import { logger } from "@/shared/logger";
 
 export interface ServerDependencies {
