@@ -1,6 +1,8 @@
-import { AlertTriangle, RotateCcw } from "lucide-react";
+import { AlertTriangle, RotateCcw, Trash2, type LucideIcon } from "lucide-react";
 import { useEffect } from "react";
 import { cx, ui } from "@/lib/uiClasses";
+
+type ConfirmTone = "restart" | "delete";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -8,9 +10,15 @@ interface ConfirmDialogProps {
   body: string;
   confirmLabel: string;
   cancelLabel: string;
+  tone?: ConfirmTone;
   onConfirm: () => void;
   onCancel: () => void;
 }
+
+const TONE_ICON: Record<ConfirmTone, LucideIcon> = {
+  restart: RotateCcw,
+  delete: Trash2
+};
 
 /** Accessible modal that confirms a destructive action (Enter / Escape aware). */
 export function ConfirmDialog({
@@ -19,9 +27,11 @@ export function ConfirmDialog({
   body,
   confirmLabel,
   cancelLabel,
+  tone = "restart",
   onConfirm,
   onCancel
 }: ConfirmDialogProps) {
+  const ConfirmIcon = TONE_ICON[tone];
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
@@ -64,7 +74,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </button>
           <button className={cx(ui.buttonDanger)} type="button" onClick={onConfirm} autoFocus>
-            <RotateCcw size={16} aria-hidden />
+            <ConfirmIcon size={16} aria-hidden />
             {confirmLabel}
           </button>
         </div>

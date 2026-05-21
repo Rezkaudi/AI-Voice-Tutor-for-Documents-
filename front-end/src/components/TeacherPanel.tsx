@@ -30,14 +30,15 @@ import { TeacherAvatar } from "./TeacherAvatar";
 const CAPTION_WINDOW = 6;
 
 const cornerButton =
-  "absolute top-3.5 z-20 inline-flex min-h-10 items-center gap-[7px] rounded-full border border-[oklch(1_0_0_/_0.26)] bg-[oklch(0.17_0.025_244_/_0.74)] px-[15px] text-[0.8rem] font-semibold tracking-[0.01em] text-[oklch(0.97_0.01_215)] shadow-[0_6px_18px_oklch(0.1_0.03_244_/_0.5)] backdrop-blur-[10px] [transition:transform_160ms_cubic-bezier(0.16,1,0.3,1),background-color_160ms_ease-out,border-color_160ms_ease-out] disabled:cursor-not-allowed disabled:opacity-[0.42] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:border-[oklch(0.78_0.13_165_/_0.7)] [&:hover:not(:disabled)]:bg-[oklch(0.22_0.03_244_/_0.85)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.78_0.13_165)]";
+  "absolute top-3 z-20 inline-flex min-h-10 min-w-10 items-center justify-center gap-[7px] rounded-full border border-[oklch(1_0_0_/_0.26)] bg-[oklch(0.17_0.025_244_/_0.74)] px-3 max-[480px]:px-2.5 sm:px-[15px] text-[0.8rem] font-semibold tracking-[0.01em] text-[oklch(0.97_0.01_215)] shadow-[0_6px_18px_oklch(0.1_0.03_244_/_0.5)] backdrop-blur-[10px] [transition:transform_160ms_cubic-bezier(0.16,1,0.3,1),background-color_160ms_ease-out,border-color_160ms_ease-out] disabled:cursor-not-allowed disabled:opacity-[0.42] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:border-[oklch(0.78_0.13_165_/_0.7)] [&:hover:not(:disabled)]:bg-[oklch(0.22_0.03_244_/_0.85)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.78_0.13_165)]";
+const cornerLabel = "hidden sm:inline";
 const cornerButtonActive =
   "!border-transparent !bg-[oklch(0.82_0.13_165)] !text-[oklch(0.18_0.04_230)] [&:hover:not(:disabled)]:!border-transparent [&:hover:not(:disabled)]:!bg-[oklch(0.86_0.13_165)]";
 const bubbleBase =
   "w-fit max-w-[92%] whitespace-pre-wrap rounded-[14px] px-[13px] py-2.5 text-[0.94rem] leading-[1.55] [&_p]:mb-1.5 [&_p]:mt-0 [&_p:last-child]:mb-0";
 const callHint = "text-center text-[0.92rem] leading-[1.55] text-[oklch(0.82_0.02_215)] px-3";
 const captionBase =
-  "pointer-events-none absolute bottom-[clamp(104px,17vh,152px)] left-1/2 z-30 flex max-w-[min(580px,calc(100%_-_32px))] -translate-x-1/2 flex-nowrap items-center gap-[9px] overflow-hidden rounded-2xl border border-[oklch(1_0_0_/_0.1)] bg-[oklch(0.13_0.022_244_/_0.9)] px-3.5 py-[9px] shadow-[0_14px_36px_oklch(0.05_0.02_244_/_0.6)] backdrop-blur-[10px] animate-caption-rise motion-reduce:animate-none";
+  "pointer-events-none absolute bottom-[clamp(96px,15vh,148px)] left-1/2 z-30 flex max-w-[min(580px,calc(100%_-_24px))] -translate-x-1/2 flex-nowrap items-center gap-[9px] overflow-hidden rounded-2xl border border-[oklch(1_0_0_/_0.1)] bg-[oklch(0.13_0.022_244_/_0.9)] px-3.5 py-[9px] shadow-[0_14px_36px_oklch(0.05_0.02_244_/_0.6)] backdrop-blur-[10px] animate-caption-rise motion-reduce:animate-none";
 
 interface TeacherPanelProps {
   messages: ChatMessage[];
@@ -144,23 +145,29 @@ export function TeacherPanel({
   };
 
   return (
-    <div className="relative grid h-full min-h-0 w-full flex-1 grid-rows-[auto_auto_minmax(0,1fr)_auto] place-items-center gap-[clamp(14px,2.2vh,26px)] px-2 pb-1 pt-[clamp(12px,2vh,22px)]">
+    <div className="relative grid h-full min-h-0 w-full flex-1 grid-rows-[auto_auto_minmax(0,1fr)_auto] place-items-center gap-[clamp(14px,2.2vh,26px)] px-3 pb-1 pt-[clamp(60px,8vh,72px)]">
       <button
-        className={cx(cornerButton, "left-3.5", showTranscript && cornerButtonActive)}
+        className={cx(cornerButton, "left-3", showTranscript && cornerButtonActive)}
         type="button"
         aria-pressed={showTranscript}
         aria-expanded={showTranscript}
+        aria-label={showTranscript ? "Hide the lesson transcript" : "Show the lesson transcript"}
         title={showTranscript ? "Hide the lesson transcript" : "Show the lesson transcript"}
         onClick={() => setShowTranscript((open) => !open)}
       >
         <Captions size={16} aria-hidden />
-        <span>{showTranscript ? "Hide" : "Transcript"}</span>
+        <span className={cornerLabel}>{showTranscript ? "Hide" : "Transcript"}</span>
       </button>
 
       <button
-        className={cx(cornerButton, "right-[70px]", saveCost && cornerButtonActive)}
+        className={cx(cornerButton, "right-[58px] sm:right-[76px]", saveCost && cornerButtonActive)}
         type="button"
         aria-pressed={saveCost}
+        aria-label={
+          saveCost
+            ? "Save-cost mode is on — using the lighter, cheaper tutor model"
+            : "Turn on save-cost mode to use a cheaper tutor model"
+        }
         title={
           saveCost
             ? "Save-cost mode is on — using the lighter, cheaper tutor model"
@@ -170,11 +177,11 @@ export function TeacherPanel({
         disabled={isStreaming || isListening || isTranscribing}
       >
         <Leaf size={16} aria-hidden />
-        <span>Save-cost{saveCost ? " · On" : ""}</span>
+        <span className={cornerLabel}>Save-cost{saveCost ? " · On" : ""}</span>
       </button>
 
       <button
-        className={cx(cornerButton, "right-3.5")}
+        className={cx(cornerButton, "right-3")}
         type="button"
         aria-label="Clear chat and restart"
         title="Clear chat and restart"
@@ -199,7 +206,7 @@ export function TeacherPanel({
             I speak
           </span>
           <div
-            className="inline-flex flex-wrap justify-center gap-0.5 rounded-full border border-[oklch(0.4_0.03_220_/_0.7)] bg-[oklch(0.22_0.03_230)] p-[3px]"
+            className="inline-flex max-w-full flex-nowrap justify-start gap-0.5 overflow-x-auto rounded-full border border-[oklch(0.4_0.03_220_/_0.7)] bg-[oklch(0.22_0.03_230)] p-[3px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             role="radiogroup"
             aria-labelledby="lang-picker-label"
           >

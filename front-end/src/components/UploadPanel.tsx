@@ -105,9 +105,9 @@ export function UploadPanel({
               Or upload a new file
             </h3>
           )}
-          <label
+          <div
             className={cx(
-              "grid min-h-[180px] place-items-center gap-3 rounded-lg border border-dashed border-[oklch(0.66_0.035_154)] bg-[oklch(0.965_0.018_138)] p-6 text-center transition-[background,border-color,transform] duration-[160ms] ease-out",
+              "grid min-h-[180px] place-items-center gap-3 rounded-lg border border-dashed border-[oklch(0.66_0.035_154)] bg-[oklch(0.965_0.018_138)] p-[clamp(16px,4vw,28px)] text-center transition-[background,border-color,transform] duration-[160ms] ease-out",
               isDragOver && "scale-[1.01] border-accent bg-[oklch(0.93_0.05_154)]"
             )}
             onDragOver={(event) => {
@@ -122,22 +122,21 @@ export function UploadPanel({
             }}
           >
             <UploadCloud size={36} aria-hidden />
-            <p className="m-0 text-[0.92rem] text-muted">
-              Drop a file here, or
-            </p>
+            <p className="m-0 text-[0.92rem] text-muted">Drop a file here, or</p>
             <div className={ui.buttonRow}>
-              <span className={cx(ui.button, ui.buttonPrimary)}>
+              <button
+                type="button"
+                className={cx(ui.button, ui.buttonPrimary)}
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <UploadCloud size={18} aria-hidden />
                 Choose file
-              </span>
+              </button>
               {hasLibrary ? (
                 <button
                   type="button"
                   className={ui.button}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    setShowUploader(false);
-                  }}
+                  onClick={() => setShowUploader(false)}
                 >
                   Cancel
                 </button>
@@ -145,12 +144,12 @@ export function UploadPanel({
             </div>
             <input
               ref={fileInputRef}
-              className="pointer-events-none absolute h-px w-px opacity-0"
+              className="sr-only"
               type="file"
               accept={ACCEPTED_TYPES}
               onChange={(event) => handleFile(event.target.files?.item(0) ?? null)}
             />
-          </label>
+          </div>
         </section>
       ) : null}
 

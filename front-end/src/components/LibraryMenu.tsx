@@ -131,21 +131,22 @@ export function LibraryMenu({
               <span className="text-[0.85rem]">Processing your upload…</span>
             </div>
           ) : (
-            <label
-              className={cx(
-                ui.button,
-                "mt-3 w-full cursor-pointer justify-center"
-              )}
-            >
-              <Plus size={16} aria-hidden /> Upload new
+            <>
+              <button
+                type="button"
+                className={cx(ui.button, "mt-3 w-full justify-center")}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Plus size={16} aria-hidden /> Upload new
+              </button>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept={ACCEPTED_TYPES}
-                className="pointer-events-none absolute h-px w-px opacity-0"
+                className="sr-only"
                 onChange={(event) => handleFile(event.target.files?.item(0) ?? null)}
               />
-            </label>
+            </>
           )}
         </div>
       ) : null}

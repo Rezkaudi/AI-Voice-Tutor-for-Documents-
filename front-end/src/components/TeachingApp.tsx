@@ -65,27 +65,21 @@ export function TeachingApp() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <header className="flex min-h-16 items-center justify-between gap-[18px] border-b border-line bg-[oklch(0.985_0.009_86_/_0.92)] px-[clamp(16px,3vw,34px)] py-3 max-[920px]:flex-col max-[920px]:items-start">
-        <div className="flex min-w-0 items-center gap-3">
+      <header className="flex min-h-16 items-center justify-between gap-3 border-b border-line bg-[oklch(0.985_0.009_86_/_0.92)] px-[clamp(12px,3vw,34px)] py-2.5 sm:py-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="grid h-[38px] w-[38px] flex-none place-items-center rounded-lg bg-teacher text-paper-strong">
             <BookOpen size={21} aria-hidden />
           </div>
-          <div>
-            <h1 className="m-0 text-[clamp(1rem,1.6vw,1.25rem)] font-[760] leading-[1.1]">
+          <div className="min-w-0">
+            <h1 className="m-0 truncate text-[clamp(0.95rem,1.6vw,1.2rem)] font-[760] leading-[1.15]">
               AI Voice Tutor for Documents
             </h1>
-            <p className="mb-0 mt-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-[0.86rem] text-muted">
+            <p className="mb-0 mt-[3px] truncate text-[0.82rem] text-muted">
               {loadedDocument ? loadedDocument.document.title : "Document learning board"}
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2 max-[920px]:justify-start">
-          {loadedDocument ? (
-            <span className={ui.pill}>
-              <FileText size={15} aria-hidden />
-              {`${loadedDocument.document.pageCount} pages`}
-            </span>
-          ) : null}
+        <div className="flex flex-none items-center justify-end gap-2">
           <LibraryMenu
             library={library}
             libraryLoading={libraryLoading}

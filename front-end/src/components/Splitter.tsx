@@ -79,12 +79,14 @@ function SplitterComponent() {
   return (
     <div
       className={cx(
-        "group relative flex cursor-col-resize touch-none items-center justify-center bg-line transition-[background] duration-[140ms] ease-out before:absolute before:inset-y-0 before:-inset-x-1 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none max-[920px]:hidden",
+        "group relative flex cursor-col-resize touch-none items-center justify-center bg-line transition-[background] duration-[140ms] ease-out before:absolute before:inset-y-0 before:-inset-x-2 before:content-[''] hover:bg-accent focus-visible:bg-accent focus-visible:outline-none max-[920px]:hidden",
         dragging && "bg-accent"
       )}
       role="separator"
       aria-orientation="vertical"
       aria-label="Resize document and chat panes"
+      aria-valuemin={MIN_SPLIT}
+      aria-valuemax={MAX_SPLIT}
       tabIndex={0}
       onMouseDown={() => setDragging(true)}
       onTouchStart={() => setDragging(true)}

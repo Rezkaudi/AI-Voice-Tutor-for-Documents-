@@ -19,7 +19,7 @@ export const ui = {
   buttonDanger: cx(
     controlBase,
     focusAccent,
-    "animate-listen-pulse !border-danger !bg-danger !px-3 !py-2 font-bold text-[oklch(0.99_0.005_100)]"
+    "!border-danger !bg-danger !px-3 !py-2 font-bold !text-[oklch(0.99_0.005_100)] [&:hover:not(:disabled)]:!border-danger [&:hover:not(:disabled)]:brightness-110"
   ),
   iconButton: cx(controlBase, focusAccent, "w-10 p-0"),
   buttonRow: "flex flex-wrap items-center justify-center gap-2.5",
