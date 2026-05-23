@@ -39,7 +39,6 @@ export interface LoadedDocument {
 
 export interface DocumentReference {
   pageNumber: number;
-  snippet: string;
 }
 
 export interface ChatMessage {

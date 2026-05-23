@@ -1,6 +1,5 @@
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { memo, useEffect, useState } from "react";
-import { renderHighlightedText } from "@/lib/messageFormat";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentPage, DocumentReference } from "@/lib/types";
 import { DocumentLoadingOverlay } from "./DocumentLoadingOverlay";
@@ -31,8 +30,6 @@ function DocumentBoardComponent({
   const pdfSrc = isPdf
     ? `${fileUrl}#page=${activePage}&view=FitH&toolbar=0&navpanes=0`
     : null;
-  const highlightOnThisPage = highlight && highlight.pageNumber === page?.pageNumber;
-
   const [iframeLoading, setIframeLoading] = useState(isPdf);
   useEffect(() => {
     if (isPdf) setIframeLoading(true);
@@ -102,9 +99,7 @@ function DocumentBoardComponent({
           </div>
         ) : (
           <article className="mx-auto min-h-[min(980px,calc(100dvh-190px))] w-[min(100%,840px)] whitespace-pre-wrap rounded border border-[oklch(0.86_0.016_86)] bg-[oklch(0.994_0.006_92)] p-[clamp(22px,4vw,46px)] text-[clamp(0.95rem,1.3vw,1.05rem)] leading-[1.72] shadow-[0_16px_28px_oklch(0.25_0.018_245/0.1)]">
-            {page
-              ? renderHighlightedText(page.text, highlightOnThisPage ? highlight.snippet : null)
-              : "No page text."}
+            {page ? page.text : "No page text."}
           </article>
         )}
         {showOverlay ? <DocumentLoadingOverlay /> : null}

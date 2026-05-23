@@ -5,7 +5,6 @@
  * transport, the tool loop, and streaming.
  */
 import type { Reference } from "@/domain/entities/chat";
-import type { DocumentChunk } from "@/domain/entities/document";
 
 /** ISO 639-1 code → display name, used to pin the tutor's reply language. */
 export const LANGUAGE_NAMES: Record<string, string> = {
@@ -167,19 +166,14 @@ export function buildTutorInstructions(title: string, language?: string): string
 }
 
 /** Demo-mode answer used when no OpenAI key is configured on the server. */
-export function buildFallbackAnswer(
-  reference: Reference | null,
-  firstChunk?: DocumentChunk
-): string {
-  const sourceText =
-    reference?.snippet ||
-    firstChunk?.snippet ||
-    "I found the document, but I could not extract a useful passage yet.";
-  const pageText = reference ? `On page ${reference.pageNumber}, ` : "";
+export function buildFallbackAnswer(reference: Reference | null): string {
+  const pageText = reference
+    ? `Take a look at page ${reference.pageNumber} of the document.`
+    : "I found the document, but could not pin a specific page yet.";
 
   return [
     "I can teach from this document in local demo mode.",
-    `${pageText}the most relevant passage says: "${sourceText}"`,
+    pageText,
     "A simple way to understand it is to identify the main claim, then connect each detail back to that claim.",
     "What part would you like me to slow down and explain next?"
   ].join("\n\n");

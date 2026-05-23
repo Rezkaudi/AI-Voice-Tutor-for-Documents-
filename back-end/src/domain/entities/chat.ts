@@ -20,6 +20,5 @@ export type SpeechLanguage = "ja" | "en" | "ar" | "";
  */
 export interface Reference {
   pageNumber: number;
-  snippet: string;
   chunkId?: string;
 }

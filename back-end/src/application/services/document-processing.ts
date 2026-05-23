@@ -95,8 +95,7 @@ export function chunkDocumentPages(
         documentId: page.documentId ?? "",
         pageNumber: page.pageNumber,
         chunkIndex: chunks.length,
-        text: segment,
-        snippet: makeSnippet(segment)
+        text: segment
       });
     }
   }
@@ -162,13 +161,6 @@ function findSoftBoundary(text: string, start: number, roughEnd: number): number
   }
   const wordBreak = text.lastIndexOf(" ", roughEnd);
   return wordBreak > start ? wordBreak : roughEnd;
-}
-
-function makeSnippet(text: string): string {
-  const normalized = normalizeText(text);
-  return normalized.length <= 240
-    ? normalized
-    : `${normalized.slice(0, 237).trim()}...`;
 }
 
 function extensionOf(fileName: string): string {

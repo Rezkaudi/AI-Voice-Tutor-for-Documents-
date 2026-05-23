@@ -56,7 +56,6 @@ export class TypeOrmDocumentRepository implements DocumentRepository {
         row.pageNumber = chunk.pageNumber;
         row.chunkIndex = chunk.chunkIndex;
         row.text = chunk.text;
-        row.snippet = chunk.snippet;
         row.embedding = chunk.embedding ?? null;
         return row;
       });
@@ -105,7 +104,6 @@ export class TypeOrmDocumentRepository implements DocumentRepository {
       pageNumber: row.pageNumber,
       chunkIndex: row.chunkIndex,
       text: row.text,
-      snippet: row.snippet,
       embedding: row.embedding
     }));
   }

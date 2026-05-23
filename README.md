@@ -455,7 +455,7 @@ All endpoints live under `/api` (except `/health`).
 |---|---|---|
 | `meta` | `{ reference: null }` | Start of stream — clear any old citation |
 | `delta` | `{ text: "..." }` | A piece of the answer (token) |
-| `meta` | `{ reference: { pageNumber, snippet } }` | Cited page found — UI should scroll |
+| `meta` | `{ reference: { pageNumber } }` | Cited page found — UI should scroll |
 | `done` | `{}` | Answer complete |
 | `error` | `{ error: "..." }` | Something failed mid-stream |
 
@@ -496,7 +496,6 @@ erDiagram
         int page_number
         int chunk_index
         text text
-        text snippet
         jsonb embedding "vector or null"
     }
 ```

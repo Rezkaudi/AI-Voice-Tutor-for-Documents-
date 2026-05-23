@@ -46,7 +46,6 @@ export interface DocumentChunk {
   pageNumber: number;
   chunkIndex: number;
   text: string;
-  snippet: string;
   /** Vector embedding; `null` until the background embedding job fills it. */
   embedding?: number[] | null;
 }

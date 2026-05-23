@@ -33,9 +33,6 @@ export class DocumentChunkOrmEntity {
   @Column({ type: "text" })
   text!: string;
 
-  @Column({ type: "text" })
-  snippet!: string;
-
   @Column({ type: "jsonb", nullable: true })
   embedding!: number[] | null;
 

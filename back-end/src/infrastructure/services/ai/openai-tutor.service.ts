@@ -1,10 +1,7 @@
 import OpenAI from "openai";
 import type { Reference } from "@/domain/entities/chat";
 import type { EmbeddingService } from "@/domain/services/embedding-service";
-import {
-  buildReferenceSnippet,
-  rankChunks
-} from "@/application/services/retrieval";
+import { rankChunks } from "@/application/services/retrieval";
 import type {
   TutorReplyRequest,
   TutorService,
@@ -257,7 +254,6 @@ export class OpenAiTutorService implements TutorService {
         seenPages.add(item.chunk.pageNumber);
         references.push({
           pageNumber: item.chunk.pageNumber,
-          snippet: buildReferenceSnippet(item.chunk.text, query),
           chunkId: item.chunk.id
         });
       }
@@ -275,7 +271,6 @@ export class OpenAiTutorService implements TutorService {
     const reference: Reference | null = firstChunk
       ? {
           pageNumber: firstChunk.pageNumber,
-          snippet: firstChunk.snippet,
           chunkId: firstChunk.id
         }
       : null;
@@ -284,7 +279,7 @@ export class OpenAiTutorService implements TutorService {
       yield { type: "reference", reference };
     }
 
-    const answer = buildFallbackAnswer(reference, firstChunk);
+    const answer = buildFallbackAnswer(reference);
     for (
       let index = 0;
       index < answer.length;
@@ -322,7 +317,7 @@ function pickCitedReference(
   return fallback;
 }
 
-/** Builds a page reference (number, snippet, chunk id) for one page number. */
+/** Builds a page reference (number, chunk id) for one page number. */
 function buildPageReference(
   pageNumber: number,
   request: TutorReplyRequest
@@ -331,10 +326,7 @@ function buildPageReference(
   if (!page) {
     return null;
   }
-  const reference: Reference = {
-    pageNumber: page.pageNumber,
-    snippet: buildReferenceSnippet(page.text, request.message)
-  };
+  const reference: Reference = { pageNumber: page.pageNumber };
   const chunkId = request.chunks.find(
     (chunk) => chunk.pageNumber === page.pageNumber
   )?.id;

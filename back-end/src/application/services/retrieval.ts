@@ -1,7 +1,7 @@
 import type { DocumentChunk } from "@/domain/entities/document";
 
 /**
- * Pure retrieval logic — keyword + vector ranking and snippet building.
+ * Pure retrieval logic — keyword + vector ranking.
  *
  * No network, no framework: the tutor's `search_document` tool ranks chunks
  * through `rankChunks`, blending an embedding cosine score (when embeddings
@@ -42,36 +42,6 @@ export function rankChunks(
   return ranked.length
     ? ranked
     : chunks.slice(0, 5).map((chunk) => ({ chunk, score: 0 }));
-}
-
-/** Builds a short snippet, centred on the first query term it can find. */
-export function buildReferenceSnippet(
-  text: string,
-  query: string,
-  maxLength = 360
-): string {
-  const normalized = text.replace(/\s+/g, " ").trim();
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  const terms = tokenize(query);
-  const lower = normalized.toLowerCase();
-  const matchIndex = terms.reduce((best, term) => {
-    const index = lower.indexOf(term);
-    return index > -1 && (best === -1 || index < best) ? index : best;
-  }, -1);
-
-  if (matchIndex === -1) {
-    return `${normalized.slice(0, maxLength - 3).trim()}...`;
-  }
-
-  const half = Math.floor(maxLength / 2);
-  const start = Math.max(0, matchIndex - half);
-  const end = Math.min(normalized.length, start + maxLength);
-  const prefix = start > 0 ? "..." : "";
-  const suffix = end < normalized.length ? "..." : "";
-  return `${prefix}${normalized.slice(start, end).trim()}${suffix}`;
 }
 
 /** Lowercased, de-duplicated, de-noised content terms of a string. */
