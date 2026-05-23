@@ -8,33 +8,15 @@ import type {
 } from "@/domain/services/speech-services";
 import type { EnvConfig } from "@/config/env.config";
 
-/**
- * OpenAI-backed voice services.
- *
- * Both report `isAvailable() === false` when no API key is set; the front-end
- * then falls back to the browser's native speech APIs.
- */
-
-function makeClient(apiKey: string): OpenAI | null {
-  return apiKey ? new OpenAI({ apiKey }) : null;
-}
-
 /** Text-to-speech via OpenAI (`/api/speak`). */
 export class OpenAiSpeechSynthesisService implements SpeechSynthesisService {
-  private readonly client: OpenAI | null;
+  private readonly client: OpenAI;
 
   constructor(private readonly config: EnvConfig) {
-    this.client = makeClient(config.OPENAI_API_KEY);
-  }
-
-  isAvailable(): boolean {
-    return this.client !== null;
+    this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
   }
 
   async synthesize(text: string, signal?: AbortSignal): Promise<SynthesizedSpeech> {
-    if (!this.client) {
-      throw new UpstreamError("Text-to-speech is not configured.");
-    }
     try {
       const response = await this.client.audio.speech.create(
         {
@@ -57,23 +39,16 @@ export class OpenAiSpeechSynthesisService implements SpeechSynthesisService {
 
 /** Speech-to-text via OpenAI (`/api/transcribe`). */
 export class OpenAiTranscriptionService implements TranscriptionService {
-  private readonly client: OpenAI | null;
+  private readonly client: OpenAI;
 
   constructor(private readonly config: EnvConfig) {
-    this.client = makeClient(config.OPENAI_API_KEY);
-  }
-
-  isAvailable(): boolean {
-    return this.client !== null;
+    this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
   }
 
   async transcribe(
     input: TranscriptionInput,
     signal?: AbortSignal
   ): Promise<string> {
-    if (!this.client) {
-      throw new UpstreamError("Transcription is not configured.");
-    }
     try {
       const file = await toFile(input.audio, input.filename, {
         type: input.contentType

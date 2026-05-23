@@ -4,8 +4,6 @@
  * Edit wording or tuning here — `openai-tutor.service.ts` handles only
  * transport, the tool loop, and streaming.
  */
-import type { Reference } from "@/domain/entities/chat";
-
 /** ISO 639-1 code → display name, used to pin the tutor's reply language. */
 export const LANGUAGE_NAMES: Record<string, string> = {
   ja: "Japanese",
@@ -165,16 +163,3 @@ export function buildTutorInstructions(title: string, language?: string): string
   ].join("\n");
 }
 
-/** Demo-mode answer used when no OpenAI key is configured on the server. */
-export function buildFallbackAnswer(reference: Reference | null): string {
-  const pageText = reference
-    ? `Take a look at page ${reference.pageNumber} of the document.`
-    : "I found the document, but could not pin a specific page yet.";
-
-  return [
-    "I can teach from this document in local demo mode.",
-    pageText,
-    "A simple way to understand it is to identify the main claim, then connect each detail back to that claim.",
-    "What part would you like me to slow down and explain next?"
-  ].join("\n\n");
-}

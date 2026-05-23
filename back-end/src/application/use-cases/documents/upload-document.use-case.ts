@@ -109,9 +109,6 @@ export class UploadDocumentUseCase {
     documentId: string,
     chunks: DocumentChunk[]
   ): Promise<void> {
-    if (!this.embeddings.isAvailable()) {
-      return;
-    }
     try {
       const vectors = await this.embeddings.embedTexts(
         chunks.map((chunk) => chunk.text)

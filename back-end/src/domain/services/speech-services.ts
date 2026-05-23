@@ -1,9 +1,4 @@
-/**
- * Voice I/O boundaries: text-to-speech and speech-to-text. Both are optional
- * capabilities — when no provider is configured, `isAvailable()` returns false
- * and the application surfaces a "not configured" response so the front-end
- * can fall back to the browser's built-in speech APIs.
- */
+/** Voice I/O boundaries: text-to-speech and speech-to-text. */
 
 /** A synthesized audio clip. */
 export interface SynthesizedSpeech {
@@ -13,7 +8,6 @@ export interface SynthesizedSpeech {
 
 /** Text-to-speech boundary. */
 export interface SpeechSynthesisService {
-  isAvailable(): boolean;
   /** Synthesizes a single sentence into an audio clip. */
   synthesize(text: string, signal?: AbortSignal): Promise<SynthesizedSpeech>;
 }
@@ -29,7 +23,6 @@ export interface TranscriptionInput {
 
 /** Speech-to-text boundary. */
 export interface TranscriptionService {
-  isAvailable(): boolean;
   /** Transcribes a recorded clip into text. */
   transcribe(input: TranscriptionInput, signal?: AbortSignal): Promise<string>;
 }

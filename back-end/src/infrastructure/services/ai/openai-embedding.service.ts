@@ -11,21 +11,15 @@ const BATCH_SIZE = 96;
  * background upload job) and learner queries (the `search_document` tool).
  */
 export class OpenAiEmbeddingService implements EmbeddingService {
-  private readonly client: OpenAI | null;
+  private readonly client: OpenAI;
 
   constructor(private readonly config: EnvConfig) {
-    this.client = config.OPENAI_API_KEY
-      ? new OpenAI({ apiKey: config.OPENAI_API_KEY })
-      : null;
-  }
-
-  isAvailable(): boolean {
-    return this.client !== null;
+    this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
   }
 
   async embedTexts(texts: string[]): Promise<(number[] | null)[]> {
-    if (!this.client || texts.length === 0) {
-      return texts.map(() => null);
+    if (texts.length === 0) {
+      return [];
     }
 
     // Split into API-sized batches and run them concurrently.
@@ -37,7 +31,7 @@ export class OpenAiEmbeddingService implements EmbeddingService {
     try {
       const responses = await Promise.all(
         batches.map((batch) =>
-          this.client!.embeddings.create({
+          this.client.embeddings.create({
             model: this.config.OPENAI_EMBEDDING_MODEL,
             input: batch
           })
@@ -53,9 +47,6 @@ export class OpenAiEmbeddingService implements EmbeddingService {
   }
 
   async embedQuery(query: string): Promise<number[] | null> {
-    if (!this.client) {
-      return null;
-    }
     const [embedding] = await this.embedTexts([query]);
     return embedding ?? null;
   }

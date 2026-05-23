@@ -5,13 +5,7 @@ import type { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/syn
 export class SpeechController {
   constructor(private readonly synthesizeSpeech: SynthesizeSpeechUseCase) {}
 
-  /**
-   * POST /api/speak — returns an audio clip for one sentence.
-   *
-   * When TTS is unconfigured the use case throws `NotConfiguredError` (501);
-   * the front-end treats any non-2xx response as "no server TTS" and falls
-   * back to the browser's speech synthesis.
-   */
+  /** POST /api/speak — returns an audio clip for one sentence. */
   speak = async (req: Request, res: Response): Promise<void> => {
     const controller = new AbortController();
     req.on("close", () => controller.abort());

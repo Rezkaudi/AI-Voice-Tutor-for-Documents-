@@ -9,14 +9,10 @@ import type {
 } from "@/domain/services/tutor-service";
 import type { EnvConfig } from "@/config/env.config";
 import {
-  buildFallbackAnswer,
   buildTutorInstructions,
   TUTOR_GENERATION,
   TUTOR_TOOLS
 } from "./tutor-prompts";
-
-/** Character batch size for streaming the local demo-mode answer. */
-const FALLBACK_STREAM_CHUNK = 36;
 
 /** A pending tool call surfaced by one response step. */
 interface PendingToolCall {
@@ -30,30 +26,22 @@ interface PendingToolCall {
  *
  * The model reads the document agentically: it calls `search_document` /
  * `get_page` / `get_outline`, we run each tool and feed the result back, and
- * loop until it produces spoken text. With no API key it streams a local demo
- * answer instead, so the app stays usable offline.
+ * loop until it produces spoken text.
  */
 export class OpenAiTutorService implements TutorService {
-  private readonly client: OpenAI | null;
+  private readonly client: OpenAI;
 
   constructor(
     private readonly config: EnvConfig,
     private readonly embeddings: EmbeddingService
   ) {
-    this.client = config.OPENAI_API_KEY
-      ? new OpenAI({ apiKey: config.OPENAI_API_KEY })
-      : null;
+    this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
   }
 
   async *streamReply(
     request: TutorReplyRequest,
     signal: AbortSignal
   ): AsyncGenerator<TutorStreamEvent> {
-    if (!this.client) {
-      yield* this.streamFallbackAnswer(request);
-      return;
-    }
-
     // Bind to keep `this` — a detached `responses.create` loses its client.
     const createResponse = this.client.responses.create.bind(
       this.client.responses
@@ -263,34 +251,6 @@ export class OpenAiTutorService implements TutorService {
     return { output: `Unknown tool: ${name}`, references: [] };
   }
 
-  /** Local demo answer used when no OpenAI key is configured. */
-  private async *streamFallbackAnswer(
-    request: TutorReplyRequest
-  ): AsyncGenerator<TutorStreamEvent> {
-    const firstChunk = request.chunks[0];
-    const reference: Reference | null = firstChunk
-      ? {
-          pageNumber: firstChunk.pageNumber,
-          chunkId: firstChunk.id
-        }
-      : null;
-
-    if (reference) {
-      yield { type: "reference", reference };
-    }
-
-    const answer = buildFallbackAnswer(reference);
-    for (
-      let index = 0;
-      index < answer.length;
-      index += FALLBACK_STREAM_CHUNK
-    ) {
-      yield {
-        type: "delta",
-        text: answer.slice(index, index + FALLBACK_STREAM_CHUNK)
-      };
-    }
-  }
 }
 
 /**

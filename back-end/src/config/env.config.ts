@@ -26,6 +26,14 @@ type EnvKey = keyof EnvConfig;
 
 const getEnv = (key: EnvKey): string | undefined => process.env[key];
 
+const requireEnv = (key: EnvKey): string => {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+};
+
 const csv = (value: string | undefined): string[] =>
   (value ?? "")
     .split(",")
@@ -48,7 +56,7 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   S3_ACCESS_KEY_ID: getEnv("S3_ACCESS_KEY_ID") || "",
   S3_SECRET_ACCESS_KEY: getEnv("S3_SECRET_ACCESS_KEY") || "",
 
-  OPENAI_API_KEY: getEnv("OPENAI_API_KEY") || "",
+  OPENAI_API_KEY: requireEnv("OPENAI_API_KEY"),
   OPENAI_TUTOR_MODEL: getEnv("OPENAI_TUTOR_MODEL") || "gpt-5.4-mini",
   OPENAI_TUTOR_MODEL_SAVE_COST:
     getEnv("OPENAI_TUTOR_MODEL_SAVE_COST") || "gpt-5-nano",

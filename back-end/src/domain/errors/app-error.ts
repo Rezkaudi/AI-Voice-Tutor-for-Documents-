@@ -53,13 +53,6 @@ export class PayloadTooLargeError extends AppError {
   }
 }
 
-/** A required capability (e.g. an AI provider) is not configured. */
-export class NotConfiguredError extends AppError {
-  constructor(message = "This capability is not configured on the server.") {
-    super(message, 501, "NOT_CONFIGURED");
-  }
-}
-
 /** A downstream dependency failed unexpectedly. */
 export class UpstreamError extends AppError {
   constructor(message = "An upstream service failed.") {

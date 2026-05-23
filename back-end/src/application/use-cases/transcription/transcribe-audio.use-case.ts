@@ -1,4 +1,4 @@
-import { NotConfiguredError, ValidationError } from "@/domain/errors/app-error";
+import { ValidationError } from "@/domain/errors/app-error";
 import type { TranscriptionService } from "@/domain/services/speech-services";
 
 /** A recorded clip submitted for transcription. */
@@ -17,9 +17,6 @@ export class TranscribeAudioUseCase {
     input: TranscribeAudioInput,
     signal?: AbortSignal
   ): Promise<{ text: string }> {
-    if (!this.transcription.isAvailable()) {
-      throw new NotConfiguredError("Transcription is not configured.");
-    }
     if (input.audio.length === 0) {
       throw new ValidationError("No audio was received.");
     }
