@@ -3,6 +3,7 @@ import { useState } from "react";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentSummary, UploadState } from "@/lib/types";
 import { DocumentLibrary } from "../DocumentLibrary";
+import { LoadingState } from "../DocumentLibrary/EmptyStates";
 import { DropZone } from "./DropZone";
 import { ProcessingState } from "./ProcessingState";
 
@@ -40,6 +41,14 @@ export function UploadPanel({
 
   if (uploadState === "processing") {
     return <ProcessingState surfaceClass={surface} />;
+  }
+
+  if (libraryLoading && library.length === 0) {
+    return (
+      <div className={surface}>
+        <LoadingState />
+      </div>
+    );
   }
 
   const hasLibrary = library.length > 0;
