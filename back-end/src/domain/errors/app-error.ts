@@ -46,13 +46,6 @@ export class UnprocessableEntityError extends AppError {
   }
 }
 
-/** The request body exceeded an allowed size. */
-export class PayloadTooLargeError extends AppError {
-  constructor(message = "The upload is too large.") {
-    super(message, 413, "PAYLOAD_TOO_LARGE");
-  }
-}
-
 /** A downstream dependency failed unexpectedly. */
 export class UpstreamError extends AppError {
   constructor(message = "An upstream service failed.") {

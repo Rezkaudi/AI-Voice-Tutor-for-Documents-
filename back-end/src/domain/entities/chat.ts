@@ -10,10 +10,6 @@ export interface ChatMessage {
   role: ChatRole;
   content: string;
 }
-
-/** Languages the tutor's reply can be pinned to. `""` means auto-detect. */
-export type SpeechLanguage = "ja" | "en" | "ar" | "";
-
 /**
  * A citation pointing the learner at the page the tutor is drawing from.
  * Mirrors the front-end `DocumentReference` shape (plus an optional chunk id).
