@@ -154,6 +154,14 @@ export class OpenAiTutorService implements TutorService {
             request,
             citedCandidates
           );
+          console.log(
+            "[tutor] citations for question:",
+            JSON.stringify(
+              { message: request.message, citations: reference?.citations ?? [] },
+              null,
+              2
+            )
+          );
           if (reference) {
             yield { type: "reference", reference };
           }
@@ -240,7 +248,7 @@ export class OpenAiTutorService implements TutorService {
           ? args.query
           : request.message;
       const embedding = await this.embeddings.embedQuery(query).catch(() => null);
-      const ranked = rankChunks(query, request.chunks, embedding).slice(0, 6);
+      const ranked = rankChunks(query, request.chunks, embedding).slice(0, 10);
       if (!ranked.length) {
         return {
           output: "No matching passages were found in the document.",
@@ -380,11 +388,26 @@ function recordCitations(
   return recorded;
 }
 
-/** One-line preview of a page, used by the get_outline tool. */
+/**
+ * Preview of a page for `get_outline`. Surfaces the first non-empty line (often
+ * the heading) and a short body snippet so the tutor can spot section
+ * boundaries — "Docker for React" vs. a random snippet on the same page.
+ */
 function previewLine(text: string): string {
-  const clean = text.replace(/\s+/g, " ").trim();
-  if (!clean) {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) {
     return "(empty page)";
   }
-  return clean.length > 140 ? `${clean.slice(0, 140)}...` : clean;
+  const heading = lines[0]!;
+  const body = lines.slice(1).join(" ").replace(/\s+/g, " ").trim();
+  const headingPart = heading.length > 120 ? `${heading.slice(0, 120)}...` : heading;
+  if (!body) {
+    return headingPart;
+  }
+  const bodyBudget = Math.max(40, 240 - headingPart.length);
+  const bodyPart = body.length > bodyBudget ? `${body.slice(0, bodyBudget)}...` : body;
+  return `${headingPart} — ${bodyPart}`;
 }
