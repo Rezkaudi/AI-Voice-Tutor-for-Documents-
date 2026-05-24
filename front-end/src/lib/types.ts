@@ -37,8 +37,16 @@ export interface LoadedDocument {
   fileUrl: string | null;
 }
 
+export interface DocumentCitation {
+  pageNumber: number;
+  start: number;
+  end: number;
+  quote: string;
+}
+
 export interface DocumentReference {
   pageNumber: number;
+  citations: DocumentCitation[];
 }
 
 export interface ChatMessage {

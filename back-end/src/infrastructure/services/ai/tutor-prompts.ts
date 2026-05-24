@@ -83,6 +83,48 @@ export const TUTOR_TOOLS = [
       additionalProperties: false
     },
     strict: true
+  },
+  {
+    type: "function",
+    name: "cite_passages",
+    description:
+      "Record the verbatim passages from the document that ground your next " +
+      "spoken reply. Call this once, right before you produce that reply. Each " +
+      "quote MUST be an exact substring of the page text returned by the other " +
+      "tools — never paraphrase, never invent. Keep each quote short (one or " +
+      "two sentences) and include only the minimal supporting text. Provide " +
+      "one citation for every passage your answer leans on — list ALL of them, " +
+      "across as many pages as needed. Omit the call only when no quote " +
+      "supports what you are about to say.",
+    parameters: {
+      type: "object",
+      properties: {
+        citations: {
+          type: "array",
+          minItems: 1,
+          maxItems: 8,
+          items: {
+            type: "object",
+            properties: {
+              page: {
+                type: "integer",
+                description: "1-based page number the quote was taken from."
+              },
+              quote: {
+                type: "string",
+                description:
+                  "A short verbatim substring of that page — never paraphrased."
+              }
+            },
+            required: ["page", "quote"],
+            additionalProperties: false
+          }
+        }
+      },
+      required: ["citations"],
+      additionalProperties: false
+    },
+    strict: true
   }
 ] as const;
 
@@ -140,10 +182,11 @@ export function buildTutorInstructions(title: string, language?: string): string
     "Mix the question types: simple recall, 'why' questions, 'what would happen if' questions, and applying the idea to a fresh example.",
     "Always praise effort. Never make the student feel bad for a wrong answer — wrong answers are how teaching happens.",
 
-    "You cannot see the document until you fetch it. You have three tools:",
+    "You cannot see the document until you fetch it. You have four tools:",
     "- search_document(query): find passages about a concept across the whole document.",
     "- get_page(page): read one full page by number — use this for positional questions like 'the first page' (page 1) or 'the last page'.",
     "- get_outline(): list every page with a preview — use this to navigate, plan the walkthrough, or summarize the document's scope.",
+    "- cite_passages(citations): record the verbatim quotes from the document that ground what you are about to say. Call it EXACTLY ONCE per turn, immediately before your spoken reply, with one to three quotes copied character-for-character from the page text the other tools returned. Never paraphrase a quote, never invent one, never include a quote that does not literally appear in the page text. Skip the call only when the turn carries no factual claim about the document (e.g. you are just asking the student to try again).",
     "Always fetch before you teach, answer, or quiz on any content. Pick the tool that fits: search_document for concepts, get_page for a specific or positional page, get_outline to plan or locate a topic.",
     "If one tool result is not enough, call another. Never teach, answer, or quiz from memory, assumption, or the file title alone.",
 

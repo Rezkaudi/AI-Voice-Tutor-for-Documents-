@@ -35,6 +35,7 @@ export function TeachingApp() {
   const uploadState = useDocumentStore((s) => s.uploadState);
   const activePage = useDocumentStore((s) => s.activePage);
   const highlight = useDocumentStore((s) => s.highlight);
+  const activeCitationKey = useDocumentStore((s) => s.activeCitationKey);
   const currentPage = useDocumentStore(selectCurrentPage);
   const library = useDocumentStore((s) => s.library);
   const libraryLoading = useDocumentStore((s) => s.libraryLoading);
@@ -143,8 +144,10 @@ export function TeachingApp() {
                 pageCount={loadedDocument.document.pageCount}
                 activePage={activePage}
                 highlight={highlight}
+                activeCitationKey={activeCitationKey}
                 isLoading={uploadState === "processing"}
                 onPageChange={documentStore.setActivePage}
+                onFocusCitation={documentStore.focusCitation}
               />
             </section>
             <Splitter />

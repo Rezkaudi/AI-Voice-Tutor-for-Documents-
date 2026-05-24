@@ -1,7 +1,12 @@
 import OpenAI from "openai";
-import type { Reference } from "@/domain/entities/chat";
+import type { Citation, Reference } from "@/domain/entities/chat";
 import type { EmbeddingService } from "@/domain/services/embedding-service";
 import { rankChunks } from "@/application/services/retrieval";
+import {
+  autoCiteFromAnswer,
+  resolveCitations,
+  type CitationCandidate
+} from "@/application/services/citations";
 import type {
   TutorReplyRequest,
   TutorService,
@@ -75,6 +80,8 @@ export class OpenAiTutorService implements TutorService {
     // reference is matched to the page the final answer actually cites.
     const referencesByPage = new Map<number, Reference>();
     let fallbackReference: Reference | null = null;
+    // Verbatim citations the model recorded via cite_passages this turn.
+    const citedCandidates: CitationCandidate[] = [];
 
     for (let step = 0; step < TUTOR_GENERATION.maxToolSteps; step += 1) {
       const stream = await createResponse(
@@ -144,7 +151,8 @@ export class OpenAiTutorService implements TutorService {
             stepText,
             referencesByPage,
             fallbackReference,
-            request
+            request,
+            citedCandidates
           );
           if (reference) {
             yield { type: "reference", reference };
@@ -156,6 +164,17 @@ export class OpenAiTutorService implements TutorService {
 
       pendingInput = [];
       for (const call of toolCalls) {
+        if (call.name === "cite_passages") {
+          const recorded = recordCitations(call.args, citedCandidates);
+          pendingInput.push({
+            type: "function_call_output",
+            call_id: call.callId,
+            output: recorded
+              ? `Recorded ${recorded} citation(s).`
+              : "No usable citations were recorded — quotes must be exact substrings of the page text."
+          });
+          continue;
+        }
         const result = await this.runTutorTool(call.name, call.args, request);
         for (const reference of result.references) {
           if (!referencesByPage.has(reference.pageNumber)) {
@@ -242,7 +261,8 @@ export class OpenAiTutorService implements TutorService {
         seenPages.add(item.chunk.pageNumber);
         references.push({
           pageNumber: item.chunk.pageNumber,
-          chunkId: item.chunk.id
+          chunkId: item.chunk.id,
+          citations: []
         });
       }
       return { output, references };
@@ -254,27 +274,53 @@ export class OpenAiTutorService implements TutorService {
 }
 
 /**
- * Chooses the reference to show — prefers the first page the answer explicitly
+ * Chooses the reference to show — prefers the page(s) of verbatim citations the
+ * model recorded via cite_passages, then the first page the answer explicitly
  * cites ("on page 4, ..."), falling back to the last tool's top hit.
  */
 function pickCitedReference(
   answer: string,
   referencesByPage: Map<number, Reference>,
   fallback: Reference | null,
-  request: TutorReplyRequest
+  request: TutorReplyRequest,
+  citedCandidates: ReadonlyArray<CitationCandidate>
 ): Reference | null {
+  const resolvedCitations = resolveCitations(citedCandidates, request.pages);
+
+  // Citations beat regex — when the model recorded verbatim quotes, anchor the
+  // jump to the page of the first one and attach every resolved span.
+  if (resolvedCitations.length > 0) {
+    const primaryPage = resolvedCitations[0]!.pageNumber;
+    const base = referencesByPage.get(primaryPage)
+      ?? buildPageReference(primaryPage, request)
+      ?? { pageNumber: primaryPage, citations: [] };
+    return { ...base, citations: resolvedCitations };
+  }
+
+  // The save-cost model often skips `cite_passages`. In that case pick a page
+  // (from the answer's regex or the last tool's top hit) and synthesise
+  // citations by ranking that page's sentences against the spoken answer, so
+  // the UI still highlights the supporting text.
+  let chosen: Reference | null = null;
   for (const match of answer.matchAll(/\bpages?\s+(\d+)\b/gi)) {
     const pageNumber = Number(match[1]);
-    const surfaced = referencesByPage.get(pageNumber);
-    if (surfaced) {
-      return surfaced;
-    }
-    const built = buildPageReference(pageNumber, request);
-    if (built) {
-      return built;
+    chosen = referencesByPage.get(pageNumber)
+      ?? buildPageReference(pageNumber, request);
+    if (chosen) break;
+  }
+  chosen ??= fallback;
+  if (!chosen) return null;
+
+  const page = request.pages.find(
+    (item) => item.pageNumber === chosen!.pageNumber
+  );
+  if (page) {
+    const auto = autoCiteFromAnswer(answer, page);
+    if (auto.length > 0) {
+      return { ...chosen, citations: auto };
     }
   }
-  return fallback;
+  return chosen;
 }
 
 /** Builds a page reference (number, chunk id) for one page number. */
@@ -286,7 +332,7 @@ function buildPageReference(
   if (!page) {
     return null;
   }
-  const reference: Reference = { pageNumber: page.pageNumber };
+  const reference: Reference = { pageNumber: page.pageNumber, citations: [] };
   const chunkId = request.chunks.find(
     (chunk) => chunk.pageNumber === page.pageNumber
   )?.id;
@@ -294,6 +340,44 @@ function buildPageReference(
     reference.chunkId = chunkId;
   }
   return reference;
+}
+
+/** Parses a cite_passages tool call and appends its quotes to the buffer. */
+function recordCitations(
+  rawArgs: string,
+  buffer: CitationCandidate[]
+): number {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawArgs || "{}");
+  } catch {
+    return 0;
+  }
+  if (!parsed || typeof parsed !== "object") {
+    return 0;
+  }
+  const list = (parsed as { citations?: unknown }).citations;
+  if (!Array.isArray(list)) {
+    return 0;
+  }
+  let recorded = 0;
+  for (const entry of list) {
+    if (!entry || typeof entry !== "object") {
+      continue;
+    }
+    const page = Number((entry as { page?: unknown }).page);
+    const quoteRaw = (entry as { quote?: unknown }).quote;
+    if (!Number.isInteger(page) || page < 1 || typeof quoteRaw !== "string") {
+      continue;
+    }
+    const quote = quoteRaw.trim();
+    if (!quote) {
+      continue;
+    }
+    buffer.push({ pageNumber: page, quote });
+    recorded += 1;
+  }
+  return recorded;
 }
 
 /** One-line preview of a page, used by the get_outline tool. */

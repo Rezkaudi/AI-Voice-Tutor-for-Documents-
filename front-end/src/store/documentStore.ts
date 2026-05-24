@@ -7,6 +7,7 @@ import {
 } from "@/services/documentsApi";
 import { useSessionStore } from "./sessionStore";
 import type {
+  DocumentCitation,
   DocumentPage,
   DocumentReference,
   DocumentSummary,
@@ -21,11 +22,14 @@ interface DocumentStore {
   uploadState: UploadState;
   activePage: number;
   highlight: DocumentReference | null;
+  /** Stable key of the citation currently highlighted in the viewer. */
+  activeCitationKey: string | null;
   library: DocumentSummary[];
   libraryLoading: boolean;
   deletingId: string | null;
   setActivePage: (activePage: number) => void;
   applyReference: (reference: DocumentReference | null) => void;
+  focusCitation: (citation: DocumentCitation) => void;
   uploadFile: (file: File | null) => Promise<void>;
   loadLibrary: () => Promise<void>;
   selectDocument: (documentId: string) => Promise<void>;
@@ -43,17 +47,29 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   uploadState: "idle",
   activePage: 1,
   highlight: null,
+  activeCitationKey: null,
   library: [],
   libraryLoading: false,
   deletingId: null,
 
-  setActivePage: (activePage) => set({ activePage }),
+  setActivePage: (activePage) => set({ activePage, activeCitationKey: null }),
 
   applyReference: (reference) => {
-    set({ highlight: reference });
+    const firstCitation = reference?.citations[0] ?? null;
+    set({
+      highlight: reference,
+      activeCitationKey: firstCitation ? citationKey(firstCitation) : null
+    });
     if (reference) {
       set({ activePage: reference.pageNumber });
     }
+  },
+
+  focusCitation: (citation) => {
+    set({
+      activePage: citation.pageNumber,
+      activeCitationKey: citationKey(citation)
+    });
   },
 
   loadLibrary: async () => {
@@ -75,7 +91,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     if (get().loadedDocument?.document.id === documentId) {
       return;
     }
-    set({ uploadState: "processing", highlight: null });
+    set({ uploadState: "processing", highlight: null, activeCitationKey: null });
     useSessionStore.getState().setError(null);
     try {
       const data = await fetchDocument(documentId);
@@ -99,7 +115,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       return;
     }
 
-    set({ uploadState: "processing", highlight: null });
+    set({ uploadState: "processing", highlight: null, activeCitationKey: null });
     useSessionStore.getState().setError(null);
 
     try {
@@ -131,7 +147,12 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
         window.localStorage.removeItem(LAST_DOC_KEY);
       }
       if (get().loadedDocument?.document.id === documentId) {
-        set({ loadedDocument: null, highlight: null, activePage: 1 });
+        set({
+          loadedDocument: null,
+          highlight: null,
+          activePage: 1,
+          activeCitationKey: null
+        });
       }
     } catch (error) {
       useSessionStore
@@ -147,6 +168,11 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     await get().loadLibrary();
   }
 }));
+
+/** Stable identifier for one citation across its lifetime. */
+export function citationKey(citation: DocumentCitation): string {
+  return `${citation.pageNumber}:${citation.start}:${citation.end}`;
+}
 
 /** Derives the page object for the active page number. */
 export function selectCurrentPage(state: DocumentStore): DocumentPage | null {
