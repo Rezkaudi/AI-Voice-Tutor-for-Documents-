@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
-import "@/lib/pdfWorker";
+import { pdfjs } from "@/lib/pdfWorker";
+import "pdfjs-dist/web/pdf_viewer.css";
 import type {
   PDFDocumentProxy,
   RenderTask
@@ -40,12 +41,15 @@ export function PdfPage({
   focusCitationKey
 }: PdfPageProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const textLayerRef = useRef<HTMLDivElement | null>(null);
   const focusRef = useRef<HTMLDivElement | null>(null);
   const [rendered, setRendered] = useState<RenderedPage | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     let renderTask: RenderTask | null = null;
+    let textLayer: { cancel: () => void } | null = null;
+    let cleanupSelection: (() => void) | null = null;
 
     async function render(): Promise<void> {
       const page = await pdf.getPage(pageNumber);
@@ -79,6 +83,39 @@ export function PdfPage({
       });
 
       if (cancelled) return;
+
+      const textContainer = textLayerRef.current;
+      if (textContainer) {
+        textContainer.replaceChildren();
+        textContainer.style.setProperty("--scale-factor", String(viewport.scale));
+        textContainer.style.width = `${viewport.width}px`;
+        textContainer.style.height = `${viewport.height}px`;
+        const layer = new pdfjs.TextLayer({
+          textContentSource: content,
+          container: textContainer,
+          viewport
+        });
+        textLayer = layer;
+        layer.render().catch(() => null);
+      }
+
+      // pdfjs's bare TextLayer paints absolutely-positioned spans but does NOT
+      // wire up the selection-bounds behavior that lives in TextLayerBuilder.
+      // Without these handlers + the .endOfContent element (which pdfjs already
+      // appends), dragging across two spans selects every span in between in
+      // DOM order — so a 2-line drag visually grabs the whole page. Toggling
+      // the `selecting` class activates the pdf_viewer.css rules that clamp
+      // selection to the cursor's actual region.
+      const textContainerEl = textLayerRef.current;
+      const onMouseDown = () => textContainerEl?.classList.add("selecting");
+      const onMouseUp = () => textContainerEl?.classList.remove("selecting");
+      textContainerEl?.addEventListener("mousedown", onMouseDown);
+      document.addEventListener("mouseup", onMouseUp);
+      cleanupSelection = () => {
+        textContainerEl?.removeEventListener("mousedown", onMouseDown);
+        document.removeEventListener("mouseup", onMouseUp);
+      };
+
       setRendered({
         placed,
         cssWidth: viewport.width,
@@ -91,6 +128,8 @@ export function PdfPage({
     return () => {
       cancelled = true;
       renderTask?.cancel();
+      textLayer?.cancel();
+      cleanupSelection?.();
     };
   }, [pdf, pageNumber, fitWidth]);
 
@@ -117,6 +156,11 @@ export function PdfPage({
           focusCitationKey={focusCitationKey ?? null}
         />
       ) : null}
+      <div
+        ref={textLayerRef}
+        className="textLayer absolute inset-0"
+        style={{ cursor: "text" }}
+      />
     </div>
   );
 }
