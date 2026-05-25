@@ -82,7 +82,7 @@ export function PdfViewer({
       ) : null}
       {pdf && fitWidth > 0 ? (
         <PdfPage
-          key={`${pdf.fingerprints?.[0] ?? "doc"}-${page}-${fitWidth}`}
+          key={pdf.fingerprints?.[0] ?? "doc"}
           pdf={pdf}
           pageNumber={page}
           fitWidth={fitWidth}
