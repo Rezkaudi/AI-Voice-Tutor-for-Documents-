@@ -92,7 +92,7 @@ export interface SpeechCaption {
 }
 
 export interface SpeechSession {
-  push: (sentence: string) => void;
+  push: (sentence: string, onPlaybackStart?: (durationMs: number) => void) => void;
   finished: () => Promise<void>;
 }
 

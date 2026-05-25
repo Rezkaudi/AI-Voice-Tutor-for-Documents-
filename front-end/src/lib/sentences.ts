@@ -21,15 +21,54 @@ export function extractSentences(buffer: string): { sentences: string[]; consume
       continue;
     }
 
-    const piece = buffer.slice(start, index + 1).trim();
+    // The tutor places [[N]] citation markers AFTER the terminating period —
+    // pull any trailing markers (and the whitespace between them) into this
+    // sentence so playback sync can read which citation it grounds. Bail if
+    // the buffer ends mid-marker so we don't commit a half-streamed `[[1`.
+    const absorbed = absorbTrailingMarkers(buffer, index + 1);
+    if (absorbed === null) {
+      break;
+    }
+    const end = absorbed;
+
+    const piece = buffer.slice(start, end).trim();
     if (piece.length >= MIN_SENTENCE_LENGTH) {
       sentences.push(piece);
-      start = index + 1;
-      consumed = index + 1;
+      start = end;
+      consumed = end;
+      index = end - 1;
     }
   }
 
   return { sentences, consumed };
+}
+
+/**
+ * Skip past any trailing `[[N]]` markers (and the whitespace between them).
+ * Returns the index after the last absorbed marker, or null if the buffer
+ * may still be hiding an incoming marker — the tutor places markers AFTER
+ * the period, so committing too early would attach the marker to the next
+ * sentence and mis-sync per-sentence focus.
+ */
+function absorbTrailingMarkers(buffer: string, from: number): number | null {
+  let cursor = from;
+  for (;;) {
+    let next = cursor;
+    while (next < buffer.length && (buffer[next] === " " || buffer[next] === "\t")) {
+      next += 1;
+    }
+    // Ran out of stream after the boundary — a marker may be on the way.
+    if (next >= buffer.length) return null;
+    if (buffer[next] !== "[") return cursor;
+    // Saw `[` but the second `[` hasn't streamed yet — wait, don't commit.
+    if (next + 1 >= buffer.length) return null;
+    if (buffer[next + 1] !== "[") return cursor;
+    const close = buffer.indexOf("]]", next + 2);
+    if (close === -1) return null;
+    const inside = buffer.slice(next + 2, close);
+    if (!/^\d+$/.test(inside)) return cursor;
+    cursor = close + 2;
+  }
 }
 
 function isSentenceBoundary(buffer: string, index: number): boolean {

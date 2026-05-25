@@ -7,6 +7,7 @@ interface SynthDeps {
   isStale: () => boolean;
   caption: CaptionController;
   onSpeakingChange: (speaking: boolean) => void;
+  onStart?: (durationMs: number) => void;
 }
 
 /** Browser SpeechSynthesis fallback used when server TTS is unavailable. */
@@ -14,7 +15,8 @@ export function playWithSpeechSynthesis({
   text,
   isStale,
   caption,
-  onSpeakingChange
+  onSpeakingChange,
+  onStart
 }: SynthDeps): Promise<void> {
   return new Promise<void>((resolve) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window) || isStale()) {
@@ -36,10 +38,12 @@ export function playWithSpeechSynthesis({
       resolve();
     };
 
+    const estimatedMs = words.length * ESTIMATED_WORD_SECONDS * 1000;
     utterance.onstart = () => {
       onSpeakingChange(true);
       // The browser reports real word boundaries; estimate as a safety net only.
-      caption.reveal(segmented, words.length * ESTIMATED_WORD_SECONDS * 1000, "teacher");
+      caption.reveal(segmented, estimatedMs, "teacher");
+      onStart?.(estimatedMs);
     };
     // Boundary events give exact word timing — far better than the estimate.
     utterance.onboundary = (event) => {

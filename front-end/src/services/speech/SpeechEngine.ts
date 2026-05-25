@@ -51,7 +51,7 @@ export class SpeechEngine {
     let chain: Promise<void> = Promise.resolve();
     const onSpeakingChange = (value: boolean) => this.onSpeakingChange(value);
 
-    const push = (sentence: string) => {
+    const push = (sentence: string, onPlaybackStart?: (durationMs: number) => void) => {
       const text = sentence.trim().slice(0, MAX_TTS_CHARS);
       if (!text) return;
 
@@ -65,6 +65,12 @@ export class SpeechEngine {
         const blob = await clip;
         if (isStale()) return;
 
+        const onStart = onPlaybackStart
+          ? (durationMs: number) => {
+              if (!isStale()) onPlaybackStart(durationMs);
+            }
+          : undefined;
+
         if (blob) {
           await playAudioClip({
             audio: (this.audio ??= new Audio()),
@@ -72,7 +78,8 @@ export class SpeechEngine {
             text,
             isStale,
             caption: this.caption,
-            onSpeakingChange
+            onSpeakingChange,
+            onStart
           });
         } else {
           // Fall back to browser speech if server TTS is unavailable (no API key).
@@ -80,7 +87,8 @@ export class SpeechEngine {
             text,
             isStale,
             caption: this.caption,
-            onSpeakingChange
+            onSpeakingChange,
+            onStart
           });
         }
       });
