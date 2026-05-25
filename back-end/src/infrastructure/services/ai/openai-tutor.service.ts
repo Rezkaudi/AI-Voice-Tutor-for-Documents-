@@ -154,18 +154,25 @@ export class OpenAiTutorService implements TutorService {
             request,
             citedCandidates
           );
+          // Align inline [[N]] markers with the citations panel: drop any
+          // citation the answer never references, renumber the remaining
+          // markers contiguously, and emit the reconciled text.
+          const aligned = reconcileMarkersWithCitations(stepText, reference);
           console.log(
             "[tutor] citations for question:",
             JSON.stringify(
-              { message: request.message, citations: reference?.citations ?? [] },
+              {
+                message: request.message,
+                citations: aligned.reference?.citations ?? []
+              },
               null,
               2
             )
           );
-          if (reference) {
-            yield { type: "reference", reference };
+          if (aligned.reference) {
+            yield { type: "reference", reference: aligned.reference };
           }
-          yield { type: "delta", text: stepText };
+          yield { type: "delta", text: aligned.text };
         }
         return;
       }
@@ -279,6 +286,50 @@ export class OpenAiTutorService implements TutorService {
     return { output: `Unknown tool: ${name}`, references: [] };
   }
 
+}
+
+/**
+ * Keeps the inline [[N]] markers and the citations panel in lockstep.
+ *
+ * The model can record more citations than it actually marks in the text
+ * (e.g. 5 in `cite_passages`, but only `[[1]]` and `[[2]]` appear in the
+ * answer). When that happens the side panel ends up showing 5 references the
+ * student can never click — confusing. We drop unreferenced citations and
+ * renumber the surviving ones to `[[1]]…[[K]]` so text and panel match.
+ */
+function reconcileMarkersWithCitations(
+  text: string,
+  reference: Reference | null
+): { text: string; reference: Reference | null } {
+  if (!reference || reference.citations.length === 0) {
+    return { text, reference };
+  }
+  const used: number[] = [];
+  for (const m of text.matchAll(/\[\[(\d+)\]\]/g)) {
+    const n = Number(m[1]);
+    if (
+      Number.isFinite(n) &&
+      n >= 1 &&
+      n <= reference.citations.length &&
+      !used.includes(n)
+    ) {
+      used.push(n);
+    }
+  }
+  const remap = new Map<number, number>();
+  used.forEach((oldIdx, i) => remap.set(oldIdx, i + 1));
+  // Always rewrite so any out-of-range marker (e.g. [[5]] when only 4
+  // citations were recorded) is stripped, even if the kept markers happen
+  // to already form a contiguous 1..K sequence.
+  const remappedText = text.replace(/\[\[(\d+)\]\]/g, (_, raw) => {
+    const next = remap.get(Number(raw));
+    return next ? `[[${next}]]` : "";
+  });
+  const remappedCitations = used.map((oldIdx) => reference.citations[oldIdx - 1]!);
+  return {
+    text: remappedText,
+    reference: { ...reference, citations: remappedCitations }
+  };
 }
 
 /**

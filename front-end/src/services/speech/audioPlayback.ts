@@ -9,6 +9,7 @@ interface PlayClipDeps {
   isStale: () => boolean;
   caption: CaptionController;
   onSpeakingChange: (speaking: boolean) => void;
+  onStart?: (durationMs: number) => void;
 }
 
 export function playAudioClip({
@@ -17,7 +18,8 @@ export function playAudioClip({
   text,
   isStale,
   caption,
-  onSpeakingChange
+  onSpeakingChange,
+  onStart
 }: PlayClipDeps): Promise<void> {
   return new Promise<void>((resolve) => {
     revokeBlobUrl(audio.src);
@@ -40,6 +42,7 @@ export function playAudioClip({
           ? audio.duration
           : segmented.words.length * ESTIMATED_WORD_SECONDS;
       caption.reveal(segmented, seconds * 1000, "teacher");
+      onStart?.(seconds * 1000);
     };
     audio.onended = finish;
     audio.onerror = finish;
