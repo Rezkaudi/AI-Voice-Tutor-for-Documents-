@@ -5,12 +5,10 @@ import { cx, ui } from "@/lib/uiClasses";
 
 interface DropZoneProps {
   onFile: (file: File | null) => void;
-  showCancel: boolean;
-  onCancel?: () => void;
 }
 
 /** Drag-and-drop / file-picker zone for a single document upload. */
-export function DropZone({ onFile, showCancel, onCancel }: DropZoneProps) {
+export function DropZone({ onFile }: DropZoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -19,10 +17,20 @@ export function DropZone({ onFile, showCancel, onCancel }: DropZoneProps) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const openPicker = () => fileInputRef.current?.click();
+
   return (
-    <div
+    <button
+      type="button"
+      onClick={openPicker}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openPicker();
+        }
+      }}
       className={cx(
-        "grid min-h-[180px] place-items-center gap-3 rounded-lg border border-dashed border-[oklch(0.66_0.035_154)] bg-[oklch(0.965_0.018_138)] p-[clamp(16px,4vw,28px)] text-center transition-[background,border-color,transform] duration-160 ease-out",
+        "grid w-full min-h-[180px] cursor-pointer place-items-center gap-3 rounded-lg border border-dashed border-[oklch(0.66_0.035_154)] bg-[oklch(0.965_0.018_138)] p-[clamp(16px,4vw,28px)] text-center transition-[background,border-color,transform] duration-160 ease-out hover:border-accent hover:bg-[oklch(0.93_0.05_154)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         isDragOver && "scale-[1.01] border-accent bg-[oklch(0.93_0.05_154)]"
       )}
       onDragOver={(event) => {
@@ -37,29 +45,17 @@ export function DropZone({ onFile, showCancel, onCancel }: DropZoneProps) {
       }}
     >
       <UploadCloud size={36} aria-hidden />
-      <p className="m-0 text-[0.92rem] text-muted">Drop a file here, or</p>
-      <div className={ui.buttonRow}>
-        <button
-          type="button"
-          className={cx(ui.button, ui.buttonPrimary)}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <UploadCloud size={18} aria-hidden />
-          Choose file
-        </button>
-        {showCancel ? (
-          <button type="button" className={ui.button} onClick={onCancel}>
-            Cancel
-          </button>
-        ) : null}
-      </div>
+      <p className="m-0 text-[0.92rem] text-muted">
+        Drop a file here, or <span className="font-[650] text-ink underline">choose file</span>
+      </p>
       <input
         ref={fileInputRef}
         className="sr-only"
         type="file"
         accept={ACCEPTED_UPLOAD_TYPES}
+        onClick={(event) => event.stopPropagation()}
         onChange={(event) => handleFile(event.target.files?.item(0) ?? null)}
       />
-    </div>
+    </button>
   );
 }
