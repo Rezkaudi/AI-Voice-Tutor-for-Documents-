@@ -139,15 +139,20 @@ export function PdfPage({
     }
   }, [focusCitationKey, rendered]);
 
+  const aspect = rendered ? rendered.cssHeight / rendered.cssWidth : 1.3;
   return (
     <div
       className="relative mx-auto"
       style={{
-        width: rendered?.cssWidth ?? fitWidth,
-        height: rendered?.cssHeight ?? Math.floor(fitWidth * 1.3)
+        width: fitWidth,
+        height: Math.floor(fitWidth * aspect)
       }}
     >
-      <canvas ref={canvasRef} className="block bg-white shadow-md" />
+      <canvas
+        ref={canvasRef}
+        className="block bg-white shadow-md"
+        style={{ width: "100%", height: "100%" }}
+      />
       {rendered ? (
         <HighlightLayer
           placed={rendered.placed}
