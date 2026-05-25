@@ -13,7 +13,8 @@ export function renderMessageBody(
 ): ReactNode[] {
   const cleaned = content
     .replace(/\*\*(.+?)\*\*/g, "$1")
-    .replace(/(^|\W)\*(.+?)\*(?=\W|$)/g, "$1$2");
+    .replace(/(^|\W)\*(.+?)\*(?=\W|$)/g, "$1$2")
+    .replace(/(\[\[\d+\]\])(?:[\s,]*\[\[\d+\]\])+/g, "$1");
 
   return cleaned.split(/\n{2,}/).map((paragraph, paragraphIndex) => (
     <p key={paragraphIndex}>{renderWithCitations(paragraph, citations)}</p>
