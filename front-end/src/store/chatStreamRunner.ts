@@ -37,7 +37,10 @@ export async function runChatStream({
       const { sentences, consumed } = extractSentences(assistantText.slice(spokenChars));
       if (consumed > 0) {
         spokenChars += consumed;
-        sentences.forEach((sentence) => speechSession.push(sentence));
+        sentences.forEach((sentence) => {
+          const spoken = stripCitationMarkers(sentence);
+          if (spoken) speechSession.push(spoken);
+        });
       }
       return;
     }
@@ -47,9 +50,14 @@ export async function runChatStream({
     }
   });
 
-  const tail = assistantText.slice(spokenChars).trim();
+  const tail = stripCitationMarkers(assistantText.slice(spokenChars)).trim();
   if (tail) speechSession.push(tail);
   await speechSession.finished();
 
   return assistantText;
+}
+
+/** [[N]] reference markers are visual-only — strip before sending to TTS. */
+function stripCitationMarkers(text: string): string {
+  return text.replace(/\[\[\d+\]\]/g, "").replace(/[ \t]{2,}/g, " ");
 }

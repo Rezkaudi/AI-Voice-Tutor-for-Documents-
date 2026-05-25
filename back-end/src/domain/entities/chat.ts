@@ -11,10 +11,23 @@ export interface ChatMessage {
   content: string;
 }
 /**
- * A citation pointing the learner at the page the tutor is drawing from.
- * Mirrors the front-end `DocumentReference` shape (plus an optional chunk id).
+ * One verbatim passage the tutor's answer is grounded in. `start`/`end` are
+ * character offsets into that page's extracted text — the front-end maps them
+ * onto the PDF.js text layer to draw a NotebookLM-style highlight.
+ */
+export interface Citation {
+  pageNumber: number;
+  start: number;
+  end: number;
+  quote: string;
+}
+
+/**
+ * A citation pointing the learner at the page the tutor is drawing from. The
+ * UI jumps to `pageNumber` and lights up every span listed in `citations`.
  */
 export interface Reference {
   pageNumber: number;
   chunkId?: string;
+  citations: Citation[];
 }

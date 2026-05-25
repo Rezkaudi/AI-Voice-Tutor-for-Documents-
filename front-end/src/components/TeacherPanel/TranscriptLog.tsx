@@ -47,7 +47,7 @@ function TranscriptBubble({ message }: { message: ChatMessage }) {
       )}
     >
       {message.content ? (
-        renderMessageBody(message.content)
+        renderMessageBody(message.content, message.reference?.citations ?? [])
       ) : assistant ? (
         <TypingDots />
       ) : (
