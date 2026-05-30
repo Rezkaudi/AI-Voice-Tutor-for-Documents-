@@ -73,6 +73,7 @@ export class Server {
     });
   }
 
+  /** Exposes the configured app without binding a port — the seam for supertest integration tests. */
   public getApp(): Application {
     return this.app;
   }

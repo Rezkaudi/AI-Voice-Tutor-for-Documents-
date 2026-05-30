@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { Citation, Reference } from "@/domain/entities/chat";
+import type { Reference } from "@/domain/entities/chat";
 import type { EmbeddingService } from "@/domain/services/embedding-service";
 import { rankChunks } from "@/application/services/retrieval";
 import {
@@ -158,17 +158,6 @@ export class OpenAiTutorService implements TutorService {
           // citation the answer never references, renumber the remaining
           // markers contiguously, and emit the reconciled text.
           const aligned = reconcileMarkersWithCitations(stepText, reference);
-          console.log(
-            "[tutor] citations for question:",
-            JSON.stringify(
-              {
-                message: request.message,
-                citations: aligned.reference?.citations ?? []
-              },
-              null,
-              2
-            )
-          );
           if (aligned.reference) {
             yield { type: "reference", reference: aligned.reference };
           }

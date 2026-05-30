@@ -1,6 +1,9 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
+// Relative path (not the `@/` alias): the TypeORM CLI loads this file without
+// the tsconfig path-resolution that the running app gets via tsc-alias/tsx.
 import { ENV_CONFIG } from "../../config/env.config";
+import { logger } from "../../shared/logger";
 
 /**
  * The single TypeORM `DataSource`, used by the running application and the
@@ -21,12 +24,12 @@ export const initializeDatabase = async (): Promise<DataSource> => {
   try {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
-      console.log("✅ Database connection established");
+      logger.info("Database connection established.");
     }
 
     return AppDataSource;
   } catch (error) {
-    console.error("❌ Database connection failed:", error);
+    logger.error("Database connection failed", error);
     throw error;
   }
 };
