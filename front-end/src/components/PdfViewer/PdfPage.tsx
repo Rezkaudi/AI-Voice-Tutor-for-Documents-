@@ -68,7 +68,7 @@ export function PdfPage({
       if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      renderTask = page.render({ canvasContext: ctx, viewport });
+      renderTask = page.render({ canvas, canvasContext: ctx, viewport });
       await renderTask.promise.catch(() => null);
       if (cancelled) return;
 
