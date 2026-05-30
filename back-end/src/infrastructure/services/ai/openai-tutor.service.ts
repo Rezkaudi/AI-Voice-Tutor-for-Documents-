@@ -2,22 +2,10 @@ import OpenAI from "openai";
 import type { Reference } from "@/domain/entities/chat";
 import type { EmbeddingService } from "@/domain/services/embedding-service";
 import { rankChunks } from "@/application/services/retrieval";
-import {
-  autoCiteFromAnswer,
-  resolveCitations,
-  type CitationCandidate
-} from "@/application/services/citations";
-import type {
-  TutorReplyRequest,
-  TutorService,
-  TutorStreamEvent
-} from "@/domain/services/tutor-service";
+import { autoCiteFromAnswer, resolveCitations, type CitationCandidate } from "@/application/services/citations";
+import type { TutorReplyRequest, TutorService, TutorStreamEvent } from "@/domain/services/tutor-service";
+import { buildTutorInstructions, TUTOR_GENERATION, TUTOR_TOOLS } from "./tutor-prompts";
 import type { EnvConfig } from "@/config/env.config";
-import {
-  buildTutorInstructions,
-  TUTOR_GENERATION,
-  TUTOR_TOOLS
-} from "./tutor-prompts";
 
 /** A pending tool call surfaced by one response step. */
 interface PendingToolCall {

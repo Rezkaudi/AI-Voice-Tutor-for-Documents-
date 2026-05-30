@@ -2,10 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { asyncHandler } from "@/infrastructure/http/middleware/async-handler";
 import type { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
-import {
-  documentIdParamValidation,
-  uploadDocumentValidation
-} from "@/infrastructure/http/validations/document.validation";
+import { documentIdParamValidation, uploadDocumentValidation } from "@/infrastructure/http/validations/document.validation";
 
 const DOCUMENT_LIMIT_BYTES = 25 * 1024 * 1024;
 

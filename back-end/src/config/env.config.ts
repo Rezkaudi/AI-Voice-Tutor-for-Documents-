@@ -47,8 +47,7 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   CORS_ORIGINS: csv(getEnv("CORS_ORIGINS")),
 
   DATABASE_URL: getEnv("DATABASE_URL") || "",
-  DB_SYNCHRONIZE:
-    getEnv("DB_SYNCHRONIZE") === "true" || getEnv("DB_SYNCHRONIZE") === "1",
+  DB_SYNCHRONIZE: getEnv("DB_SYNCHRONIZE") === "true" || getEnv("DB_SYNCHRONIZE") === "1",
   DB_LOGGING: getEnv("DB_LOGGING") === "true" || getEnv("DB_LOGGING") === "1",
 
   S3_BUCKET: getEnv("S3_BUCKET") || "",
@@ -57,13 +56,11 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   S3_SECRET_ACCESS_KEY: getEnv("S3_SECRET_ACCESS_KEY") || "",
 
   OPENAI_API_KEY: requireEnv("OPENAI_API_KEY"),
+
   OPENAI_TUTOR_MODEL: getEnv("OPENAI_TUTOR_MODEL") || "gpt-5.4-mini",
-  OPENAI_TUTOR_MODEL_SAVE_COST:
-    getEnv("OPENAI_TUTOR_MODEL_SAVE_COST") || "gpt-5-nano",
-  OPENAI_EMBEDDING_MODEL:
-    getEnv("OPENAI_EMBEDDING_MODEL") || "text-embedding-3-small",
-  OPENAI_TRANSCRIBE_MODEL:
-    getEnv("OPENAI_TRANSCRIBE_MODEL") || "gpt-4o-mini-transcribe",
+  OPENAI_TUTOR_MODEL_SAVE_COST: getEnv("OPENAI_TUTOR_MODEL_SAVE_COST") || "gpt-5-nano",
+  OPENAI_EMBEDDING_MODEL: getEnv("OPENAI_EMBEDDING_MODEL") || "text-embedding-3-small",
+  OPENAI_TRANSCRIBE_MODEL: getEnv("OPENAI_TRANSCRIBE_MODEL") || "gpt-4o-mini-transcribe",
   OPENAI_SPEECH_MODEL: getEnv("OPENAI_SPEECH_MODEL") || "gpt-4o-mini-tts",
   OPENAI_SPEECH_VOICE: getEnv("OPENAI_SPEECH_VOICE") || "alloy"
 });
