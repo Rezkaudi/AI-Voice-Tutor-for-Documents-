@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { pdfjs } from "@/lib/pdfWorker";
+import { pdfjs, pdfjsWasmUrl } from "@/lib/pdfWorker";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { DocumentCitation } from "@/lib/types";
 import { PdfPage } from "./PdfPage";
@@ -37,7 +37,11 @@ export function PdfViewer({
     let cancelled = false;
     setPdf(null);
     setError(null);
-    const task = pdfjs.getDocument({ url: fileUrl, withCredentials: true });
+    const task = pdfjs.getDocument({
+      url: fileUrl,
+      withCredentials: true,
+      wasmUrl: pdfjsWasmUrl
+    });
     task.promise
       .then((doc) => {
         if (cancelled) {
