@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import type { Reference } from "@/domain/entities/chat";
 import type { EmbeddingService } from "@/domain/services/embedding-service";
-import { rankChunks } from "@/application/services/retrieval";
-import { autoCiteFromAnswer, resolveCitations, type CitationCandidate } from "@/application/services/citations";
+import type { ChunkRanker } from "@/domain/logic/chunk-ranker";
+import type { CitationResolver, CitationCandidate } from "@/domain/logic/citation-resolver";
 import type { TutorReplyRequest, TutorService, TutorStreamEvent } from "@/domain/services/tutor-service";
 import { buildTutorInstructions, TUTOR_GENERATION, TUTOR_TOOLS } from "./tutor-prompts";
 import type { EnvConfig } from "@/config/env.config";
@@ -26,7 +26,9 @@ export class OpenAiTutorService implements TutorService {
 
   constructor(
     private readonly config: EnvConfig,
-    private readonly embeddings: EmbeddingService
+    private readonly embeddings: EmbeddingService,
+    private readonly ranker: ChunkRanker,
+    private readonly citations: CitationResolver
   ) {
     this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
   }
@@ -140,7 +142,8 @@ export class OpenAiTutorService implements TutorService {
             referencesByPage,
             fallbackReference,
             request,
-            citedCandidates
+            citedCandidates,
+            this.citations
           );
           // Align inline [[N]] markers with the citations panel: drop any
           // citation the answer never references, renumber the remaining
@@ -232,7 +235,7 @@ export class OpenAiTutorService implements TutorService {
           ? args.query
           : request.message;
       const embedding = await this.embeddings.embedQuery(query).catch(() => null);
-      const ranked = rankChunks(query, request.chunks, embedding).slice(0, 10);
+      const ranked = this.ranker.rank(query, request.chunks, embedding).slice(0, 10);
       if (!ranked.length) {
         return {
           output: "No matching passages were found in the document.",
@@ -319,9 +322,10 @@ function pickCitedReference(
   referencesByPage: Map<number, Reference>,
   fallback: Reference | null,
   request: TutorReplyRequest,
-  citedCandidates: ReadonlyArray<CitationCandidate>
+  citedCandidates: ReadonlyArray<CitationCandidate>,
+  citations: CitationResolver
 ): Reference | null {
-  const resolvedCitations = resolveCitations(citedCandidates, request.pages);
+  const resolvedCitations = citations.resolve(citedCandidates, request.pages);
 
   // Citations beat regex — when the model recorded verbatim quotes, anchor the
   // jump to the page of the first one and attach every resolved span.
@@ -351,7 +355,7 @@ function pickCitedReference(
     (item) => item.pageNumber === chosen!.pageNumber
   );
   if (page) {
-    const auto = autoCiteFromAnswer(answer, page);
+    const auto = citations.autoCiteFromAnswer(answer, page);
     if (auto.length > 0) {
       return { ...chosen, citations: auto };
     }

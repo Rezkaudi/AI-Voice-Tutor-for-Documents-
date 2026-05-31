@@ -8,12 +8,9 @@ import type { DocumentRepository } from "@/domain/repositories/document-reposito
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
 import type { EmbeddingService } from "@/domain/services/embedding-service";
 import type { FileStorage } from "@/domain/services/file-storage";
-import {
-  chunkDocumentPages,
-  safeFileName,
-  titleFromFileName,
-  validateUploadFile
-} from "@/application/services/document-processing";
+import type { DocumentChunker } from "@/domain/logic/document-chunker";
+import type { UploadValidator } from "@/domain/logic/upload-validator";
+import type { FileNaming } from "@/domain/logic/file-naming";
 import { logger } from "@/shared/logger";
 
 /** The uploaded file as received by the application layer. */
@@ -44,11 +41,14 @@ export class UploadDocumentUseCase {
     private readonly repository: DocumentRepository,
     private readonly storage: FileStorage,
     private readonly extractor: DocumentTextExtractor,
-    private readonly embeddings: EmbeddingService
+    private readonly embeddings: EmbeddingService,
+    private readonly validator: UploadValidator,
+    private readonly chunker: DocumentChunker,
+    private readonly naming: FileNaming
   ) {}
 
   async execute(input: UploadDocumentInput): Promise<UploadDocumentResult> {
-    const validation = validateUploadFile({
+    const validation = this.validator.validate({
       name: input.filename,
       type: input.mimeType,
       size: input.size
@@ -61,7 +61,7 @@ export class UploadDocumentUseCase {
     const pages = (await this.extractor.extract(input.buffer, validation.kind)).map(
       (page) => ({ ...page, id: randomUUID(), documentId: id })
     );
-    const chunks: DocumentChunk[] = chunkDocumentPages(pages).map((chunk) => ({
+    const chunks: DocumentChunk[] = this.chunker.chunk(pages).map((chunk) => ({
       ...chunk,
       documentId: id
     }));
@@ -72,7 +72,7 @@ export class UploadDocumentUseCase {
       );
     }
 
-    const storagePath = `${id}/${safeFileName(input.filename)}`;
+    const storagePath = `${id}/${this.naming.safe(input.filename)}`;
     await this.storage.put({
       key: storagePath,
       body: input.buffer,
@@ -82,7 +82,7 @@ export class UploadDocumentUseCase {
     const now = new Date().toISOString();
     const record: DocumentRecord = {
       id,
-      title: titleFromFileName(input.filename),
+      title: this.naming.toTitle(input.filename),
       fileName: input.filename,
       mimeType: input.mimeType || contentTypeFor(validation.kind),
       fileType: validation.kind,

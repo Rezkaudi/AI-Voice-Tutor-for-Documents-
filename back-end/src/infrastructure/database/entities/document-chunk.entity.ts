@@ -12,7 +12,7 @@ import { DocumentOrmEntity } from "./document.entity";
  * TypeORM persistence model for a retrieval chunk.
  *
  * The embedding is stored as JSONB (a `number[]`). Ranking runs in application
- * memory (`rankChunks`), so no `pgvector` extension is required — keeping the
+ * memory (`ChunkRanker`), so no `pgvector` extension is required — keeping the
  * schema portable across any PostgreSQL instance.
  */
 @Entity({ name: "document_chunks" })

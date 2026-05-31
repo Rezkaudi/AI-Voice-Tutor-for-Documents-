@@ -236,9 +236,20 @@ async function main(): Promise<void> {
     const { OpenAiTutorService } = await import(
       "@/infrastructure/services/ai/openai-tutor.service"
     );
+    const { TextTokenizer } = await import("@/domain/logic/text-tokenizer");
+    const { ChunkRanker } = await import("@/domain/logic/chunk-ranker");
+    const { CitationResolver } = await import(
+      "@/domain/logic/citation-resolver"
+    );
     const { ENV_CONFIG } = await import("@/config/env.config");
     const embeddings = new OpenAiEmbeddingService(ENV_CONFIG);
-    const tutor: TutorService = new OpenAiTutorService(ENV_CONFIG, embeddings);
+    const tokenizer = new TextTokenizer();
+    const tutor: TutorService = new OpenAiTutorService(
+      ENV_CONFIG,
+      embeddings,
+      new ChunkRanker(tokenizer),
+      new CitationResolver(tokenizer)
+    );
 
     const results: RunResult[] = [];
     for (const question of args.questions) {

@@ -9,6 +9,13 @@ import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-
 import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
 import { TranscribeAudioUseCase } from "@/application/use-cases/transcription/transcribe-audio.use-case";
 
+import { TextTokenizer } from "@/domain/logic/text-tokenizer";
+import { ChunkRanker } from "@/domain/logic/chunk-ranker";
+import { CitationResolver } from "@/domain/logic/citation-resolver";
+import { DocumentChunker } from "@/domain/logic/document-chunker";
+import { UploadValidator } from "@/domain/logic/upload-validator";
+import { FileNaming } from "@/domain/logic/file-naming";
+
 import { initializeDatabase } from "@/infrastructure/database/data-source";
 import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositories/typeorm-document.repository";
 
@@ -42,12 +49,25 @@ export async function buildContainer(): Promise<Container> {
   // ─── Persistence ─────────────────────────────────────────────────────────
   const dataSource = await initializeDatabase();
 
+  // ─── Domain services (pure business logic) ───────────────────────────────
+  const tokenizer = new TextTokenizer();
+  const chunkRanker = new ChunkRanker(tokenizer);
+  const citationResolver = new CitationResolver(tokenizer);
+  const documentChunker = new DocumentChunker();
+  const uploadValidator = new UploadValidator();
+  const fileNaming = new FileNaming();
+
   // ─── Infrastructure adapters (implement domain ports) ────────────────────
   const documentRepository = new TypeOrmDocumentRepository(dataSource);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
   const textExtractor = new PdfJsTextExtractor();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG);
-  const tutorService = new OpenAiTutorService(ENV_CONFIG, embeddingService);
+  const tutorService = new OpenAiTutorService(
+    ENV_CONFIG,
+    embeddingService,
+    chunkRanker,
+    citationResolver
+  );
   const speechService = new OpenAiSpeechSynthesisService(ENV_CONFIG);
   const transcriptionService = new OpenAiTranscriptionService(ENV_CONFIG);
 
@@ -56,7 +76,10 @@ export async function buildContainer(): Promise<Container> {
     documentRepository,
     fileStorage,
     textExtractor,
-    embeddingService
+    embeddingService,
+    uploadValidator,
+    documentChunker,
+    fileNaming
   );
   const getDocument = new GetDocumentUseCase(documentRepository);
   const getDocumentFile = new GetDocumentFileUseCase(
