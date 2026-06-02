@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cx } from "@/lib/uiClasses";
 import { ConfirmDialog } from "../ConfirmDialog";
 import type { DocumentSummary } from "@/lib/types";
 import { DocumentRow } from "./DocumentRow";
@@ -12,6 +13,8 @@ interface DocumentLibraryProps {
   onSelect: (documentId: string) => void;
   onDelete?: (documentId: string) => void;
   emptyHint?: string;
+  /** Fill the available height of a flex parent (scroll internally) instead of a fixed max-height cap. */
+  fillHeight?: boolean;
 }
 
 /** Browseable list of previously processed documents the learner can switch to or delete. */
@@ -22,7 +25,8 @@ export function DocumentLibrary({
   deletingId,
   onSelect,
   onDelete,
-  emptyHint
+  emptyHint,
+  fillHeight
 }: DocumentLibraryProps) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
@@ -36,7 +40,10 @@ export function DocumentLibrary({
   return (
     <>
       <ul
-        className="m-0 flex max-h-[min(56vh,420px)] list-none flex-col gap-1.5 overflow-y-auto p-0"
+        className={cx(
+          "m-0 flex list-none flex-col gap-1.5 overflow-y-auto p-0",
+          fillHeight ? "min-h-0 flex-1" : "max-h-[min(56vh,420px)]"
+        )}
         role="listbox"
         aria-label="Your documents"
       >

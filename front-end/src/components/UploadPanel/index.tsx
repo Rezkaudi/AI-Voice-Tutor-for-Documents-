@@ -19,7 +19,7 @@ interface UploadPanelProps {
 
 const surface = cx(
   ui.surface,
-  "mx-auto my-[clamp(20px,5vh,60px)] max-w-[780px] p-[clamp(18px,3vw,30px)]"
+  "m-auto flex max-h-full w-full max-w-[780px] flex-col p-[clamp(18px,3vw,30px)]"
 );
 
 /**
@@ -53,8 +53,8 @@ export function UploadPanel({
   return (
     <div className={surface}>
       {hasLibrary ? (
-        <section className="grid gap-3">
-          <header className="flex items-center justify-between gap-2">
+        <section className="flex min-h-0 flex-1 flex-col gap-3">
+          <header className="flex flex-none items-center justify-between gap-2">
             <h2 className="m-0 inline-flex items-center gap-2 text-[1.05rem] font-bold text-ink">
               <Library size={18} aria-hidden /> Your documents
             </h2>
@@ -65,11 +65,12 @@ export function UploadPanel({
             deletingId={deletingId}
             onSelect={onSelect}
             onDelete={onDelete}
+            fillHeight
           />
         </section>
       ) : null}
 
-      <section className={cx(hasLibrary && "mt-5 border-t border-line pt-5")}>
+      <section className={cx("flex-none", hasLibrary && "mt-5 border-t border-line pt-5")}>
         {!hasLibrary ? (
           <div className="mb-3 text-center">
             <h2 className={ui.introTitle}>Upload a Lesson Source</h2>

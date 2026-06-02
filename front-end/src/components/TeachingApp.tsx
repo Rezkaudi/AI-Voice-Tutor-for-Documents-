@@ -181,7 +181,7 @@ export function TeachingApp() {
         </>
       ) : (
         <main
-          className="h-full min-w-0 overflow-hidden p-[clamp(14px,2vw,26px)] [background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0/36px_36px,var(--color-panel)]"
+          className="flex min-h-0 flex-1 min-w-0 overflow-hidden p-[clamp(14px,2vw,26px)] [background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0/36px_36px,var(--color-panel)]"
           style={{ "--color-panel": "oklch(0.96 0.01 84)" } as CSSProperties}
         >
           <UploadPanel
