@@ -67,6 +67,17 @@ export class UploadValidator {
     return null;
   }
 
+  /** The default MIME type for a kind, used when the client sent none. */
+  defaultContentType(kind: UploadKind): string {
+    if (kind === "pdf") {
+      return "application/pdf";
+    }
+    if (kind === "markdown") {
+      return "text/markdown";
+    }
+    return "text/plain";
+  }
+
   private extensionOf(fileName: string): string {
     const lower = fileName.toLowerCase();
     const lastPart = lower.split(".").pop();

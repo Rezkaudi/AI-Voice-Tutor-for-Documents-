@@ -76,7 +76,7 @@ export class UploadDocumentUseCase {
     await this.storage.put({
       key: storagePath,
       body: input.buffer,
-      contentType: input.mimeType || contentTypeFor(validation.kind)
+      contentType: input.mimeType || this.validator.defaultContentType(validation.kind)
     });
 
     const now = new Date().toISOString();
@@ -84,7 +84,7 @@ export class UploadDocumentUseCase {
       id,
       title: this.naming.toTitle(input.filename),
       fileName: input.filename,
-      mimeType: input.mimeType || contentTypeFor(validation.kind),
+      mimeType: input.mimeType || this.validator.defaultContentType(validation.kind),
       fileType: validation.kind,
       fileSize: input.size,
       status: "ready",
@@ -125,15 +125,4 @@ export class UploadDocumentUseCase {
       logger.error(`Background embedding failed for document ${documentId}`, error);
     }
   }
-}
-
-/** Default content type for an upload kind when the client sent none. */
-function contentTypeFor(kind: string): string {
-  if (kind === "pdf") {
-    return "application/pdf";
-  }
-  if (kind === "markdown") {
-    return "text/markdown";
-  }
-  return "text/plain";
 }
