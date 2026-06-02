@@ -15,6 +15,7 @@ import { CitationResolver } from "@/domain/logic/citation-resolver";
 import { DocumentChunker } from "@/domain/logic/document-chunker";
 import { UploadValidator } from "@/domain/logic/upload-validator";
 import { FileNaming } from "@/domain/logic/file-naming";
+import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
 
 import { initializeDatabase } from "@/infrastructure/database/data-source";
 import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositories/typeorm-document.repository";
@@ -56,6 +57,7 @@ export async function buildContainer(): Promise<Container> {
   const documentChunker = new DocumentChunker();
   const uploadValidator = new UploadValidator();
   const fileNaming = new FileNaming();
+  const historySanitizer = new ChatHistorySanitizer();
 
   // ─── Infrastructure adapters (implement domain ports) ────────────────────
   const documentRepository = new TypeOrmDocumentRepository(dataSource);
@@ -88,7 +90,11 @@ export async function buildContainer(): Promise<Container> {
   );
   const listDocuments = new ListDocumentsUseCase(documentRepository);
   const deleteDocument = new DeleteDocumentUseCase(documentRepository, fileStorage);
-  const streamChat = new StreamChatUseCase(documentRepository, tutorService);
+  const streamChat = new StreamChatUseCase(
+    documentRepository,
+    tutorService,
+    historySanitizer
+  );
   const synthesizeSpeech = new SynthesizeSpeechUseCase(speechService);
   const transcribeAudio = new TranscribeAudioUseCase(transcriptionService);
 

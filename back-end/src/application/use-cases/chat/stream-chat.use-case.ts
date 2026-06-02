@@ -1,6 +1,7 @@
 import type { StreamEvent } from "@/application/dto/stream-event";
 import type { ChatMessage } from "@/domain/entities/chat";
 import { NotFoundError, ValidationError } from "@/domain/errors/app-error";
+import type { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 import type { TutorService } from "@/domain/services/tutor-service";
 
@@ -13,10 +14,6 @@ export interface StreamChatInput {
   readonly saveCost: boolean;
 }
 
-/** Keep at most this many recent history turns; truncate each to this length. */
-const HISTORY_LIMIT = 10;
-const MESSAGE_CHAR_LIMIT = 4000;
-
 /**
  * Streams a tutor answer for a learner's message.
  *
@@ -28,7 +25,8 @@ const MESSAGE_CHAR_LIMIT = 4000;
 export class StreamChatUseCase {
   constructor(
     private readonly repository: DocumentRepository,
-    private readonly tutor: TutorService
+    private readonly tutor: TutorService,
+    private readonly historySanitizer: ChatHistorySanitizer
   ) {}
 
   async execute(
@@ -54,7 +52,7 @@ export class StreamChatUseCase {
       this.repository.getChunks(documentId)
     ]);
 
-    const history = sanitizeHistory(input.messages);
+    const history = this.historySanitizer.sanitize(input.messages);
     const tutor = this.tutor;
 
     return (async function* stream(): AsyncGenerator<StreamEvent> {
@@ -93,20 +91,4 @@ export class StreamChatUseCase {
       }
     })();
   }
-}
-
-/** Keeps the most recent valid turns, each truncated to a safe length. */
-function sanitizeHistory(messages: ChatMessage[]): ChatMessage[] {
-  return messages
-    .filter(
-      (message) =>
-        (message.role === "user" || message.role === "assistant") &&
-        typeof message.content === "string" &&
-        message.content.trim().length > 0
-    )
-    .slice(-HISTORY_LIMIT)
-    .map((message) => ({
-      role: message.role,
-      content: message.content.slice(0, MESSAGE_CHAR_LIMIT)
-    }));
 }
