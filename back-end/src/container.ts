@@ -12,6 +12,11 @@ import { TranscribeAudioUseCase } from "@/application/use-cases/transcription/tr
 import { TextTokenizer } from "@/domain/logic/text-tokenizer";
 import { ChunkRanker } from "@/domain/logic/chunk-ranker";
 import { CitationResolver } from "@/domain/logic/citation-resolver";
+import { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
+import { TokenSimilarity } from "@/domain/logic/citation/token-similarity";
+import { QuoteLocator } from "@/domain/logic/citation/quote-locator";
+import { SentenceSplitter } from "@/domain/logic/citation/sentence-splitter";
+import { AnswerAutoCiter } from "@/domain/logic/citation/answer-auto-citer";
 import { DocumentChunker } from "@/domain/logic/document-chunker";
 import { UploadValidator } from "@/domain/logic/upload-validator";
 import { FileNaming } from "@/domain/logic/file-naming";
@@ -53,7 +58,9 @@ export async function buildContainer(): Promise<Container> {
   // ─── Domain services (pure business logic) ───────────────────────────────
   const tokenizer = new TextTokenizer();
   const chunkRanker = new ChunkRanker(tokenizer);
-  const citationResolver = new CitationResolver(tokenizer);
+  const quoteLocator = new QuoteLocator(new TextNormalizer(), new TokenSimilarity());
+  const answerAutoCiter = new AnswerAutoCiter(tokenizer, new SentenceSplitter());
+  const citationResolver = new CitationResolver(quoteLocator, answerAutoCiter);
   const documentChunker = new DocumentChunker();
   const uploadValidator = new UploadValidator();
   const fileNaming = new FileNaming();

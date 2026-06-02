@@ -241,14 +241,31 @@ async function main(): Promise<void> {
     const { CitationResolver } = await import(
       "@/domain/logic/citation-resolver"
     );
+    const { TextNormalizer } = await import(
+      "@/domain/logic/citation/text-normalizer"
+    );
+    const { TokenSimilarity } = await import(
+      "@/domain/logic/citation/token-similarity"
+    );
+    const { QuoteLocator } = await import("@/domain/logic/citation/quote-locator");
+    const { SentenceSplitter } = await import(
+      "@/domain/logic/citation/sentence-splitter"
+    );
+    const { AnswerAutoCiter } = await import(
+      "@/domain/logic/citation/answer-auto-citer"
+    );
     const { ENV_CONFIG } = await import("@/config/env.config");
     const embeddings = new OpenAiEmbeddingService(ENV_CONFIG);
     const tokenizer = new TextTokenizer();
+    const citationResolver = new CitationResolver(
+      new QuoteLocator(new TextNormalizer(), new TokenSimilarity()),
+      new AnswerAutoCiter(tokenizer, new SentenceSplitter())
+    );
     const tutor: TutorService = new OpenAiTutorService(
       ENV_CONFIG,
       embeddings,
       new ChunkRanker(tokenizer),
-      new CitationResolver(tokenizer)
+      citationResolver
     );
 
     const results: RunResult[] = [];
