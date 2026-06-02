@@ -254,6 +254,18 @@ async function main(): Promise<void> {
     const { AnswerAutoCiter } = await import(
       "@/domain/logic/citation/answer-auto-citer"
     );
+    const { DocumentReferenceFactory } = await import(
+      "@/domain/logic/citation/document-reference-factory"
+    );
+    const { ReferenceSelector } = await import(
+      "@/domain/logic/citation/reference-selector"
+    );
+    const { CitationMarkerReconciler } = await import(
+      "@/domain/logic/citation/citation-marker-reconciler"
+    );
+    const { TutorToolExecutor } = await import(
+      "@/infrastructure/services/ai/tutor-tool-executor"
+    );
     const { ENV_CONFIG } = await import("@/config/env.config");
     const embeddings = new OpenAiEmbeddingService(ENV_CONFIG);
     const tokenizer = new TextTokenizer();
@@ -261,11 +273,12 @@ async function main(): Promise<void> {
       new QuoteLocator(new TextNormalizer(), new TokenSimilarity()),
       new AnswerAutoCiter(tokenizer, new SentenceSplitter())
     );
+    const referenceFactory = new DocumentReferenceFactory();
     const tutor: TutorService = new OpenAiTutorService(
       ENV_CONFIG,
-      embeddings,
-      new ChunkRanker(tokenizer),
-      citationResolver
+      new TutorToolExecutor(embeddings, new ChunkRanker(tokenizer), referenceFactory),
+      new ReferenceSelector(citationResolver, referenceFactory),
+      new CitationMarkerReconciler()
     );
 
     const results: RunResult[] = [];

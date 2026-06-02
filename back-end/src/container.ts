@@ -17,6 +17,9 @@ import { TokenSimilarity } from "@/domain/logic/citation/token-similarity";
 import { QuoteLocator } from "@/domain/logic/citation/quote-locator";
 import { SentenceSplitter } from "@/domain/logic/citation/sentence-splitter";
 import { AnswerAutoCiter } from "@/domain/logic/citation/answer-auto-citer";
+import { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
+import { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
+import { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
 import { DocumentChunker } from "@/domain/logic/document-chunker";
 import { UploadValidator } from "@/domain/logic/upload-validator";
 import { FileNaming } from "@/domain/logic/file-naming";
@@ -28,6 +31,7 @@ import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositorie
 import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage";
 import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
 import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.service";
+import { TutorToolExecutor } from "@/infrastructure/services/ai/tutor-tool-executor";
 import { OpenAiEmbeddingService } from "@/infrastructure/services/ai/openai-embedding.service";
 import { OpenAiSpeechSynthesisService, OpenAiTranscriptionService } from "@/infrastructure/services/ai/openai-speech.service";
 
@@ -61,6 +65,9 @@ export async function buildContainer(): Promise<Container> {
   const quoteLocator = new QuoteLocator(new TextNormalizer(), new TokenSimilarity());
   const answerAutoCiter = new AnswerAutoCiter(tokenizer, new SentenceSplitter());
   const citationResolver = new CitationResolver(quoteLocator, answerAutoCiter);
+  const referenceFactory = new DocumentReferenceFactory();
+  const referenceSelector = new ReferenceSelector(citationResolver, referenceFactory);
+  const citationMarkerReconciler = new CitationMarkerReconciler();
   const documentChunker = new DocumentChunker();
   const uploadValidator = new UploadValidator();
   const fileNaming = new FileNaming();
@@ -71,11 +78,16 @@ export async function buildContainer(): Promise<Container> {
   const fileStorage = new S3FileStorage(ENV_CONFIG);
   const textExtractor = new PdfJsTextExtractor();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG);
-  const tutorService = new OpenAiTutorService(
-    ENV_CONFIG,
+  const tutorToolExecutor = new TutorToolExecutor(
     embeddingService,
     chunkRanker,
-    citationResolver
+    referenceFactory
+  );
+  const tutorService = new OpenAiTutorService(
+    ENV_CONFIG,
+    tutorToolExecutor,
+    referenceSelector,
+    citationMarkerReconciler
   );
   const speechService = new OpenAiSpeechSynthesisService(ENV_CONFIG);
   const transcriptionService = new OpenAiTranscriptionService(ENV_CONFIG);
