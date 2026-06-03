@@ -9,7 +9,6 @@ import type {
   TutorStreamEvent
 } from "@/domain/services/tutor-service";
 import type { EnvConfig } from "@/config/env.config";
-import { TUTOR_GENERATION } from "./tutor-prompts";
 import { TutorRequestFactory } from "./tutor-request-factory";
 import { TutorToolExecutor } from "./tutor-tool-executor";
 import { CitePassagesParser } from "./cite-passages-parser";
@@ -73,7 +72,7 @@ export class OpenAiTutorService implements TutorService {
     let pendingInput = this.requests.initialInput(request, settings);
     let previousResponseId: string | undefined;
 
-    for (let step = 0; step < TUTOR_GENERATION.maxToolSteps; step += 1) {
+    for (let step = 0; step < settings.maxToolSteps; step += 1) {
       const stream = await createResponse(
         this.requests.body(request, settings, pendingInput, previousResponseId),
         { signal }

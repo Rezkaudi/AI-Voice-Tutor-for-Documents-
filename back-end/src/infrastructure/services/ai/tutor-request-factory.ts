@@ -1,12 +1,16 @@
 import type { TutorReplyRequest } from "@/domain/services/tutor-service";
 import type { EnvConfig } from "@/config/env.config";
-import { buildTutorInstructions, TUTOR_GENERATION, TUTOR_TOOLS } from "./tutor-prompts";
+import { buildTutorInstructions } from "@/config/prompt.config";
+import { NORMAL_GENERATION, SAVE_COST_GENERATION } from "@/config/constant.config";
+import { TUTOR_TOOLS } from "@/config/ai-tools.config";
 
 /** Per-turn model/decoding settings, chosen from the save-cost flag. */
 export interface TurnSettings {
   model: string;
   historyWindow: number;
   reasoningEffort: string;
+  maxOutputTokens: number;
+  maxToolSteps: number;
 }
 
 /**
@@ -18,19 +22,13 @@ export interface TurnSettings {
 export class TutorRequestFactory {
   constructor(private readonly config: EnvConfig) {}
 
-  /** Model, history window, and reasoning effort for this turn. */
+  /** Model plus every per-turn tuning value for this turn. */
   settingsFor(request: TutorReplyRequest): TurnSettings {
-    return {
-      model: request.saveCost
-        ? this.config.OPENAI_TUTOR_MODEL_SAVE_COST
-        : this.config.OPENAI_TUTOR_MODEL,
-      historyWindow: request.saveCost
-        ? TUTOR_GENERATION.historyWindowSaveCost
-        : TUTOR_GENERATION.historyWindow,
-      reasoningEffort: request.saveCost
-        ? TUTOR_GENERATION.reasoningEffortSaveCost
-        : TUTOR_GENERATION.reasoningEffort
-    };
+    const profile = request.saveCost ? SAVE_COST_GENERATION : NORMAL_GENERATION;
+    const model = request.saveCost
+      ? this.config.OPENAI_TUTOR_MODEL_SAVE_COST
+      : this.config.OPENAI_TUTOR_MODEL;
+    return { model, ...profile };
   }
 
   /** First-turn input: a slice of history plus the student's message. */
@@ -61,7 +59,7 @@ export class TutorRequestFactory {
         request.language || undefined
       ),
       reasoning: { effort: settings.reasoningEffort },
-      max_output_tokens: TUTOR_GENERATION.maxOutputTokens,
+      max_output_tokens: settings.maxOutputTokens,
       tools: TUTOR_TOOLS,
       input,
       ...(previousResponseId ? { previous_response_id: previousResponseId } : {}),
