@@ -20,6 +20,7 @@ export type EnvConfig = {
   OPENAI_TRANSCRIBE_MODEL: string;
   OPENAI_SPEECH_MODEL: string;
   OPENAI_SPEECH_VOICE: string;
+  TUTOR_LOG_VERBOSE: boolean;
 };
 
 type EnvKey = keyof EnvConfig;
@@ -39,6 +40,9 @@ const csv = (value: string | undefined): string[] =>
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+
+const bool = (value: string | undefined, fallback: boolean): boolean =>
+  value === undefined || value === "" ? fallback : value === "true" || value === "1";
 
 export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   NODE_ENV: getEnv("NODE_ENV") || "development",
@@ -62,5 +66,13 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   OPENAI_EMBEDDING_MODEL: getEnv("OPENAI_EMBEDDING_MODEL") || "text-embedding-3-small",
   OPENAI_TRANSCRIBE_MODEL: getEnv("OPENAI_TRANSCRIBE_MODEL") || "gpt-4o-mini-transcribe",
   OPENAI_SPEECH_MODEL: getEnv("OPENAI_SPEECH_MODEL") || "gpt-4o-mini-tts",
-  OPENAI_SPEECH_VOICE: getEnv("OPENAI_SPEECH_VOICE") || "alloy"
+  OPENAI_SPEECH_VOICE: getEnv("OPENAI_SPEECH_VOICE") || "alloy",
+
+  // Verbose tutor tracing: dump the full result of each agentic step (tool
+  // output, recorded citations, answer text). On by default outside production;
+  // set TUTOR_LOG_VERBOSE=false to keep only the concise step summaries.
+  TUTOR_LOG_VERBOSE: bool(
+    getEnv("TUTOR_LOG_VERBOSE"),
+    (getEnv("NODE_ENV") || "development") !== "production"
+  )
 });
