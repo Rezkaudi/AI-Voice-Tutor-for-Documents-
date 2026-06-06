@@ -6,6 +6,7 @@ import type {
 } from "@/lib/types";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { MicPermissionDialog } from "../MicPermissionDialog";
+import { PageSelectionDialog } from "../PageSelectionDialog";
 import { TeacherAvatar } from "../TeacherAvatar";
 import { CallControls } from "./CallControls";
 import { CaptionStrip } from "./CaptionStrip";
@@ -31,11 +32,17 @@ interface TeacherPanelProps {
   speechLanguage: SpeechLanguage;
   saveCost: boolean;
   error: string | null;
+  pageCount: number;
+  selectedPages: number[];
+  pageDialogOpen: boolean;
   onSpeechLanguageChange: (language: SpeechLanguage) => void;
   onSaveCostToggle: () => void;
   onMicToggle: () => void;
   onCallToggle: () => void | Promise<void>;
   onClearChat: () => void;
+  onEditPages: () => void;
+  onClosePageDialog: () => void;
+  onSubmitPageSelection: (pages: number[]) => void;
 }
 
 /** Avatar-led voice-call panel: transcript, language picker, and call controls. */
@@ -52,11 +59,17 @@ export function TeacherPanel({
   speechLanguage,
   saveCost,
   error,
+  pageCount,
+  selectedPages,
+  pageDialogOpen,
   onSpeechLanguageChange,
   onSaveCostToggle,
   onMicToggle,
   onCallToggle,
-  onClearChat
+  onClearChat,
+  onEditPages,
+  onClosePageDialog,
+  onSubmitPageSelection
 }: TeacherPanelProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   // Transcript starts hidden — the call leads with the avatar and live caption;
@@ -93,6 +106,8 @@ export function TeacherPanel({
       <CornerButtons
         showTranscript={showTranscript}
         onToggleTranscript={() => setShowTranscript((open) => !open)}
+        onEditPages={onEditPages}
+        editPagesDisabled={isStreaming || isListening || isTranscribing}
         saveCost={saveCost}
         onSaveCostToggle={onSaveCostToggle}
         saveCostDisabled={saveCostDisabled}
@@ -161,6 +176,16 @@ export function TeacherPanel({
       />
 
       <MicPermissionDialog open={micDialog.open} onClose={() => micDialog.setOpen(false)} />
+
+      {pageDialogOpen ? (
+        <PageSelectionDialog
+          pageCount={pageCount}
+          selectedPages={selectedPages}
+          callMode={callMode}
+          onConfirm={onSubmitPageSelection}
+          onCancel={onClosePageDialog}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={confirmOpen}

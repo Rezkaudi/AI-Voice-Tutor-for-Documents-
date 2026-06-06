@@ -83,6 +83,16 @@ export class OpenAiTutorService implements TutorService {
     let pendingInput = this.requests.initialInput(request, settings);
     let previousResponseId: string | undefined;
 
+    // Confirm the chosen lesson pages were injected as developer-role material.
+    if (request.selectedPages.length > 0) {
+      const lesson = pendingInput.find((item) => item.role === "developer");
+      const chars = typeof lesson?.content === "string" ? lesson.content.length : 0;
+      log.info(
+        `lesson material → pages [${request.selectedPages.join(", ")}] injected ` +
+          `as developer input · ${chars} chars`
+      );
+    }
+
     for (let step = 0; step < settings.maxToolSteps; step += 1) {
       log.info(
         `step ${step + 1}/${settings.maxToolSteps} → requesting model response` +

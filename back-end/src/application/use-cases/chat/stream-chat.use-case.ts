@@ -5,6 +5,7 @@ import type { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 import type { TutorService } from "@/domain/services/tutor-service";
 import type { Logger } from "@/domain/services/logger";
+import { MAX_LESSON_PAGES } from "@/config/constant.config";
 
 /** The chat request payload, mirroring the front-end `ChatPayload`. */
 export interface StreamChatInput {
@@ -12,6 +13,8 @@ export interface StreamChatInput {
   readonly message: string;
   readonly language: string;
   readonly messages: ChatMessage[];
+  /** 1-based page numbers the student chose to study this call (max 5). */
+  readonly selectedPages: number[];
   readonly saveCost: boolean;
 }
 
@@ -63,9 +66,19 @@ export class StreamChatUseCase {
     ]);
 
     const history = this.historySanitizer.sanitize(input.messages);
+
+    // Keep only real, in-range page numbers, de-duplicated, ordered, capped at
+    // MAX_LESSON_PAGES — the UI enforces this too, but never trust the wire.
+    const validPages = new Set(pages.map((page) => page.pageNumber));
+    const selectedPages = Array.from(new Set(input.selectedPages))
+      .filter((pageNumber) => validPages.has(pageNumber))
+      .sort((a, b) => a - b)
+      .slice(0, MAX_LESSON_PAGES);
+
     log.info(
       `loaded document "${document.title}" · ${pages.length} page(s) · ` +
-        `${chunks.length} chunk(s) · ${history.length} history turn(s) → streaming answer`
+        `${chunks.length} chunk(s) · ${history.length} history turn(s) · ` +
+        `lesson pages=[${selectedPages.join(", ")}] → streaming answer`
     );
     const tutor = this.tutor;
 
@@ -82,6 +95,7 @@ export class StreamChatUseCase {
             history,
             pages,
             chunks,
+            selectedPages,
             saveCost: input.saveCost
           },
           signal

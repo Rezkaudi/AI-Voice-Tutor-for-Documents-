@@ -20,6 +20,8 @@ export function TeachingWorkspace() {
   const speechLanguage = useSessionStore((s) => s.speechLanguage);
   const saveCost = useSessionStore((s) => s.saveCost);
   const error = useSessionStore((s) => s.error);
+  const selectedPages = useSessionStore((s) => s.selectedPages);
+  const pageDialogOpen = useSessionStore((s) => s.pageDialogOpen);
 
   const loadedDocument = useDocumentStore((s) => s.loadedDocument);
   const uploadState = useDocumentStore((s) => s.uploadState);
@@ -100,11 +102,17 @@ export function TeachingWorkspace() {
             speechLanguage={speechLanguage}
             saveCost={saveCost}
             error={error}
+            pageCount={loadedDocument.document.pageCount}
+            selectedPages={selectedPages}
+            pageDialogOpen={pageDialogOpen}
             onSpeechLanguageChange={session.setSpeechLanguage}
             onSaveCostToggle={session.toggleSaveCost}
             onMicToggle={session.handleMicToggle}
             onCallToggle={session.handleCallToggle}
             onClearChat={session.clearChat}
+            onEditPages={session.openPageDialog}
+            onClosePageDialog={session.closePageDialog}
+            onSubmitPageSelection={session.submitPageSelection}
           />
         </section>
       </main>

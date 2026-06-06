@@ -5,6 +5,13 @@ export const LANGUAGE_NAMES: Record<string, string> = {
     ar: "Arabic"
 };
 
+/**
+ * The most pages a student may pick for one focused lesson. Their full text is
+ * injected into the model's context, so this caps both the token cost and how
+ * much material a single lesson covers. Mirrored on the front-end.
+ */
+export const MAX_LESSON_PAGES = 5;
+
 export interface TutorGenerationProfile {
     reasoningEffort: string;
     historyWindow: number;
