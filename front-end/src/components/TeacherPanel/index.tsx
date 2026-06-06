@@ -107,7 +107,7 @@ export function TeacherPanel({
         showTranscript={showTranscript}
         onToggleTranscript={() => setShowTranscript((open) => !open)}
         onEditPages={onEditPages}
-        editPagesDisabled={isStreaming || isListening || isTranscribing}
+        editPagesDisabled={false}
         saveCost={saveCost}
         onSaveCostToggle={onSaveCostToggle}
         saveCostDisabled={saveCostDisabled}
