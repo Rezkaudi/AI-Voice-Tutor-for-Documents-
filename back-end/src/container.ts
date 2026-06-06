@@ -34,6 +34,7 @@ import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.se
 import { TutorToolExecutor } from "@/infrastructure/services/ai/tutor-tool-executor";
 import { OpenAiEmbeddingService } from "@/infrastructure/services/ai/openai-embedding.service";
 import { OpenAiSpeechSynthesisService, OpenAiTranscriptionService } from "@/infrastructure/services/ai/openai-speech.service";
+import { ConsoleLogger } from "@/infrastructure/logging/console-logger";
 
 import { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
 import { ChatController } from "@/infrastructure/http/controllers/chat.controller";
@@ -56,6 +57,11 @@ export interface Container {
 }
 
 export async function buildContainer(): Promise<Container> {
+  // ─── Cross-cutting ───────────────────────────────────────────────────────
+  // One logger, injected as the `Logger` port wherever a flow needs tracing.
+  // Verbosity is decided here, once, from the environment.
+  const logger = new ConsoleLogger(ENV_CONFIG.TUTOR_LOG_VERBOSE);
+
   // ─── Persistence ─────────────────────────────────────────────────────────
   const dataSource = await initializeDatabase();
 
@@ -77,7 +83,7 @@ export async function buildContainer(): Promise<Container> {
   const documentRepository = new TypeOrmDocumentRepository(dataSource);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
   const textExtractor = new PdfJsTextExtractor();
-  const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG);
+  const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
   const tutorToolExecutor = new TutorToolExecutor(
     embeddingService,
     chunkRanker,
@@ -87,7 +93,8 @@ export async function buildContainer(): Promise<Container> {
     ENV_CONFIG,
     tutorToolExecutor,
     referenceSelector,
-    citationMarkerReconciler
+    citationMarkerReconciler,
+    logger
   );
   const speechService = new OpenAiSpeechSynthesisService(ENV_CONFIG);
   const transcriptionService = new OpenAiTranscriptionService(ENV_CONFIG);
@@ -100,7 +107,8 @@ export async function buildContainer(): Promise<Container> {
     embeddingService,
     uploadValidator,
     documentChunker,
-    fileNaming
+    fileNaming,
+    logger
   );
   const getDocument = new GetDocumentUseCase(documentRepository);
   const getDocumentFile = new GetDocumentFileUseCase(
@@ -112,10 +120,11 @@ export async function buildContainer(): Promise<Container> {
   const streamChat = new StreamChatUseCase(
     documentRepository,
     tutorService,
-    historySanitizer
+    historySanitizer,
+    logger
   );
-  const synthesizeSpeech = new SynthesizeSpeechUseCase(speechService);
-  const transcribeAudio = new TranscribeAudioUseCase(transcriptionService);
+  const synthesizeSpeech = new SynthesizeSpeechUseCase(speechService, logger);
+  const transcribeAudio = new TranscribeAudioUseCase(transcriptionService, logger);
 
   // ─── HTTP controllers ────────────────────────────────────────────────────
   const deps: ServerDependencies = {

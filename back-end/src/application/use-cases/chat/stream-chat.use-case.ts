@@ -4,6 +4,7 @@ import { NotFoundError, ValidationError } from "@/domain/errors/app-error";
 import type { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 import type { TutorService } from "@/domain/services/tutor-service";
+import type { Logger } from "@/domain/services/logger";
 
 /** The chat request payload, mirroring the front-end `ChatPayload`. */
 export interface StreamChatInput {
@@ -26,21 +27,31 @@ export class StreamChatUseCase {
   constructor(
     private readonly repository: DocumentRepository,
     private readonly tutor: TutorService,
-    private readonly historySanitizer: ChatHistorySanitizer
+    private readonly historySanitizer: ChatHistorySanitizer,
+    private readonly logger: Logger
   ) {}
 
   async execute(
     input: StreamChatInput,
     signal: AbortSignal
   ): Promise<AsyncIterable<StreamEvent>> {
+    const log = this.logger.scope("chat");
     const documentId = input.documentId.trim();
     const message = input.message.trim();
     if (!documentId || !message) {
+      log.warn("rejected — document and message are required");
       throw new ValidationError("Document and message are required.");
     }
 
+    log.info(
+      `question on document ${documentId} · lang=${input.language} · ` +
+        `saveCost=${input.saveCost} · history=${input.messages.length} msg(s)`
+    );
+    log.detail("student message", message);
+
     const document = await this.repository.findById(documentId);
     if (!document) {
+      log.warn(`document ${documentId} not found`);
       throw new NotFoundError("Document not found.");
     }
 
@@ -53,11 +64,16 @@ export class StreamChatUseCase {
     ]);
 
     const history = this.historySanitizer.sanitize(input.messages);
+    log.info(
+      `loaded document "${document.title}" · ${pages.length} page(s) · ` +
+        `${chunks.length} chunk(s) · ${history.length} history turn(s) → streaming answer`
+    );
     const tutor = this.tutor;
 
     return (async function* stream(): AsyncGenerator<StreamEvent> {
       yield { event: "meta", data: { reference: null } };
 
+      let deltaCount = 0;
       try {
         for await (const event of tutor.streamReply(
           {
@@ -72,21 +88,26 @@ export class StreamChatUseCase {
           signal
         )) {
           if (event.type === "reference") {
+            log.info(`emitting citation → page ${event.reference.pageNumber}`);
             yield { event: "meta", data: { reference: event.reference } };
           } else {
+            deltaCount += 1;
             yield { event: "delta", data: { text: event.text } };
           }
         }
+        log.info(`answer complete · ${deltaCount} delta(s) streamed`);
         yield { event: "done", data: {} };
       } catch (error) {
         if (signal.aborted) {
           // The learner ended the call mid-answer — close quietly.
+          log.info("learner aborted mid-answer — closing stream quietly");
           return;
         }
         const reason =
           error instanceof Error
             ? error.message
             : "The teacher could not answer right now.";
+        log.error(`answer failed — ${reason}`);
         yield { event: "error", data: { error: reason } };
       }
     })();

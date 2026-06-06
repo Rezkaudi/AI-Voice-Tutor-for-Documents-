@@ -11,7 +11,7 @@ import type { FileStorage } from "@/domain/services/file-storage";
 import type { DocumentChunker } from "@/domain/logic/document-chunker";
 import type { UploadValidator } from "@/domain/logic/upload-validator";
 import type { FileNaming } from "@/domain/logic/file-naming";
-import { logger } from "@/shared/logger";
+import type { Logger } from "@/domain/services/logger";
 
 /** The uploaded file as received by the application layer. */
 export interface UploadDocumentInput {
@@ -44,33 +44,45 @@ export class UploadDocumentUseCase {
     private readonly embeddings: EmbeddingService,
     private readonly validator: UploadValidator,
     private readonly chunker: DocumentChunker,
-    private readonly naming: FileNaming
+    private readonly naming: FileNaming,
+    private readonly logger: Logger
   ) {}
 
   async execute(input: UploadDocumentInput): Promise<UploadDocumentResult> {
+    const log = this.logger.scope("upload");
+    log.info(
+      `received "${input.filename}" · ${(input.size / 1024).toFixed(1)} KiB · ` +
+        `${input.mimeType || "(no mime)"}`
+    );
+
     const validation = this.validator.validate({
       name: input.filename,
       type: input.mimeType,
       size: input.size
     });
     if (!validation.ok) {
+      log.warn(`rejected — ${validation.error}`);
       throw new UnprocessableEntityError(validation.error);
     }
+    log.info(`validated as ${validation.kind} → extracting text`);
 
     const id = randomUUID();
     const pages = (await this.extractor.extract(input.buffer, validation.kind)).map(
       (page) => ({ ...page, id: randomUUID(), documentId: id })
     );
+    log.info(`extracted ${pages.length} page(s) → chunking`);
     const chunks: DocumentChunk[] = this.chunker.chunk(pages).map((chunk) => ({
       ...chunk,
       documentId: id
     }));
 
     if (chunks.length === 0) {
+      log.warn("no searchable text found after chunking — rejecting");
       throw new UnprocessableEntityError(
         "No searchable text was found in this file."
       );
     }
+    log.info(`chunked into ${chunks.length} chunk(s) · documentId=${id}`);
 
     const storagePath = `${id}/${this.naming.safe(input.filename)}`;
     await this.storage.put({
@@ -78,6 +90,7 @@ export class UploadDocumentUseCase {
       body: input.buffer,
       contentType: input.mimeType || this.validator.defaultContentType(validation.kind)
     });
+    log.info(`stored original file at ${storagePath}`);
 
     const now = new Date().toISOString();
     const record: DocumentRecord = {
@@ -96,10 +109,12 @@ export class UploadDocumentUseCase {
     };
 
     await this.repository.save({ record, pages, chunks });
+    log.info(`persisted document, pages, and chunks · status=${record.status}`);
 
     // Fire-and-forget: embeddings improve retrieval but the learner can start
     // immediately. Failures are logged, never surfaced to the upload caller.
-    void this.embedInBackground(id, chunks);
+    log.info(`embedding ${chunks.length} chunk(s) in background → returning now`);
+    void this.embedInBackground(id, chunks, log);
 
     return { documentId: id, status: record.status };
   }
@@ -107,7 +122,8 @@ export class UploadDocumentUseCase {
   /** Computes and stores chunk embeddings after the response is sent. */
   private async embedInBackground(
     documentId: string,
-    chunks: DocumentChunk[]
+    chunks: DocumentChunk[],
+    log: Logger
   ): Promise<void> {
     try {
       const vectors = await this.embeddings.embedTexts(
@@ -120,9 +136,9 @@ export class UploadDocumentUseCase {
           embedding: vectors[index] ?? null
         }))
       );
-      logger.info(`Embeddings stored for document ${documentId}.`);
+      log.info(`embeddings stored for document ${documentId}`);
     } catch (error) {
-      logger.error(`Background embedding failed for document ${documentId}`, error);
+      log.error(`background embedding failed for document ${documentId}`, error);
     }
   }
 }

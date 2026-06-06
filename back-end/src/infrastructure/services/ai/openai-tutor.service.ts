@@ -9,6 +9,7 @@ import type {
   TutorStreamEvent
 } from "@/domain/services/tutor-service";
 import type { EnvConfig } from "@/config/env.config";
+import type { Logger } from "@/domain/services/logger";
 import { TutorRequestFactory } from "./tutor-request-factory";
 import { TutorToolExecutor } from "./tutor-tool-executor";
 import { CitePassagesParser } from "./cite-passages-parser";
@@ -16,7 +17,7 @@ import {
   OpenAiResponseStreamReader,
   type PendingToolCall
 } from "./openai-response-stream-reader";
-import { logger } from "@/shared/logger";
+import { truncate } from "@/shared/logger";
 
 /** OpenAI's streaming create call, narrowed to what this adapter uses. */
 type CreateResponse = (
@@ -45,17 +46,16 @@ export class OpenAiTutorService implements TutorService {
   private readonly requests: TutorRequestFactory;
   private readonly citePassages = new CitePassagesParser();
   private readonly streamReader = new OpenAiResponseStreamReader();
-  private readonly logVerbose: boolean;
 
   constructor(
     config: EnvConfig,
     private readonly tools: TutorToolExecutor,
     private readonly referenceSelector: ReferenceSelector,
-    private readonly markerReconciler: CitationMarkerReconciler
+    private readonly markerReconciler: CitationMarkerReconciler,
+    private readonly logger: Logger
   ) {
     this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
     this.requests = new TutorRequestFactory(config);
-    this.logVerbose = config.TUTOR_LOG_VERBOSE;
   }
 
   async *streamReply(
@@ -64,7 +64,7 @@ export class OpenAiTutorService implements TutorService {
   ): AsyncGenerator<TutorStreamEvent> {
     const createResponse = this.bindCreateResponse();
     const settings = this.requests.settingsFor(request);
-    const log = createTurnLogger(this.logVerbose);
+    const log = this.logger.scope("tutor");
     const state: TurnState = {
       referencesByPage: new Map(),
       fallbackReference: null,
@@ -130,7 +130,7 @@ export class OpenAiTutorService implements TutorService {
     stepText: string,
     request: TutorReplyRequest,
     state: TurnState,
-    log: TurnLogger
+    log: Logger
   ): Generator<TutorStreamEvent> {
     const reference = this.referenceSelector.select({
       answer: stepText,
@@ -153,7 +153,7 @@ export class OpenAiTutorService implements TutorService {
     toolCalls: ReadonlyArray<PendingToolCall>,
     request: TutorReplyRequest,
     state: TurnState,
-    log: TurnLogger
+    log: Logger
   ): Promise<Record<string, unknown>[]> {
     const outputs: Record<string, unknown>[] = [];
     for (const call of toolCalls) {
@@ -167,7 +167,7 @@ export class OpenAiTutorService implements TutorService {
       }
 
       log.info(`tool ${call.name}(${truncate(call.args, 160)})`);
-      const result = await this.tools.execute(call.name, call.args, request);
+      const result = await this.tools.execute(call.name, call.args, request, log);
       log.info(
         `tool ${call.name} ← ${result.output.length} chars · ` +
           `${result.references.length} reference(s)`
@@ -202,53 +202,6 @@ export class OpenAiTutorService implements TutorService {
       this.client.responses
     ) as unknown as CreateResponse;
   }
-}
-
-/** A turn-scoped logger; every line is tagged so concurrent turns stay legible. */
-type TurnLogger = {
-  info: (message: string) => void;
-  warn: (message: string) => void;
-  /** Verbose-only: dump a step's full result (tool text, answer, …) as a block. */
-  detail: (label: string, body: string) => void;
-};
-
-/**
- * Builds a {@link TurnLogger} tagged with a fresh short id, so the interleaved
- * step logs of simultaneous students can be told apart in the output. When
- * `verbose` is on, `detail` dumps the full result of each step as an indented
- * block; otherwise it is a no-op so only the concise step summaries show.
- */
-function createTurnLogger(verbose: boolean): TurnLogger {
-  const tag = `[tutor ${Math.random().toString(36).slice(2, 8)}]`;
-  return {
-    info: (message) => logger.info(`${tag} ${message}`),
-    warn: (message) => logger.warn(`${tag} ${message}`),
-    detail: (label, body) => {
-      if (!verbose) return;
-      logger.info(`${tag} ↳ ${label}:`, `\n${block(body)}`);
-    }
-  };
-}
-
-/** Collapses whitespace and clips to `max` chars for a single-line log preview. */
-function truncate(text: string, max = 120): string {
-  const collapsed = text.replace(/\s+/g, " ").trim();
-  return collapsed.length > max ? `${collapsed.slice(0, max)}…` : collapsed;
-}
-
-/**
- * Indents a (possibly multi-line) value into a readable block for verbose logs,
- * clipping pathologically large bodies so a single trace can't flood the console.
- */
-function block(body: string, max = 16000): string {
-  const text =
-    body.length > max
-      ? `${body.slice(0, max)}\n… (${body.length - max} more characters truncated)`
-      : body;
-  return text
-    .split("\n")
-    .map((line) => `    ${line}`)
-    .join("\n");
 }
 
 /** Renders recorded citation candidates as `[page N] "quote"` lines. */

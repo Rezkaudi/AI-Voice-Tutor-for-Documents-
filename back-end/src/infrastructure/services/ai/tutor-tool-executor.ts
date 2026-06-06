@@ -2,7 +2,9 @@ import type { Reference } from "@/domain/entities/chat";
 import type { EmbeddingService } from "@/domain/services/embedding-service";
 import type { ChunkRanker } from "@/domain/logic/chunk-ranker";
 import type { TutorReplyRequest } from "@/domain/services/tutor-service";
+import type { Logger } from "@/domain/services/logger";
 import type { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
+import { truncate } from "@/shared/logger";
 
 /** Text returned to the model plus the page candidates surfaced this call. */
 export interface ToolResult {
@@ -28,34 +30,44 @@ export class TutorToolExecutor {
   async execute(
     name: string,
     rawArgs: string,
-    request: TutorReplyRequest
+    request: TutorReplyRequest,
+    log: Logger
   ): Promise<ToolResult> {
     const args = this.parseArgs(rawArgs);
     switch (name) {
       case "get_outline":
-        return this.getOutline(request);
+        return this.getOutline(request, log);
       case "get_page":
-        return this.getPage(Number(args.page), request);
+        return this.getPage(Number(args.page), request, log);
       case "search_document":
-        return this.searchDocument(args.query, request);
+        return this.searchDocument(args.query, request, log);
       default:
+        log.warn(`unknown tool requested: ${name}`);
         return { output: `Unknown tool: ${name}`, references: [] };
     }
   }
 
-  private getOutline(request: TutorReplyRequest): ToolResult {
+  private getOutline(request: TutorReplyRequest, log: Logger): ToolResult {
     const outline = request.pages
       .map((page) => `Page ${page.pageNumber}: ${this.previewLine(page.text)}`)
       .join("\n");
+    log.info(`get_outline → ${request.pages.length} page(s) summarised`);
     return {
       output: outline || "The document has no readable pages.",
       references: []
     };
   }
 
-  private getPage(pageNumber: number, request: TutorReplyRequest): ToolResult {
+  private getPage(
+    pageNumber: number,
+    request: TutorReplyRequest,
+    log: Logger
+  ): ToolResult {
     const page = request.pages.find((item) => item.pageNumber === pageNumber);
     if (!page) {
+      log.warn(
+        `get_page ${pageNumber} → no such page (document has ${request.pages.length})`
+      );
       return {
         output: `There is no page ${pageNumber}. The document has ${request.pages.length} page(s).`,
         references: []
@@ -66,6 +78,10 @@ export class TutorToolExecutor {
       request.pages,
       request.chunks
     );
+    log.info(
+      `get_page ${pageNumber} → ${page.text.length} char(s)` +
+        (reference ? " · 1 reference" : " · no reference")
+    );
     return {
       output: `[Page ${page.pageNumber}]\n${page.text}`,
       references: reference ? [reference] : []
@@ -74,14 +90,35 @@ export class TutorToolExecutor {
 
   private async searchDocument(
     rawQuery: unknown,
-    request: TutorReplyRequest
+    request: TutorReplyRequest,
+    log: Logger
   ): Promise<ToolResult> {
-    const query =
-      typeof rawQuery === "string" && rawQuery.trim() ? rawQuery : request.message;
-    const embedding = await this.embeddings.embedQuery(query).catch(() => null);
+    const usedFallback = !(typeof rawQuery === "string" && rawQuery.trim());
+    const query = usedFallback ? request.message : (rawQuery as string);
+    log.info(
+      `search_document query="${truncate(query, 80)}"` +
+        (usedFallback ? " (fell back to student message)" : "")
+    );
+
+    // Embedding is best-effort: a failure degrades to keyword-only ranking
+    // rather than failing the search — but it must not pass silently.
+    let embedding: number[] | null = null;
+    try {
+      embedding = await this.embeddings.embedQuery(query);
+    } catch (error) {
+      log.warn(
+        `search_document embedding failed — keyword-only ranking (${describe(error)})`
+      );
+    }
+
     const ranked = this.ranker
       .rank(query, request.chunks, embedding)
       .slice(0, TutorToolExecutor.SEARCH_LIMIT);
+    log.info(
+      `search_document ranked ${request.chunks.length} chunk(s) · ` +
+        `mode=${embedding ? "hybrid keyword+vector" : "keyword-only"} → ` +
+        `${ranked.length} hit(s)`
+    );
     if (!ranked.length) {
       return { output: "No matching passages were found in the document.", references: [] };
     }
@@ -103,6 +140,11 @@ export class TutorToolExecutor {
         citations: []
       });
     }
+    const top = ranked[0]!;
+    log.info(
+      `search_document → top page ${top.chunk.pageNumber} (score ${top.score.toFixed(2)}) · ` +
+        `pages [${references.map((reference) => reference.pageNumber).join(", ")}]`
+    );
     return { output, references };
   }
 
@@ -136,4 +178,8 @@ export class TutorToolExecutor {
     const bodyPart = body.length > bodyBudget ? `${body.slice(0, bodyBudget)}...` : body;
     return `${headingPart} — ${bodyPart}`;
   }
+}
+
+function describe(error: unknown): string {
+  return error instanceof Error ? error.message : "unknown error";
 }
