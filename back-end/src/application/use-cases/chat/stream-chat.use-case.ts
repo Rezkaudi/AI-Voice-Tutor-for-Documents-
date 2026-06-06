@@ -56,8 +56,7 @@ export class StreamChatUseCase {
     }
 
     // The tutor reads the document agentically via tools, so hand it
-    // everything: every page (get_page / get_outline) and every chunk
-    // (search_document).
+    // everything: every page (get_page) and every chunk (search_document).
     const [pages, chunks] = await Promise.all([
       this.repository.getPages(documentId),
       this.repository.getChunks(documentId)

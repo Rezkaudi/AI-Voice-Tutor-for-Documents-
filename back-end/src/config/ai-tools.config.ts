@@ -5,21 +5,6 @@
 export const TUTOR_TOOLS = [
   {
     type: "function",
-    name: "get_outline",
-    description:
-      "List every page of the document with a short preview of how it begins. " +
-      "Use it to orient yourself, locate where a topic lives, or answer questions " +
-      "about the document's structure or overall scope.",
-    parameters: {
-      type: "object",
-      properties: {},
-      required: [],
-      additionalProperties: false
-    },
-    strict: true
-  },
-  {
-    type: "function",
     name: "get_page",
     description:
       "Read the full text of one page by its number. Use it for positional " +

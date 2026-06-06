@@ -13,10 +13,10 @@ export interface ToolResult {
 }
 
 /**
- * Runs the document-reading tools the tutor calls agentically: `get_outline`,
- * `get_page`, and `search_document`. Each returns text for the model and the
- * page references the UI may later highlight. `cite_passages` is handled by the
- * service itself, not here.
+ * Runs the document-reading tools the tutor calls agentically: `get_page` and
+ * `search_document`. Each returns text for the model and the page references the
+ * UI may later highlight. `cite_passages` is handled by the service itself, not
+ * here.
  */
 export class TutorToolExecutor {
   private static readonly SEARCH_LIMIT = 10;
@@ -35,8 +35,6 @@ export class TutorToolExecutor {
   ): Promise<ToolResult> {
     const args = this.parseArgs(rawArgs);
     switch (name) {
-      case "get_outline":
-        return this.getOutline(request, log);
       case "get_page":
         return this.getPage(Number(args.page), request, log);
       case "search_document":
@@ -45,17 +43,6 @@ export class TutorToolExecutor {
         log.warn(`unknown tool requested: ${name}`);
         return { output: `Unknown tool: ${name}`, references: [] };
     }
-  }
-
-  private getOutline(request: TutorReplyRequest, log: Logger): ToolResult {
-    const outline = request.pages
-      .map((page) => `Page ${page.pageNumber}: ${this.previewLine(page.text)}`)
-      .join("\n");
-    log.info(`get_outline → ${request.pages.length} page(s) summarised`);
-    return {
-      output: outline || "The document has no readable pages.",
-      references: []
-    };
   }
 
   private getPage(
@@ -154,29 +141,6 @@ export class TutorToolExecutor {
     } catch {
       return {};
     }
-  }
-
-  /**
-   * Outline preview: the first non-empty line (often the heading) plus a short
-   * body snippet, so the tutor can tell sections apart.
-   */
-  private previewLine(text: string): string {
-    const lines = text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-    if (!lines.length) {
-      return "(empty page)";
-    }
-    const heading = lines[0]!;
-    const body = lines.slice(1).join(" ").replace(/\s+/g, " ").trim();
-    const headingPart = heading.length > 120 ? `${heading.slice(0, 120)}...` : heading;
-    if (!body) {
-      return headingPart;
-    }
-    const bodyBudget = Math.max(40, 240 - headingPart.length);
-    const bodyPart = body.length > bodyBudget ? `${body.slice(0, bodyBudget)}...` : body;
-    return `${headingPart} — ${bodyPart}`;
   }
 }
 

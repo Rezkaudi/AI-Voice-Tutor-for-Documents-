@@ -36,8 +36,8 @@ interface TurnState {
  * `TutorService` backed by OpenAI.
  *
  * The model reads the document agentically: it calls `search_document` /
- * `get_page` / `get_outline` (run by {@link TutorToolExecutor}) and records
- * quotes via `cite_passages`. This class only drives that loop — request
+ * `get_page` (run by {@link TutorToolExecutor}) and records quotes via
+ * `cite_passages`. This class only drives that loop — request
  * assembly, stream decoding, reference selection, and marker reconciliation are
  * each delegated to a collaborator.
  */
