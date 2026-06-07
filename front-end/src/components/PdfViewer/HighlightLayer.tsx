@@ -66,11 +66,11 @@ export function HighlightLayer({
               width: box.rect.width,
               height: box.rect.height,
               background: box.isFocus
-                ? "oklch(0.88 0.16 95 / 0.55)"
-                : "oklch(0.92 0.13 95 / 0.42)",
+                ? "oklch(0.80 0.18 65 / 0.60)"
+                : "oklch(0.94 0.10 100 / 0.68)",
               boxShadow: box.isFocus
-                ? "0 0 0 1px oklch(0.78 0.18 80 / 0.55)"
-                : "0 0 0 1px oklch(0.82 0.14 85 / 0.35)",
+                ? "0 0 0 1.5px oklch(0.68 0.20 55 / 0.85)"
+                : "0 0 0 1px oklch(0.85 0.10 100 / 0.58)",
               mixBlendMode: "multiply"
             }}
           />
