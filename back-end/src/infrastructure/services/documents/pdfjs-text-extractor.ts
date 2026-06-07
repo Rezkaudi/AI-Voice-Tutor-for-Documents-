@@ -54,28 +54,81 @@ export class PdfJsTextExtractor implements DocumentTextExtractor {
   }
 }
 
+/** A positioned text run from pdf.js (`transform` is `[a, b, c, d, x, y]`). */
+interface PositionedItem {
+  str: string;
+  x: number;
+  y: number;
+  height: number;
+}
+
 /**
- * Builds the page text from pdf.js text items while PRESERVING line structure.
+ * Builds the page text from pdf.js text items in true VISUAL reading order.
  *
- * pdf.js tags each text run with `hasEOL` (it ends a visual line). The old code
- * joined every run with a single space, which flattened tables, conjugation
- * grids, and "How To Use" boxes into one unreadable run — the model then could
- * not tell a formation rule from prose and skipped it. We instead break a line
- * on `hasEOL`, so a table's rows survive as separate lines.
+ * pdf.js returns items in CONTENT-STREAM order, which is how the PDF was
+ * authored, not how it reads on the page. Generator tools frequently emit a
+ * boxed "Meaning / How To Use" table LAST in the stream even though it is drawn
+ * near the top — so naively concatenating items dumps that box at the BOTTOM of
+ * the extracted text. We instead reconstruct order from each item's position:
+ * group runs into lines by their baseline `y` (top→bottom), then sort each line
+ * left→right by `x`. This keeps tables, conjugation grids, and side-by-side
+ * boxes in the order a reader actually sees them.
  *
  * Newlines are safe downstream: the citation matchers collapse all whitespace
  * (newlines included) to single spaces with an offset map, so highlighting is
  * unaffected, while the LLM now SEES the layout in the injected lesson material.
  */
 function itemsToLayoutText(items: readonly unknown[]): string {
-  let out = "";
+  const positioned: PositionedItem[] = [];
   for (const item of items) {
     if (!item || typeof item !== "object" || !("str" in item)) continue;
-    const run = item as { str: string; hasEOL?: boolean };
-    out += run.str;
-    out += run.hasEOL ? "\n" : " ";
+    const run = item as { str: string; transform?: number[]; height?: number };
+    if (!run.str) continue;
+    const transform = run.transform;
+    if (!Array.isArray(transform) || transform.length < 6) continue;
+    positioned.push({
+      str: run.str,
+      x: transform[4]!,
+      y: transform[5]!,
+      height: run.height ?? Math.abs(transform[3] ?? 0)
+    });
   }
-  return normalizeLayoutText(out);
+
+  return normalizeLayoutText(positionedItemsToText(positioned));
+}
+
+/**
+ * Orders positioned runs into top-to-bottom, left-to-right reading order.
+ *
+ * Runs whose baselines sit within a small vertical tolerance are treated as the
+ * same visual line; the tolerance scales with glyph height so large headings and
+ * small body text both group correctly. Lines are emitted top→bottom (PDF `y`
+ * grows upward, so we sort descending) and each line's runs left→right.
+ */
+function positionedItemsToText(items: PositionedItem[]): string {
+  if (items.length === 0) return "";
+
+  const byTop = [...items].sort((a, b) => b.y - a.y);
+  const lines: PositionedItem[][] = [];
+  for (const item of byTop) {
+    const current = lines[lines.length - 1];
+    const reference = current?.[0];
+    const tolerance = Math.max(2, (reference?.height ?? item.height) * 0.5);
+    if (current && reference && Math.abs(reference.y - item.y) <= tolerance) {
+      current.push(item);
+    } else {
+      lines.push([item]);
+    }
+  }
+
+  return lines
+    .map((line) =>
+      line
+        .sort((a, b) => a.x - b.x)
+        .map((run) => run.str)
+        .join(" ")
+    )
+    .join("\n");
 }
 
 /**
