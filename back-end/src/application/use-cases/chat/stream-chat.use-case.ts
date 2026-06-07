@@ -80,6 +80,17 @@ export class StreamChatUseCase {
         `${chunks.length} chunk(s) · ${history.length} history turn(s) · ` +
         `lesson pages=[${selectedPages.join(", ")}] → streaming answer`
     );
+
+    // Log the verbatim text of the pages the student chose to study, so the
+    // exact material handed to the tutor is visible in the logs.
+    if (selectedPages.length > 0) {
+      const byNumber = new Map(pages.map((page) => [page.pageNumber, page]));
+      for (const pageNumber of selectedPages) {
+        const page = byNumber.get(pageNumber);
+        log.detail(`selected page ${pageNumber} content`, page?.text ?? "");
+      }
+    }
+
     const tutor = this.tutor;
 
     return (async function* stream(): AsyncGenerator<StreamEvent> {
