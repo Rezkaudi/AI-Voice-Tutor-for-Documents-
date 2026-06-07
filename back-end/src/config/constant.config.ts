@@ -19,9 +19,13 @@ export interface TutorGenerationProfile {
     maxToolSteps: number;
 }
 
-/** Full-quality tutoring: fastest reasoning, full history. */
+/**
+ * Full-quality tutoring: a small reasoning budget so the model aligns each
+ * recorded citation with the exact sentence/example it teaches (at "none" the
+ * quotes drifted from the prose), plus full history.
+ */
 export const NORMAL_GENERATION: TutorGenerationProfile = {
-    reasoningEffort: "none",
+    reasoningEffort: "low",
     historyWindow: 8,
     maxOutputTokens: 700,
     maxToolSteps: 8

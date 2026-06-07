@@ -16,7 +16,16 @@ export type { CitationCandidate } from "@/domain/logic/citation/citation-types";
  * model recorded no citations at all.
  */
 export class CitationResolver {
-  private static readonly MIN_QUOTE_LENGTH = 8;
+  /** Floor for Latin-script quotes — guards against trivially short matches. */
+  private static readonly MIN_QUOTE_LENGTH = 6;
+  /**
+   * Floor for quotes containing CJK characters. CJK is far denser than Latin —
+   * a page TITLE like "だけ" (2 chars) or "だろう" (3) is a real, locatable
+   * citation, so the 6-char Latin floor would wrongly drop it.
+   */
+  private static readonly MIN_QUOTE_LENGTH_CJK = 2;
+  /** Hiragana, katakana, CJK ideographs, and half-width kana. */
+  private static readonly CJK = /[぀-ヿ㐀-鿿豈-﫿ｦ-ﾟ]/;
 
   constructor(
     private readonly locator: QuoteLocator,
@@ -39,7 +48,7 @@ export class CitationResolver {
     for (const candidate of candidates) {
       const page = pageByNumber.get(candidate.pageNumber);
       const quote = candidate.quote?.trim();
-      if (!page || !quote || quote.length < CitationResolver.MIN_QUOTE_LENGTH) {
+      if (!page || !quote || !CitationResolver.longEnough(quote)) {
         continue;
       }
       const span = this.locator.locate(page.text, quote);
@@ -60,6 +69,17 @@ export class CitationResolver {
     }
 
     return resolved;
+  }
+
+  /**
+   * A quote clears the floor when it is long enough for its script: CJK quotes
+   * pass at 2+ chars (so short page titles survive), Latin quotes at 6+.
+   */
+  private static longEnough(quote: string): boolean {
+    const min = CitationResolver.CJK.test(quote)
+      ? CitationResolver.MIN_QUOTE_LENGTH_CJK
+      : CitationResolver.MIN_QUOTE_LENGTH;
+    return quote.length >= min;
   }
 
   /** Synthesises citations from the answer when the model skipped `cite_passages`. */
