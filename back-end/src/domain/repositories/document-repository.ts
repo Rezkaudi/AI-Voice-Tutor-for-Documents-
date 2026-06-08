@@ -23,17 +23,17 @@ export interface ProcessedDocument {
  * lives in the infrastructure layer.
  */
 export interface DocumentRepository {
-  /** Persists a document with its pages and chunks in one transaction. */
+  /** Persists a document (with its owner) plus its pages and chunks in one transaction. */
   save(input: ProcessedDocument): Promise<void>;
 
-  /** Loads a document record by id, or `null` when it does not exist. */
-  findById(id: string): Promise<DocumentRecord | null>;
+  /** Loads a document owned by `userId`, or `null` when missing / not theirs. */
+  findById(id: string, userId: string): Promise<DocumentRecord | null>;
 
-  /** Returns every ready document, newest first. */
-  listReady(): Promise<DocumentRecord[]>;
+  /** Returns the user's ready documents, newest first. */
+  listReady(userId: string): Promise<DocumentRecord[]>;
 
-  /** Deletes a document and its pages/chunks. A no-op when missing. */
-  delete(id: string): Promise<void>;
+  /** Deletes a document owned by `userId` and its pages/chunks. A no-op when missing. */
+  delete(id: string, userId: string): Promise<void>;
 
   /** Returns a document's pages, ordered by page number. */
   getPages(documentId: string): Promise<DocumentPage[]>;

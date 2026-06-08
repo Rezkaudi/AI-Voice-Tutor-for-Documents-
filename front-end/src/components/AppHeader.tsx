@@ -1,7 +1,9 @@
 import { BookOpen } from "lucide-react";
 import { useDocumentStore } from "@/store/documentStore";
 import { useSessionStore } from "@/store/sessionStore";
+import { useAuthStore } from "@/store/authStore";
 import { LibraryMenu } from "./LibraryMenu";
+import { UserMenu } from "./UserMenu";
 
 /** Top bar: product title, the loaded document's name, and the library menu. */
 export function AppHeader() {
@@ -10,6 +12,8 @@ export function AppHeader() {
   const library = useDocumentStore((s) => s.library);
   const libraryLoading = useDocumentStore((s) => s.libraryLoading);
   const deletingId = useDocumentStore((s) => s.deletingId);
+
+  const user = useAuthStore((s) => s.user);
 
   const session = useSessionStore.getState();
   const documentStore = useDocumentStore.getState();
@@ -40,6 +44,7 @@ export function AppHeader() {
           onFile={session.handleUpload}
           onDelete={documentStore.deleteDocument}
         />
+        {user && <UserMenu user={user} />}
       </div>
     </header>
   );

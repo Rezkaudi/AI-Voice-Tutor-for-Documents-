@@ -14,6 +14,8 @@ export type DocumentStatus = "ready" | "failed";
 /** The metadata record for a processed document. */
 export interface DocumentRecord {
   id: string;
+  /** The owner — the user who uploaded it. Documents are private per user. */
+  userId: string;
   title: string;
   fileName: string;
   mimeType: string;

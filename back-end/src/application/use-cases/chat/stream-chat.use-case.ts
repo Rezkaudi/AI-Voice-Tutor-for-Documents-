@@ -9,6 +9,8 @@ import { MAX_LESSON_PAGES } from "@/config/constant.config";
 
 /** The chat request payload, mirroring the front-end `ChatPayload`. */
 export interface StreamChatInput {
+  /** The signed-in user; the document must belong to them. */
+  readonly userId: string;
   readonly documentId: string;
   readonly message: string;
   readonly language: string;
@@ -52,7 +54,7 @@ export class StreamChatUseCase {
     );
     log.detail("student message", message);
 
-    const document = await this.repository.findById(documentId);
+    const document = await this.repository.findById(documentId, input.userId);
     if (!document) {
       log.warn(`document ${documentId} not found`);
       throw new NotFoundError("Document not found.");

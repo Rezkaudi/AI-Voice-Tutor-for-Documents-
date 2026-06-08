@@ -19,12 +19,12 @@ export class GetDocumentFileUseCase {
     private readonly storage: FileStorage
   ) {}
 
-  async execute(documentId: unknown): Promise<DocumentFileResult> {
+  async execute(documentId: unknown, userId: string): Promise<DocumentFileResult> {
     if (typeof documentId !== "string" || documentId.trim().length === 0) {
       throw new ValidationError("A document id is required.");
     }
 
-    const document = await this.repository.findById(documentId);
+    const document = await this.repository.findById(documentId, userId);
     if (!document) {
       throw new NotFoundError("File not found.");
     }

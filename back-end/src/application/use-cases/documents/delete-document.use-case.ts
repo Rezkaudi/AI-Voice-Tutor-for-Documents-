@@ -12,12 +12,12 @@ export class DeleteDocumentUseCase {
     private readonly fileStorage: FileStorage
   ) {}
 
-  async execute(documentId: unknown): Promise<void> {
+  async execute(documentId: unknown, userId: string): Promise<void> {
     if (typeof documentId !== "string" || documentId.trim().length === 0) {
       throw new ValidationError("A document id is required.");
     }
 
-    const document = await this.repository.findById(documentId);
+    const document = await this.repository.findById(documentId, userId);
     if (!document) {
       throw new NotFoundError("Document not found.");
     }
@@ -25,6 +25,6 @@ export class DeleteDocumentUseCase {
     // Delete the file first so a partial failure leaves an orphaned row rather
     // than an orphaned S3 object (cheaper to clean up).
     await this.fileStorage.delete(document.storagePath);
-    await this.repository.delete(documentId);
+    await this.repository.delete(documentId, userId);
   }
 }

@@ -32,6 +32,13 @@ export class ValidationError extends AppError {
   }
 }
 
+/** The request lacks valid authentication credentials. */
+export class UnauthorizedError extends AppError {
+  constructor(message = "Authentication is required.") {
+    super(message, 401, "UNAUTHORIZED");
+  }
+}
+
 /** A requested resource does not exist. */
 export class NotFoundError extends AppError {
   constructor(message = "The requested resource was not found.") {

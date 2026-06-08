@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type {
   DocumentChunk,
   DocumentRecord
@@ -8,6 +7,7 @@ import type { DocumentRepository } from "@/domain/repositories/document-reposito
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
 import type { EmbeddingService } from "@/domain/services/embedding-service";
 import type { FileStorage } from "@/domain/services/file-storage";
+import type { IdGenerator } from "@/domain/services/id-generator";
 import type { DocumentChunker } from "@/domain/logic/document-chunker";
 import type { UploadValidator } from "@/domain/logic/upload-validator";
 import type { FileNaming } from "@/domain/logic/file-naming";
@@ -15,6 +15,8 @@ import type { Logger } from "@/domain/services/logger";
 
 /** The uploaded file as received by the application layer. */
 export interface UploadDocumentInput {
+  /** The owner this document belongs to. */
+  readonly userId: string;
   readonly buffer: Buffer;
   readonly filename: string;
   readonly mimeType: string;
@@ -45,6 +47,7 @@ export class UploadDocumentUseCase {
     private readonly validator: UploadValidator,
     private readonly chunker: DocumentChunker,
     private readonly naming: FileNaming,
+    private readonly idGenerator: IdGenerator,
     private readonly logger: Logger
   ) {}
 
@@ -66,9 +69,9 @@ export class UploadDocumentUseCase {
     }
     log.info(`validated as ${validation.kind} → extracting text`);
 
-    const id = randomUUID();
+    const id = this.idGenerator.uuid();
     const pages = (await this.extractor.extract(input.buffer, validation.kind)).map(
-      (page) => ({ ...page, id: randomUUID(), documentId: id })
+      (page) => ({ ...page, id: this.idGenerator.uuid(), documentId: id })
     );
     log.info(`extracted ${pages.length} page(s) → chunking`);
     const chunks: DocumentChunk[] = this.chunker.chunk(pages).map((chunk) => ({
@@ -95,6 +98,7 @@ export class UploadDocumentUseCase {
     const now = new Date().toISOString();
     const record: DocumentRecord = {
       id,
+      userId: input.userId,
       title: this.naming.toTitle(input.filename),
       fileName: input.filename,
       mimeType: input.mimeType || this.validator.defaultContentType(validation.kind),

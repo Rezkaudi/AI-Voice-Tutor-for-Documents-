@@ -1,7 +1,16 @@
-import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryColumn
+} from "typeorm";
 import type { DocumentStatus, UploadKind } from "@/domain/entities/document";
 import { DocumentPageOrmEntity } from "./document-page.entity";
 import { DocumentChunkOrmEntity } from "./document-chunk.entity";
+import { UserOrmEntity } from "./user.entity";
 
 /**
  * TypeORM persistence model for a document. An infrastructure detail — mapped
@@ -11,6 +20,16 @@ import { DocumentChunkOrmEntity } from "./document-chunk.entity";
 export class DocumentOrmEntity {
   @PrimaryColumn("uuid")
   id!: string;
+
+  // Owner FK. Deleting the user cascades to their documents (and pages/chunks
+  // cascade from documents in turn).
+  @Index()
+  @Column({ name: "user_id", type: "uuid" })
+  userId!: string;
+
+  @ManyToOne(() => UserOrmEntity, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "user_id" })
+  user!: UserOrmEntity;
 
   @Column({ type: "text" })
   title!: string;
