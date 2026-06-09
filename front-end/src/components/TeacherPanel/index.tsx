@@ -40,7 +40,6 @@ interface TeacherPanelProps {
   onMicToggle: () => void;
   onCallToggle: () => void | Promise<void>;
   onClearChat: () => void;
-  onEditPages: () => void;
   onClosePageDialog: () => void;
   onSubmitPageSelection: (pages: number[]) => void;
 }
@@ -67,7 +66,6 @@ export function TeacherPanel({
   onMicToggle,
   onCallToggle,
   onClearChat,
-  onEditPages,
   onClosePageDialog,
   onSubmitPageSelection
 }: TeacherPanelProps) {
@@ -106,8 +104,6 @@ export function TeacherPanel({
       <CornerButtons
         showTranscript={showTranscript}
         onToggleTranscript={() => setShowTranscript((open) => !open)}
-        onEditPages={onEditPages}
-        editPagesDisabled={false}
         saveCost={saveCost}
         onSaveCostToggle={onSaveCostToggle}
         saveCostDisabled={saveCostDisabled}
