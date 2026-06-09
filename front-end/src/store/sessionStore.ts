@@ -103,12 +103,17 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     useSpeechStore.getState().stopSpeaking();
   },
 
-  /** Mic button: toggle listening, stopping playback before a new turn. */
+  /**
+   * Mic button: toggle listening. Tapping it while the teacher is talking is a
+   * barge-in — abort the in-flight answer (LLM stream + queued TTS) and cut the
+   * current playback so the learner can take the floor immediately.
+   */
   handleMicToggle: () => {
     const voice = useVoiceStore.getState();
     if (voice.isListening) {
       voice.stop();
     } else {
+      useChatStore.getState().abort();
       useSpeechStore.getState().stopSpeaking();
       voice.start();
     }

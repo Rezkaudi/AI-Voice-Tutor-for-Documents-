@@ -41,26 +41,28 @@ export function CaptionStrip({ caption }: CaptionStripProps) {
       >
         {isUser ? "You" : "Teacher"}
       </span>
-      <span className="block min-w-0 flex-[0_1_auto] overflow-hidden whitespace-nowrap text-center">
-        {words.map((text, i) => {
-          const index = start + i;
-          const isActive = index === activeIndex;
-          return (
-            <span
-              key={index}
-              className={cx(
-                "text-[clamp(1.02rem,2.5vh,1.32rem)] font-semibold leading-[1.35] text-[oklch(0.68_0.015_215)] transition-colors duration-160 ease-out",
-                isActive &&
-                  (isUser
-                    ? "text-[oklch(0.92_0.12_150)] [text-shadow:0_0_12px_oklch(0.78_0.14_150/0.5)]"
-                    : "text-[oklch(0.97_0.035_95)] [text-shadow:0_0_12px_oklch(0.85_0.13_90/0.5)]")
-              )}
-            >
-              {spaced && i > 0 ? " " : ""}
-              {text}
-            </span>
-          );
-        })}
+      <span className="flex min-w-0 flex-[0_1_auto] justify-end overflow-hidden">
+        <span className="whitespace-nowrap">
+          {words.map((text, i) => {
+            const index = start + i;
+            const isActive = index === activeIndex;
+            return (
+              <span
+                key={index}
+                className={cx(
+                  "text-[clamp(1.02rem,2.5vh,1.32rem)] font-semibold leading-[1.35] text-[oklch(0.68_0.015_215)] transition-colors duration-160 ease-out",
+                  isActive &&
+                    (isUser
+                      ? "text-[oklch(0.92_0.12_150)] [text-shadow:0_0_12px_oklch(0.78_0.14_150/0.5)]"
+                      : "text-[oklch(0.97_0.035_95)] [text-shadow:0_0_12px_oklch(0.85_0.13_90/0.5)]")
+                )}
+              >
+                {spaced && i > 0 ? " " : ""}
+                {text}
+              </span>
+            );
+          })}
+        </span>
       </span>
     </div>
   );

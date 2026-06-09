@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { memo, useState } from "react";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentPage, DocumentReference } from "@/lib/types";
@@ -19,6 +19,7 @@ interface DocumentBoardProps {
   isLoading?: boolean;
   onPageChange: (page: number) => void;
   onFocusCitation: (citation: DocumentReference["citations"][number]) => void;
+  onEditPages?: () => void;
 }
 
 /**
@@ -36,7 +37,8 @@ function DocumentBoardComponent({
   activeCitationKey,
   isLoading = false,
   onPageChange,
-  onFocusCitation
+  onFocusCitation,
+  onEditPages
 }: DocumentBoardProps) {
   const isPdf = mimeType === "application/pdf" && !!fileUrl;
   const [pdfLoading, setPdfLoading] = useState(isPdf);
@@ -62,12 +64,24 @@ function DocumentBoardComponent({
         <div className="flex items-center justify-between gap-3.5 max-[560px]:flex-col max-[560px]:items-stretch">
           <div className="min-w-0">
             <h2 className="m-0 text-base">Page {activePage}</h2>
-            <p className="mb-0 mt-1 text-[0.85rem] text-muted">
-              {citations.length
-                ? `${citations.length} cited passage${citations.length === 1 ? "" : "s"}`
-                : "Original document"}
-            </p>
+            {citations.length > 0 && (
+              <p className="mb-0 mt-1 text-[0.85rem] text-muted">
+                {`${citations.length} cited passage${citations.length === 1 ? "" : "s"}`}
+              </p>
+            )}
           </div>
+          {onEditPages ? (
+            <button
+              className={ui.button}
+              type="button"
+              aria-label="Choose which pages to study"
+              title="Choose which pages to study"
+              onClick={onEditPages}
+            >
+              <BookOpen size={17} aria-hidden />
+              Teaching pages
+            </button>
+          ) : null}
           <div className={ui.buttonRow}>
             <button
               className={ui.iconButton}
@@ -113,7 +127,7 @@ function DocumentBoardComponent({
             {fileUrl ? (
               <a className={ui.button} href={fileUrl} target="_blank" rel="noreferrer">
                 <ExternalLink size={17} aria-hidden />
-                Open
+                {/* Open */}
               </a>
             ) : null}
           </div>

@@ -1,12 +1,10 @@
-import { BookOpen, Captions, Leaf, RotateCcw } from "lucide-react";
+import { Captions, RotateCcw } from "lucide-react";
 import { cx } from "@/lib/uiClasses";
 import { cornerButton, cornerButtonActive, cornerLabel } from "./styles";
 
 interface CornerButtonsProps {
   showTranscript: boolean;
   onToggleTranscript: () => void;
-  onEditPages: () => void;
-  editPagesDisabled: boolean;
   saveCost: boolean;
   onSaveCostToggle: () => void;
   saveCostDisabled: boolean;
@@ -18,8 +16,6 @@ interface CornerButtonsProps {
 export function CornerButtons({
   showTranscript,
   onToggleTranscript,
-  onEditPages,
-  editPagesDisabled,
   saveCost,
   onSaveCostToggle,
   saveCostDisabled,
@@ -29,10 +25,6 @@ export function CornerButtons({
   const transcriptLabel = showTranscript
     ? "Hide the lesson transcript"
     : "Show the lesson transcript";
-  const saveCostLabel = saveCost
-    ? "Save-cost mode is on — using the lighter, cheaper tutor model"
-    : "Turn on save-cost mode to use a cheaper tutor model";
-
   return (
     <>
       <button
@@ -45,22 +37,10 @@ export function CornerButtons({
         onClick={onToggleTranscript}
       >
         <Captions size={16} aria-hidden />
-        <span className={cornerLabel}>{showTranscript ? "Hide" : "Transcript"}</span>
+        {/* <span className={cornerLabel}>{showTranscript ? "Hide" : "Transcript"}</span> */}
       </button>
 
-      <button
-        className={cx(cornerButton, "left-[60px] sm:left-[152px]")}
-        type="button"
-        aria-label="Choose which pages to study"
-        title="Choose which pages to study"
-        onClick={onEditPages}
-        disabled={editPagesDisabled}
-      >
-        <BookOpen size={16} aria-hidden />
-        <span className={cornerLabel}>Pages</span>
-      </button>
-
-      <button
+      {/* <button
         className={cx(cornerButton, "right-[58px] sm:right-[76px]", saveCost && cornerButtonActive)}
         type="button"
         aria-pressed={saveCost}
@@ -71,7 +51,7 @@ export function CornerButtons({
       >
         <Leaf size={16} aria-hidden />
         <span className={cornerLabel}>Save-cost{saveCost ? " · On" : ""}</span>
-      </button>
+      </button> */}
 
       <button
         className={cx(cornerButton, "right-3")}
