@@ -36,6 +36,7 @@
   --animate-halo-breath: halo-breath 3s ease-in-out infinite;
   --animate-halo-spin: halo-spin 3s linear infinite;
   --animate-wave-bar: wave-bar 0.9s ease-in-out infinite;
+  --animate-speak-pulse: speak-pulse 1.5s ease-in-out infinite;
 }
 
 @layer base {
@@ -229,6 +230,25 @@
 
   50% {
     height: 22px;
+  }
+}
+
+@keyframes speak-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 oklch(0.7 0.13 154 / 0.55),
+      0 0 0 5px oklch(0.7 0.13 154 / 0.22),
+      0 14px 30px oklch(0.45 0.1 154 / 0.45);
+  }
+
+  50% {
+    transform: scale(1.05);
+    box-shadow:
+      0 0 0 11px oklch(0.7 0.13 154 / 0),
+      0 0 0 22px oklch(0.7 0.13 154 / 0),
+      0 16px 34px oklch(0.45 0.1 154 / 0.5);
   }
 }
 

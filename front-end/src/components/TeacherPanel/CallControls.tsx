@@ -1,4 +1,4 @@
-import { Loader2, Mic, MicOff, Phone, PhoneOff } from "lucide-react";
+import { Loader2, MicOff, Phone, PhoneOff } from "lucide-react";
 import { cx } from "@/lib/uiClasses";
 import {
   callButtonBase,
@@ -7,6 +7,21 @@ import {
   micCircleActive,
   micCircleBase
 } from "./styles";
+
+/** Animated purple voice equalizer shown while the mic is capturing the learner. */
+function VoiceWave() {
+  return (
+    <span className="flex h-7 items-center gap-[3px]" aria-hidden>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className="w-[3px] min-h-[6px] rounded-full bg-current animate-wave-bar motion-reduce:animate-none"
+          style={{ animationDelay: `${i * 110}ms` }}
+        />
+      ))}
+    </span>
+  );
+}
 
 interface CallControlsProps {
   callMode: boolean;
@@ -45,7 +60,7 @@ export function CallControls({
         onClick={onCallToggle}
         disabled={!micSupported || micBlocked}
       >
-        {callMode ? <PhoneOff size={26} aria-hidden /> : <Phone size={26} aria-hidden />}
+        {callMode ? <PhoneOff size={22} aria-hidden /> : <Phone size={22} aria-hidden />}
         <span>{callMode ? "End" : "Call"}</span>
       </button>
 
@@ -59,11 +74,11 @@ export function CallControls({
         disabled={!callMode || isStreaming || isTranscribing || micBlocked}
       >
         {isTranscribing ? (
-          <Loader2 className="animate-spin-fast" size={20} aria-hidden />
+          <Loader2 className="animate-spin-fast" size={26} aria-hidden />
         ) : isListening ? (
-          <Mic size={20} aria-hidden />
+          <VoiceWave />
         ) : (
-          <MicOff size={20} aria-hidden />
+          <MicOff size={26} aria-hidden />
         )}
       </button>
     </div>

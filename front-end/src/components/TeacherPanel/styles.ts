@@ -22,7 +22,7 @@ export const langOptionActive =
   "bg-[oklch(0.78_0.13_165)]! text-[oklch(0.18_0.04_230)]!";
 
 export const callButtonBase =
-  "inline-flex h-16 min-w-[116px] items-center gap-2.5 rounded-full border-0 px-[22px] text-base font-bold tracking-[0.02em] text-[oklch(0.99_0.005_100)] shadow-[0_14px_32px_oklch(0.18_0.04_244/0.55)] transition-[transform,box-shadow,filter] duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-50 [&:active:not(:disabled)]:translate-y-0 [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]";
+  "inline-flex h-[50px] min-w-[96px] items-center gap-2 rounded-full border-0 px-[18px] text-[0.92rem] font-bold tracking-[0.02em] text-[oklch(0.99_0.005_100)] shadow-[0_10px_24px_oklch(0.18_0.04_244/0.5)] transition-[transform,box-shadow,filter] duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-50 [&:active:not(:disabled)]:translate-y-0 [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]";
 
 export const callButtonEnd =
   "animate-listen-pulse-slow bg-[linear-gradient(140deg,oklch(0.62_0.18_28),oklch(0.5_0.18_22))]";
@@ -31,7 +31,7 @@ export const callButtonStart =
   "bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))]";
 
 export const micCircleBase =
-  "grid h-[52px] w-[52px] place-items-center rounded-full border border-[oklch(0.46_0.04_230)] bg-[oklch(0.32_0.035_232)] text-[oklch(0.94_0.012_100)] transition-[transform,background,border-color] duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-[0.42] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:bg-[oklch(0.38_0.04_232)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]";
+  "relative grid h-[72px] w-[72px] place-items-center rounded-full border border-[oklch(0.46_0.04_230)] bg-[oklch(0.32_0.035_232)] text-[oklch(0.94_0.012_100)] shadow-[0_8px_22px_oklch(0.12_0.03_244/0.45)] transition-[transform,background,border-color,box-shadow] duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-[0.42] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:bg-[oklch(0.38_0.04_232)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]";
 
 export const micCircleActive =
-  "animate-listen-pulse border-[oklch(0.7_0.13_154)] bg-[oklch(0.55_0.11_154)] text-[oklch(0.99_0.008_138)]";
+  "animate-speak-pulse border-[oklch(0.7_0.13_154)] bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))] text-[oklch(0.99_0.008_138)]";
