@@ -1,4 +1,4 @@
-import { Loader2, MicOff, Phone, PhoneOff } from "lucide-react";
+import { Loader2, Mic, MicOff, Phone, PhoneOff } from "lucide-react";
 import { cx } from "@/lib/uiClasses";
 import {
   callButtonBase,
@@ -45,7 +45,14 @@ export function CallControls({
   onCallToggle,
   onMicClick
 }: CallControlsProps) {
-  const micLabel = isListening ? "Mute microphone" : "Speak now";
+  // While the teacher is talking, the mic doubles as a barge-in: tapping it
+  // cuts the answer short and hands the floor to the learner.
+  const isTeacherTalking = isStreaming && !isListening;
+  const micLabel = isListening
+    ? "Mute microphone"
+    : isTeacherTalking
+      ? "Interrupt and speak"
+      : "Speak now";
   return (
     <div
       className="flex items-center justify-center gap-[clamp(14px,3vw,26px)] pb-1 pt-1.5"
@@ -71,12 +78,14 @@ export function CallControls({
         aria-pressed={isListening}
         title={micLabel}
         onClick={onMicClick}
-        disabled={!callMode || isStreaming || isTranscribing || micBlocked}
+        disabled={!callMode || isTranscribing || micBlocked}
       >
         {isTranscribing ? (
           <Loader2 className="animate-spin-fast" size={26} aria-hidden />
         ) : isListening ? (
           <VoiceWave />
+        ) : isTeacherTalking ? (
+          <Mic size={26} aria-hidden />
         ) : (
           <MicOff size={26} aria-hidden />
         )}
