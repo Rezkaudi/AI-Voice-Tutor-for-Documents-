@@ -122,11 +122,13 @@ export function TeacherPanel({
         >
           {statusLabel}
         </p>
-        <LanguagePicker
+        {/* Language picker ("I SPEAK" + language options) hidden; default language (auto) still applies.
+            Uncomment to let users see and change the spoken language. */}
+        {/* <LanguagePicker
           value={speechLanguage}
           disabled={langDisabled}
           onChange={onSpeechLanguageChange}
-        />
+        /> */}
       </div>
 
       <div className="flex h-full min-h-0 w-full max-w-[520px] flex-col items-center justify-center gap-2.5">

@@ -48,7 +48,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   callMode: false,
   hasIntroduced: false,
   mobilePane: "teacher",
-  speechLanguage: "en",
+  speechLanguage: "",
   // "Save-cost mode": cheaper tutor model + shorter history. Off by default;
   // the learner's choice is restored from localStorage via initSaveCost().
   saveCost: false,

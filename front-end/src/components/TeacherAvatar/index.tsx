@@ -45,7 +45,7 @@ function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
         thinking={thinking}
         state={state}
       />
-      <WaveBars visible={listening || speaking} listening={listening} />
+      <WaveBars visible={speaking} listening={false} />
     </div>
   );
 }
