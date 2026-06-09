@@ -60,18 +60,6 @@ export function CallControls({
       aria-label="Call controls"
     >
       <button
-        className={cx(callButtonBase, callMode ? callButtonEnd : callButtonStart)}
-        type="button"
-        aria-label={callMode ? "End voice call" : "Start voice call"}
-        aria-pressed={callMode}
-        onClick={onCallToggle}
-        disabled={!micSupported || micBlocked}
-      >
-        {callMode ? <PhoneOff size={22} aria-hidden /> : <Phone size={22} aria-hidden />}
-        <span>{callMode ? "End" : "Call"}</span>
-      </button>
-
-      <button
         className={cx(micCircleBase, isListening && micCircleActive)}
         type="button"
         aria-label={micLabel}
@@ -89,6 +77,17 @@ export function CallControls({
         ) : (
           <MicOff size={26} aria-hidden />
         )}
+      </button>
+
+      <button
+        className={cx(callButtonBase, callMode ? callButtonEnd : callButtonStart)}
+        type="button"
+        aria-label={callMode ? "End voice call" : "Start voice call"}
+        aria-pressed={callMode}
+        onClick={onCallToggle}
+        disabled={!micSupported || micBlocked}
+      >
+        {callMode ? <PhoneOff size={26} aria-hidden /> : <Phone size={26} aria-hidden />}
       </button>
     </div>
   );

@@ -22,10 +22,10 @@ export const langOptionActive =
   "bg-[oklch(0.78_0.13_165)]! text-[oklch(0.18_0.04_230)]!";
 
 export const callButtonBase =
-  "inline-flex h-[50px] min-w-[96px] items-center gap-2 rounded-full border-0 px-[18px] text-[0.92rem] font-bold tracking-[0.02em] text-[oklch(0.99_0.005_100)] shadow-[0_10px_24px_oklch(0.18_0.04_244/0.5)] transition-[transform,box-shadow,filter] duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-50 [&:active:not(:disabled)]:translate-y-0 [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]";
+  "relative grid h-[72px] w-[72px] place-items-center rounded-full border-0 text-[oklch(0.99_0.005_100)] shadow-[0_10px_24px_oklch(0.18_0.04_244/0.5)] transition-[transform,box-shadow,filter,background-position] duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-50 [&:active:not(:disabled)]:translate-y-0 [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]";
 
 export const callButtonEnd =
-  "animate-listen-pulse-slow bg-[linear-gradient(140deg,oklch(0.62_0.18_28),oklch(0.5_0.18_22))]";
+  "animate-listen-pulse-slow bg-[linear-gradient(to_bottom,oklch(0.53_0.045_27),oklch(0.6_0.24_27))] bg-[length:100%_200%] [background-position:50%_0%] [transition-duration:320ms] [&:hover:not(:disabled)]:[background-position:50%_100%]";
 
 export const callButtonStart =
   "bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))]";
