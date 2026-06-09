@@ -18,18 +18,7 @@ export const SPEECH_LANGUAGES = [
  * Mirrors `GREETING_PROMPT` in the original backend project.
  */
 export const GREETING_PROMPT =
-  "Greet the student warmly in ONE short spoken sentence and introduce yourself as their AI teacher " +
-  "for this lesson. Assume they have not read it and know nothing about it yet. Then, in the SAME " +
-  "reply, OPEN the lesson on the FIRST page by introducing the topic itself — a short, clear " +
-  "introduction in three beats, each as its own short sentence on its own line so the right lines " +
-  "highlight as you speak: (1) name the grammar point or topic that the page's title introduces; " +
-  "(2) state what it MEANS; (3) explain HOW TO USE it — how it is formed or what it attaches to, " +
-  "from the page's 'How To Use' or structure block. Do NOT teach the worked examples yet and do not " +
-  "summarise the rest of the page — the examples come in the next turns, one at a time. Finish by " +
-  "handing the turn back with one small task or question that checks they understood the meaning and " +
-  "how to form it, like a real teacher would. Keep the greeting itself free of page numbers, but " +
-  "follow your normal citation rules for the title, the meaning, and the how-to-use so all three " +
-  "lines highlight as you speak.";
+  "START THE LESSON";
 
 /**
  * The most pages a student may pick for one focused lesson. Mirrors
