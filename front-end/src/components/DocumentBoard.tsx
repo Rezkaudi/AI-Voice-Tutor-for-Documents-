@@ -62,11 +62,11 @@ function DocumentBoardComponent({
         <div className="flex items-center justify-between gap-3.5 max-[560px]:flex-col max-[560px]:items-stretch">
           <div className="min-w-0">
             <h2 className="m-0 text-base">Page {activePage}</h2>
-            <p className="mb-0 mt-1 text-[0.85rem] text-muted">
-              {citations.length
-                ? `${citations.length} cited passage${citations.length === 1 ? "" : "s"}`
-                : "Original document"}
-            </p>
+            {citations.length > 0 && (
+              <p className="mb-0 mt-1 text-[0.85rem] text-muted">
+                {`${citations.length} cited passage${citations.length === 1 ? "" : "s"}`}
+              </p>
+            )}
           </div>
           <div className={ui.buttonRow}>
             <button
