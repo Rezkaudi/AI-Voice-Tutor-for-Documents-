@@ -14,7 +14,7 @@ import { CornerButtons } from "./CornerButtons";
 import { LanguagePicker } from "./LanguagePicker";
 import { MicStatusBanner } from "./MicStatusBanner";
 import { TranscriptLog } from "./TranscriptLog";
-import { bubbleBase, callHint } from "./styles";
+import { bubbleBase } from "./styles";
 import { deriveOrbState, deriveStatusLabel } from "./status";
 import { useMicDialog } from "./useMicDialog";
 import { cx } from "@/lib/uiClasses";
@@ -148,11 +148,6 @@ export function TeacherPanel({
 
         {showTranscript ? (
           <TranscriptLog messages={messages} />
-        ) : !callMode && !error ? (
-          <p className={cx(callHint, "mx-auto max-w-[340px]")}>
-            Press <strong>Call</strong>. Your teacher will introduce the lesson and
-            listen for your reply — no typing needed.
-          </p>
         ) : null}
       </div>
 
