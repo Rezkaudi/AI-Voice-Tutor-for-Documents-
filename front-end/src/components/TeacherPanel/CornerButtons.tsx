@@ -41,7 +41,7 @@ export function CornerButtons({
         onClick={onToggleTranscript}
       >
         <Captions size={16} aria-hidden />
-        <span className={cornerLabel}>{showTranscript ? "Hide" : "Transcript"}</span>
+        {/* <span className={cornerLabel}>{showTranscript ? "Hide" : "Transcript"}</span> */}
       </button>
 
       <button
