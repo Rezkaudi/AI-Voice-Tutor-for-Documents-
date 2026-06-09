@@ -59,7 +59,7 @@ export function TeachingWorkspace() {
     <>
       <MobilePaneTabs />
       <main
-        className="grid min-h-0 flex-1 grid-cols-[var(--split)_8px_minmax(0,1fr)] overflow-hidden [--split:81.3%] max-[920px]:grid-cols-1 max-[920px]:grid-rows-1"
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,var(--split))_8px_minmax(400px,1fr)] overflow-hidden [--split:81.3%] max-[920px]:grid-cols-1 max-[920px]:grid-rows-1"
         data-pane={mobilePane}
         data-workspace
       >
