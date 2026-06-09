@@ -13,7 +13,7 @@ export const callHint =
   "text-center text-[0.92rem] leading-[1.55] text-[oklch(0.82_0.02_215)] px-3";
 
 export const captionBase =
-  "pointer-events-none absolute bottom-[clamp(96px,15vh,148px)] left-1/2 z-30 flex max-w-[min(580px,calc(100%_-_24px))] -translate-x-1/2 flex-nowrap items-center gap-[9px] overflow-hidden rounded-2xl border border-[oklch(1_0_0/0.1)] bg-[oklch(0.13_0.022_244/0.9)] px-3.5 py-[9px] shadow-[0_14px_36px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[10px] animate-caption-rise motion-reduce:animate-none";
+  "pointer-events-none absolute bottom-[clamp(96px,15vh,148px)] left-1/2 z-30 flex max-w-[min(580px,calc(100%_-_24px))] -translate-x-1/2 flex-nowrap items-center gap-[9px] rounded-2xl border border-[oklch(1_0_0/0.1)] bg-[oklch(0.13_0.022_244/0.9)] px-3.5 py-[9px] shadow-[0_14px_36px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[10px] animate-caption-rise motion-reduce:animate-none";
 
 export const langOptionBase =
   "min-h-[38px] appearance-none rounded-full border-0 bg-transparent px-4 py-2 text-[0.8rem] font-semibold leading-none text-[oklch(0.78_0.02_215)] transition-colors duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.78_0.13_165)] [&:hover:not(:disabled)]:bg-[oklch(0.3_0.03_230)] [&:hover:not(:disabled)]:text-[oklch(0.92_0.01_215)]";
