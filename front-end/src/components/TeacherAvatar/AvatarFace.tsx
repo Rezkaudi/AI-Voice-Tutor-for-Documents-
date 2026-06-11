@@ -23,7 +23,7 @@ export function AvatarFace({ headAnimation, speaking, thinking, state }: AvatarF
       <FaceDefs />
       <Shoulders />
       <rect x="88" y="148" width="24" height="18" rx="6" fill="#e5b489" />
-      <Head headAnimation={headAnimation} speaking={speaking} />
+      <Head headAnimation={headAnimation} speaking={speaking} asleep={state === "idle"} />
       <Antenna />
     </svg>
   );
@@ -77,7 +77,15 @@ function Antenna() {
   );
 }
 
-function Head({ headAnimation, speaking }: { headAnimation: string; speaking: boolean }) {
+function Head({
+  headAnimation,
+  speaking,
+  asleep
+}: {
+  headAnimation: string;
+  speaking: boolean;
+  asleep: boolean;
+}) {
   return (
     <g className={cx("origin-[100px_110px]", headAnimation)}>
       <circle cx="100" cy="100" r="52" fill="url(#face)" />
@@ -89,7 +97,7 @@ function Head({ headAnimation, speaking }: { headAnimation: string; speaking: bo
       <ellipse cx="149" cy="104" rx="6" ry="9" fill="#e5b489" />
       <circle cx="74" cy="116" r="9" fill="url(#cheek)" />
       <circle cx="126" cy="116" r="9" fill="url(#cheek)" />
-      <Eyes />
+      <Eyes asleep={asleep} />
       <Eyebrows />
       <Glasses />
       <Nose />
@@ -98,18 +106,30 @@ function Head({ headAnimation, speaking }: { headAnimation: string; speaking: bo
   );
 }
 
-function Eyes() {
+function Eyes({ asleep }: { asleep: boolean }) {
   return (
     <>
-      <g className="animate-blink origin-center">
-        <ellipse cx="82" cy="102" rx="6.5" ry="7.5" fill="#fff" />
-        <circle cx="82" cy="103" r="3.4" fill="#1c1a17" />
-        <circle cx="83.5" cy="101" r="1.1" fill="#fff" />
+      <g className={cx("transition-opacity duration-300", asleep && "opacity-0")}>
+        <g className="animate-blink origin-center">
+          <ellipse cx="82" cy="102" rx="6.5" ry="7.5" fill="#fff" />
+          <circle cx="82" cy="103" r="3.4" fill="#1c1a17" />
+          <circle cx="83.5" cy="101" r="1.1" fill="#fff" />
+        </g>
+        <g className="animate-blink origin-center">
+          <ellipse cx="118" cy="102" rx="6.5" ry="7.5" fill="#fff" />
+          <circle cx="118" cy="103" r="3.4" fill="#1c1a17" />
+          <circle cx="119.5" cy="101" r="1.1" fill="#fff" />
+        </g>
       </g>
-      <g className="animate-blink origin-center">
-        <ellipse cx="118" cy="102" rx="6.5" ry="7.5" fill="#fff" />
-        <circle cx="118" cy="103" r="3.4" fill="#1c1a17" />
-        <circle cx="119.5" cy="101" r="1.1" fill="#fff" />
+      <g
+        className={cx("opacity-0 transition-opacity duration-300", asleep && "opacity-100")}
+        fill="none"
+        stroke="#2b1d15"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      >
+        <path d="M75.5 102 Q 82 107.5 88.5 102" />
+        <path d="M111.5 102 Q 118 107.5 124.5 102" />
       </g>
     </>
   );
