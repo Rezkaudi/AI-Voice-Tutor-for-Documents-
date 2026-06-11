@@ -15,9 +15,20 @@ export function extractSentences(buffer: string): { sentences: string[]; consume
   const sentences: string[] = [];
   let start = 0;
   let consumed = 0;
+  // Whether the scan is inside a `**bold**` span. The tutor bolds whole
+  // quoted sentences ("**嘘だろう？**"), so a terminator inside the span must
+  // not split it — that would orphan the markers across two sentences and
+  // break both caption styling and TTS prosody. If the closing `**` hasn't
+  // streamed in yet, we simply wait, same as for a half-streamed `[[1`.
+  let inBold = false;
 
   for (let index = 0; index < buffer.length; index += 1) {
-    if (!isSentenceBoundary(buffer, index)) {
+    if (buffer[index] === "*" && buffer[index + 1] === "*") {
+      inBold = !inBold;
+      index += 1;
+      continue;
+    }
+    if (inBold || !isSentenceBoundary(buffer, index)) {
       continue;
     }
 

@@ -1,9 +1,9 @@
-import { segmentText } from "@/lib/textSegmentation";
+import type { SegmentedText } from "@/lib/types";
 import type { CaptionController } from "./CaptionController";
 import { ESTIMATED_WORD_SECONDS, SPEECH_SYNTHESIS_RATE } from "./constants";
 
 interface SynthDeps {
-  text: string;
+  segmented: SegmentedText;
   isStale: () => boolean;
   caption: CaptionController;
   onSpeakingChange: (speaking: boolean) => void;
@@ -12,7 +12,7 @@ interface SynthDeps {
 
 /** Browser SpeechSynthesis fallback used when server TTS is unavailable. */
 export function playWithSpeechSynthesis({
-  text,
+  segmented,
   isStale,
   caption,
   onSpeakingChange,
@@ -25,11 +25,12 @@ export function playWithSpeechSynthesis({
     }
 
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Speak the markdown-stripped text — `offsets` index into it, so the
+    // boundary events' charIndex lines up with caption words exactly.
+    const utterance = new SpeechSynthesisUtterance(segmented.clean);
     utterance.rate = SPEECH_SYNTHESIS_RATE;
 
-    const segmented = segmentText(text);
-    const { words, offsets, spaced, rtl } = segmented;
+    const { words, offsets, styles, spaced, rtl } = segmented;
     let settled = false;
     const finish = () => {
       if (settled) return;
@@ -53,6 +54,7 @@ export function playWithSpeechSynthesis({
         caption.show({
           speaker: "teacher",
           words,
+          styles,
           spoken: Math.min(spoken, words.length),
           spaced,
           rtl

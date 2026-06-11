@@ -1,11 +1,11 @@
-import { segmentText } from "@/lib/textSegmentation";
+import type { SegmentedText } from "@/lib/types";
 import type { CaptionController } from "./CaptionController";
 import { ESTIMATED_WORD_SECONDS } from "./constants";
 
 interface PlayClipDeps {
   audio: HTMLAudioElement;
   blob: Blob;
-  text: string;
+  segmented: SegmentedText;
   isStale: () => boolean;
   caption: CaptionController;
   onSpeakingChange: (speaking: boolean) => void;
@@ -15,7 +15,7 @@ interface PlayClipDeps {
 export function playAudioClip({
   audio,
   blob,
-  text,
+  segmented,
   isStale,
   caption,
   onSpeakingChange,
@@ -24,7 +24,6 @@ export function playAudioClip({
   return new Promise<void>((resolve) => {
     revokeBlobUrl(audio.src);
 
-    const segmented = segmentText(text);
     let settled = false;
     const finish = () => {
       if (settled) return;
