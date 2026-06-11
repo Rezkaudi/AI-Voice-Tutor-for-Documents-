@@ -64,11 +64,11 @@ function DocumentBoardComponent({
         <div className="flex items-center justify-between gap-3.5 max-[560px]:flex-col max-[560px]:items-stretch">
           <div className="min-w-0">
             <h2 className="m-0 text-base">Page {activePage}</h2>
-            {citations.length > 0 && (
+            {/* {citations.length > 0 && (
               <p className="mb-0 mt-1 text-[0.85rem] text-muted">
                 {`${citations.length} cited passage${citations.length === 1 ? "" : "s"}`}
               </p>
-            )}
+            )} */}
           </div>
           {onEditPages ? (
             <button
@@ -132,13 +132,13 @@ function DocumentBoardComponent({
             ) : null}
           </div>
         </div>
-        {citations.length ? (
+        {/* {citations.length ? (
           <CitationChips
             citations={citations}
             activeKey={activeCitationKey}
             onPick={onFocusCitation}
           />
-        ) : null}
+        ) : null} */}
       </div>
       <div
         className={cx(
