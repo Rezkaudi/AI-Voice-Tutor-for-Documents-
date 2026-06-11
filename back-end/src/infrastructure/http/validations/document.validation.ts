@@ -5,7 +5,7 @@ import { handleValidationErrors } from "./handle-validation-errors";
 export const uploadDocumentValidation: RequestHandler[] = [
   check("file")
     .custom((_value, { req }) => Boolean((req as Request).file))
-    .withMessage("Upload one PDF, text, or markdown file."),
+    .withMessage("Upload one PDF file."),
   handleValidationErrors
 ];
 

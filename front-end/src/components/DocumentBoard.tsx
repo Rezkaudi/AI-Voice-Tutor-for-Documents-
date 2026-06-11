@@ -1,17 +1,15 @@
 import { BookOpen, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { memo, useState } from "react";
 import { cx, ui } from "@/lib/uiClasses";
-import type { DocumentPage, DocumentReference } from "@/lib/types";
+import type { DocumentReference } from "@/lib/types";
 import { citationKey } from "@/store/documentStore";
 import { CitationChips } from "./CitationChips";
 import { DocumentLoadingOverlay } from "./DocumentLoadingOverlay";
-import { HighlightedArticle } from "./HighlightedArticle";
 import { PdfViewer } from "./PdfViewer";
 
 interface DocumentBoardProps {
   fileUrl: string | null;
   mimeType: string;
-  page: DocumentPage | null;
   pageCount: number;
   activePage: number;
   highlight: DocumentReference | null;
@@ -25,12 +23,11 @@ interface DocumentBoardProps {
 /**
  * Renders the source document with NotebookLM-style citation highlights.
  * PDFs use a PDF.js canvas + text-layer so we can paint coloured spans over
- * the citation offsets; text/markdown uploads use a prose view with `<mark>`.
+ * the citation offsets.
  */
 function DocumentBoardComponent({
   fileUrl,
   mimeType,
-  page,
   pageCount,
   activePage,
   highlight,
@@ -64,11 +61,11 @@ function DocumentBoardComponent({
         <div className="flex items-center justify-between gap-3.5 max-[560px]:flex-col max-[560px]:items-stretch">
           <div className="min-w-0">
             <h2 className="m-0 text-base">Page {activePage}</h2>
-            {citations.length > 0 && (
+            {/* {citations.length > 0 && (
               <p className="mb-0 mt-1 text-[0.85rem] text-muted">
                 {`${citations.length} cited passage${citations.length === 1 ? "" : "s"}`}
               </p>
-            )}
+            )} */}
           </div>
           {onEditPages ? (
             <button
@@ -132,13 +129,13 @@ function DocumentBoardComponent({
             ) : null}
           </div>
         </div>
-        {citations.length ? (
+        {/* {citations.length ? (
           <CitationChips
             citations={citations}
             activeKey={activeCitationKey}
             onPick={onFocusCitation}
           />
-        ) : null}
+        ) : null} */}
       </div>
       <div
         className={cx(
@@ -157,11 +154,9 @@ function DocumentBoardComponent({
             />
           </div>
         ) : (
-          <HighlightedArticle
-            text={page?.text ?? "No page text."}
-            citations={pageCitations}
-            focusCitationKey={activeCitationKey}
-          />
+          <div className="grid h-full place-items-center text-[0.9rem] text-muted">
+            Loading PDF…
+          </div>
         )}
         {showOverlay ? <DocumentLoadingOverlay /> : null}
       </div>

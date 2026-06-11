@@ -10,7 +10,14 @@ export function buildDocumentRoutes(controller: DocumentsController): Router {
   const router = Router();
   const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: DOCUMENT_LIMIT_BYTES }
+    limits: { fileSize: DOCUMENT_LIMIT_BYTES },
+    // PDF only: reject anything else before it is buffered.
+    fileFilter: (_req, file, cb) => {
+      const isPdf =
+        file.mimetype === "application/pdf" ||
+        file.originalname.toLowerCase().endsWith(".pdf");
+      cb(null, isPdf);
+    }
   });
 
   router.get("/documents", asyncHandler(controller.list));

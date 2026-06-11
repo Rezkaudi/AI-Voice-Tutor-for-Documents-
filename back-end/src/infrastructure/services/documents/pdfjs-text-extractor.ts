@@ -3,20 +3,13 @@ import type { DocumentPage, UploadKind } from "@/domain/entities/document";
 import { UnprocessableEntityError } from "@/domain/errors/app-error";
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
 
-/** Characters per synthetic page when splitting a plain-text upload. */
-const TEXT_PAGE_CHARS = 5000;
-const MAX_PDF_PAGES = 300;
-
 /**
- * `DocumentTextExtractor` backed by pdf.js (for PDFs) and a paragraph-aware
- * splitter (for text/markdown). Mirrors the original `extract-text` module.
+ * `DocumentTextExtractor` backed by pdf.js. PDFs are the only supported upload
+ * format. Mirrors the original `extract-text` module.
  */
 export class PdfJsTextExtractor implements DocumentTextExtractor {
-  async extract(buffer: Buffer, kind: UploadKind): Promise<DocumentPage[]> {
-    if (kind === "pdf") {
-      return this.extractPdfPages(buffer);
-    }
-    return splitPlainText(buffer.toString("utf8"));
+  async extract(buffer: Buffer, _kind: UploadKind): Promise<DocumentPage[]> {
+    return this.extractPdfPages(buffer);
   }
 
   private async extractPdfPages(buffer: Buffer): Promise<DocumentPage[]> {
@@ -30,11 +23,6 @@ export class PdfJsTextExtractor implements DocumentTextExtractor {
     });
 
     const pdf = await loadingTask.promise;
-    if (pdf.numPages > MAX_PDF_PAGES) {
-      throw new UnprocessableEntityError(
-        `This PDF has ${pdf.numPages} pages. The MVP limit is ${MAX_PDF_PAGES} pages.`
-      );
-    }
 
     const pages: DocumentPage[] = [];
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
@@ -239,41 +227,4 @@ function installPdfJsNodePolyfills(): void {
   globals.DOMMatrix ??= DOMMatrix;
   globals.ImageData ??= ImageData;
   globals.Path2D ??= Path2D;
-}
-
-/** Splits plain text into fixed-size pages on paragraph/sentence boundaries. */
-function splitPlainText(text: string): DocumentPage[] {
-  const normalized = text.replace(/\r\n/g, "\n").trim();
-  if (!normalized) {
-    throw new UnprocessableEntityError("The uploaded text file is empty.");
-  }
-
-  const pages: DocumentPage[] = [];
-  let cursor = 0;
-  while (cursor < normalized.length) {
-    const roughEnd = Math.min(cursor + TEXT_PAGE_CHARS, normalized.length);
-    const end =
-      roughEnd === normalized.length
-        ? roughEnd
-        : findTextBoundary(normalized, cursor, roughEnd);
-    const pageText = normalized.slice(cursor, end).trim();
-    if (pageText) {
-      pages.push({ pageNumber: pages.length + 1, text: pageText });
-    }
-    cursor = end;
-  }
-  return pages;
-}
-
-function findTextBoundary(text: string, start: number, roughEnd: number): number {
-  const paragraphBreak = text.lastIndexOf("\n\n", roughEnd);
-  if (paragraphBreak > start) {
-    return paragraphBreak;
-  }
-  const sentenceBreak = text.lastIndexOf(". ", roughEnd);
-  if (sentenceBreak > start) {
-    return sentenceBreak + 1;
-  }
-  const wordBreak = text.lastIndexOf(" ", roughEnd);
-  return wordBreak > start ? wordBreak : roughEnd;
 }
