@@ -40,11 +40,14 @@ export function CaptionStrip({ caption }: CaptionStripProps) {
             : "bg-[oklch(0.82_0.13_90)] shadow-[0_0_8px_oklch(0.85_0.13_90/0.75)]"
         )}
       />
-      {/* Fixed two-line window. `items-end` anchors the text block to the
-          bottom, so when a long sentence wraps past two lines the overflow
-          clips at the top — old lines scroll up and away, broadcast-style.
-          Font size and line height live here so h-[2lh] is exactly two rows. */}
-      <span className="flex h-[2lh] min-w-0 flex-1 items-end overflow-hidden text-[clamp(1.18rem,3vh,1.58rem)] leading-[1.4]">
+      {/* Text window that grows with the caption but never exceeds two lines.
+          A short phrase makes the window one line tall, and since the box
+          centers its contents the phrase sits in the vertical middle. Once a
+          sentence passes two lines the window caps at 2lh and `items-end`
+          anchors to the bottom, so the latest two lines stay whole and older
+          lines clip cleanly above — no half-rows top and bottom.
+          Font size and line height live here so 2lh is exactly two rows. */}
+      <span className="flex max-h-[2lh] min-w-0 flex-1 items-end overflow-hidden text-[clamp(1.18rem,3vh,1.58rem)] leading-[1.4]">
         <span className="block">
           {words.map((text, index) => {
             const isActive = index === activeIndex;
