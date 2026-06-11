@@ -3,8 +3,6 @@ import type { DocumentPage, UploadKind } from "@/domain/entities/document";
 import { UnprocessableEntityError } from "@/domain/errors/app-error";
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
 
-const MAX_PDF_PAGES = 300;
-
 /**
  * `DocumentTextExtractor` backed by pdf.js. PDFs are the only supported upload
  * format. Mirrors the original `extract-text` module.
@@ -25,11 +23,6 @@ export class PdfJsTextExtractor implements DocumentTextExtractor {
     });
 
     const pdf = await loadingTask.promise;
-    if (pdf.numPages > MAX_PDF_PAGES) {
-      throw new UnprocessableEntityError(
-        `This PDF has ${pdf.numPages} pages. The MVP limit is ${MAX_PDF_PAGES} pages.`
-      );
-    }
 
     const pages: DocumentPage[] = [];
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
