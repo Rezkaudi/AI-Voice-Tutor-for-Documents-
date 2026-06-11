@@ -72,18 +72,19 @@ export class StreamChatUseCase {
       .sort((a, b) => a - b)
       .slice(0, MAX_LESSON_PAGES);
 
-    // A focused lesson exposes no tools, so `search_document` can never run —
-    // skip the chunk query, whose embedding vectors dominate document load
-    // time. Whole-document mode still needs every chunk for ranking.
-    const chunks =
-      selectedPages.length > 0 ? [] : await this.repository.getChunks(documentId);
+    // ─── CHUNKS DISABLED ─────────────────────────────────────────────────────
+    // Chunking + embedding are turned off at upload time, so there are no chunk
+    // rows to read and the tutor teaches only the selected pages (full page text
+    // injected directly). We always run with an empty chunk list. Re-enable the
+    // upload chunking/embedding blocks AND the conditional load below together to
+    // restore whole-document retrieval.
+    // const chunks =
+    //   selectedPages.length > 0 ? [] : await this.repository.getChunks(documentId);
+    const chunks: never[] = [];
 
     log.info(
       `loaded document "${document.title}" · ${pages.length} page(s) · ` +
-        (selectedPages.length > 0
-          ? "chunks skipped (lesson mode)"
-          : `${chunks.length} chunk(s)`) +
-        ` · ${history.length} history turn(s) · ` +
+        `chunks disabled · ${history.length} history turn(s) · ` +
         `lesson pages=[${selectedPages.join(", ")}] → streaming answer`
     );
 
