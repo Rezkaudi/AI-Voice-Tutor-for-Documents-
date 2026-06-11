@@ -18,11 +18,11 @@ export type { CitationCandidate } from "@/domain/logic/citation/citation-types";
  */
 export class CitationResolver {
   /** Floor for Latin-script quotes — guards against trivially short matches. */
-  private static readonly MIN_QUOTE_LENGTH = 6;
+  private static readonly MIN_QUOTE_LENGTH = 3;
   /**
    * Floor for quotes containing CJK characters. CJK is far denser than Latin —
    * a page TITLE like "だけ" (2 chars) or "だろう" (3) is a real, locatable
-   * citation, so the 6-char Latin floor would wrongly drop it.
+   * citation, so the 3-char Latin floor would wrongly drop it.
    */
   private static readonly MIN_QUOTE_LENGTH_CJK = 2;
   /** Hiragana, katakana, CJK ideographs, and half-width kana. */
@@ -31,7 +31,7 @@ export class CitationResolver {
   constructor(
     private readonly locator: QuoteLocator,
     private readonly autoCiter: AnswerAutoCiter
-  ) {}
+  ) { }
 
   /** Maps verbatim quotes to `{ pageNumber, start, end }` spans on their page. */
   resolve(
