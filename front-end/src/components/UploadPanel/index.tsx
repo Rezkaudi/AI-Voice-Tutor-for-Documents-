@@ -74,7 +74,7 @@ export function UploadPanel({
         {!hasLibrary ? (
           <div className="mb-3 text-center">
             <h2 className={ui.introTitle}>Upload a Lesson Source</h2>
-            <p className={ui.introCopy}>PDF, text, and markdown files up to 25MB.</p>
+            <p className={ui.introCopy}>PDF files up to 25MB.</p>
           </div>
         ) : (
           <h3 className="m-0 mb-3 text-[0.92rem] font-[650] text-muted">

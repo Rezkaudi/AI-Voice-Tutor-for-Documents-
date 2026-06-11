@@ -29,6 +29,5 @@ export const MAX_LESSON_PAGES = 5;
 /** Gap before listening resumes so playback fully releases the audio device. */
 export const CALL_RESUME_DELAY_MS = 350;
 
-/** File types accepted by the upload widgets. */
-export const ACCEPTED_UPLOAD_TYPES =
-  ".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/markdown";
+/** File types accepted by the upload widgets. PDF only. */
+export const ACCEPTED_UPLOAD_TYPES = ".pdf,application/pdf";

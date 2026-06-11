@@ -17,7 +17,7 @@ export interface DocumentRecord {
   pageCount: number;
   mimeType: string;
   fileName?: string;
-  fileType?: "pdf" | "text" | "markdown";
+  fileType?: "pdf";
   fileSize?: number;
   status?: "ready" | "failed";
   updatedAt?: string;

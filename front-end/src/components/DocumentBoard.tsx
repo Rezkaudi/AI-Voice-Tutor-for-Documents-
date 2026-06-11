@@ -1,17 +1,15 @@
 import { BookOpen, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { memo, useState } from "react";
 import { cx, ui } from "@/lib/uiClasses";
-import type { DocumentPage, DocumentReference } from "@/lib/types";
+import type { DocumentReference } from "@/lib/types";
 import { citationKey } from "@/store/documentStore";
 import { CitationChips } from "./CitationChips";
 import { DocumentLoadingOverlay } from "./DocumentLoadingOverlay";
-import { HighlightedArticle } from "./HighlightedArticle";
 import { PdfViewer } from "./PdfViewer";
 
 interface DocumentBoardProps {
   fileUrl: string | null;
   mimeType: string;
-  page: DocumentPage | null;
   pageCount: number;
   activePage: number;
   highlight: DocumentReference | null;
@@ -25,12 +23,11 @@ interface DocumentBoardProps {
 /**
  * Renders the source document with NotebookLM-style citation highlights.
  * PDFs use a PDF.js canvas + text-layer so we can paint coloured spans over
- * the citation offsets; text/markdown uploads use a prose view with `<mark>`.
+ * the citation offsets.
  */
 function DocumentBoardComponent({
   fileUrl,
   mimeType,
-  page,
   pageCount,
   activePage,
   highlight,
@@ -157,11 +154,9 @@ function DocumentBoardComponent({
             />
           </div>
         ) : (
-          <HighlightedArticle
-            text={page?.text ?? "No page text."}
-            citations={pageCitations}
-            focusCitationKey={activeCitationKey}
-          />
+          <div className="grid h-full place-items-center text-[0.9rem] text-muted">
+            Loading PDF…
+          </div>
         )}
         {showOverlay ? <DocumentLoadingOverlay /> : null}
       </div>

@@ -5,8 +5,8 @@
  * and maps to/from these — the domain never imports an ORM.
  */
 
-/** The upload formats the tutor can ingest. */
-export type UploadKind = "pdf" | "text" | "markdown";
+/** The upload formats the tutor can ingest. PDF only. */
+export type UploadKind = "pdf";
 
 /** Processing outcome of an uploaded document. */
 export type DocumentStatus = "ready" | "failed";

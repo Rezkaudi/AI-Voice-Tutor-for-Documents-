@@ -1,5 +1,5 @@
 import { useChatStore } from "@/store/chatStore";
-import { selectCurrentPage, useDocumentStore } from "@/store/documentStore";
+import { useDocumentStore } from "@/store/documentStore";
 import { useSessionStore } from "@/store/sessionStore";
 import { useSpeechStore } from "@/store/speechStore";
 import { useVoiceStore } from "@/store/voiceStore";
@@ -28,7 +28,6 @@ export function TeachingWorkspace() {
   const activePage = useDocumentStore((s) => s.activePage);
   const highlight = useDocumentStore((s) => s.highlight);
   const activeCitationKey = useDocumentStore((s) => s.activeCitationKey);
-  const currentPage = useDocumentStore(selectCurrentPage);
 
   const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
@@ -72,7 +71,6 @@ export function TeachingWorkspace() {
           <DocumentBoard
             fileUrl={loadedDocument.fileUrl}
             mimeType={loadedDocument.document.mimeType}
-            page={currentPage}
             pageCount={loadedDocument.document.pageCount}
             activePage={activePage}
             highlight={highlight}
