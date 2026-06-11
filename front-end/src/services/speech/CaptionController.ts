@@ -33,7 +33,7 @@ export class CaptionController {
 
   /** Reveals words one at a time, pacing the reveal to fit `durationMs`. */
   reveal(segmented: SegmentedText, durationMs: number, speaker: CaptionSpeaker): void {
-    const { words, spaced, rtl } = segmented;
+    const { words, styles, spaced, rtl } = segmented;
     this.clearTimer();
     if (words.length === 0) {
       this.emit(null);
@@ -41,13 +41,13 @@ export class CaptionController {
     }
 
     let spoken = 1;
-    this.emit({ speaker, words, spoken, spaced, rtl });
+    this.emit({ speaker, words, styles, spoken, spaced, rtl });
     if (words.length === 1) return;
 
     const step = Math.max(140, durationMs / words.length);
     this.timer = window.setInterval(() => {
       spoken += 1;
-      this.emit({ speaker, words, spoken: Math.min(spoken, words.length), spaced, rtl });
+      this.emit({ speaker, words, styles, spoken: Math.min(spoken, words.length), spaced, rtl });
       if (spoken >= words.length) {
         this.clearTimer();
       }

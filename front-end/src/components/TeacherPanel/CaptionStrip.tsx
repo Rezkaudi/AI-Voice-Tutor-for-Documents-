@@ -1,29 +1,30 @@
+import { Fragment } from "react";
 import { cx } from "@/lib/uiClasses";
+import { WORD_BOLD, WORD_CODE, WORD_ITALIC, WORD_QUOTED } from "@/lib/textSegmentation";
 import type { SpeechCaption } from "@/lib/types";
 import { captionBase } from "./styles";
-
-// Trailing words kept on the one-line caption; older words drop off as the
-// teacher speaks, so the strip always fits without clipping.
-const CAPTION_WINDOW = 6;
 
 interface CaptionStripProps {
   caption: SpeechCaption;
 }
 
 /**
- * Live caption — a video-style subtitle strip. Decorative: word-by-word
+ * Live caption — a fixed-size subtitle box in the style of broadcast live
+ * captions: words fill a two-line window anchored to the bottom, and once a
+ * sentence wraps past two lines the oldest line slides up out of view. The
+ * box itself never changes size mid-sentence. Decorative: word-by-word
  * updates would flood a screen reader, and the panel's status label already
- * carries the live region.
+ * carries the live region. The speaker is signalled by a colored dot (green
+ * for the learner, amber for the teacher) plus the word/border tint — a text
+ * label would compete with the caption itself for attention.
  */
 export function CaptionStrip({ caption }: CaptionStripProps) {
-  const start = caption.spoken > 0 ? Math.max(0, caption.spoken - CAPTION_WINDOW) : 0;
-  const words = caption.spoken > 0 ? caption.words.slice(start, caption.spoken) : [];
+  const words = caption.spoken > 0 ? caption.words.slice(0, caption.spoken) : [];
   if (words.length === 0) return null;
 
   const activeIndex = caption.spoken - 1;
-  const speaker = caption.speaker;
   const spaced = caption.spaced;
-  const isUser = speaker === "user";
+  const isUser = caption.speaker === "user";
 
   return (
     <div
@@ -33,37 +34,61 @@ export function CaptionStrip({ caption }: CaptionStripProps) {
     >
       <span
         className={cx(
-          "flex-none whitespace-nowrap rounded-full px-[9px] py-[3px] text-[0.62rem] font-bold uppercase tracking-[0.07em]",
+          "h-[9px] w-[9px] flex-none rounded-full",
           isUser
-            ? "bg-[oklch(0.8_0.14_150)] text-[oklch(0.17_0.04_150)]"
-            : "bg-[oklch(0.82_0.13_90)] text-[oklch(0.18_0.04_60)]"
+            ? "bg-[oklch(0.8_0.14_150)] shadow-[0_0_8px_oklch(0.78_0.14_150/0.75)]"
+            : "bg-[oklch(0.82_0.13_90)] shadow-[0_0_8px_oklch(0.85_0.13_90/0.75)]"
         )}
-      >
-        {isUser ? "You" : "Teacher"}
-      </span>
-      <span className="flex min-w-0 flex-[0_1_auto] justify-end overflow-hidden">
-        <span className="whitespace-nowrap">
-          {words.map((text, i) => {
-            const index = start + i;
+      />
+      {/* Fixed two-line window. `items-end` anchors the text block to the
+          bottom, so when a long sentence wraps past two lines the overflow
+          clips at the top — old lines scroll up and away, broadcast-style.
+          Font size and line height live here so h-[2lh] is exactly two rows. */}
+      <span className="flex h-[2lh] min-w-0 flex-1 items-end overflow-hidden text-[clamp(1.18rem,3vh,1.58rem)] leading-[1.4]">
+        <span className="block">
+          {words.map((text, index) => {
             const isActive = index === activeIndex;
+            const flags = caption.styles[index] ?? 0;
             return (
-              <span
-                key={index}
-                className={cx(
-                  "text-[clamp(1.02rem,2.5vh,1.32rem)] font-semibold leading-[1.35] text-[oklch(0.68_0.015_215)] transition-colors duration-160 ease-out",
-                  isActive &&
-                    (isUser
-                      ? "text-[oklch(0.92_0.12_150)] [text-shadow:0_0_12px_oklch(0.78_0.14_150/0.5)]"
-                      : "text-[oklch(0.97_0.035_95)] [text-shadow:0_0_12px_oklch(0.85_0.13_90/0.5)]")
-                )}
-              >
-                {spaced && i > 0 ? " " : ""}
-                {text}
-              </span>
+              <Fragment key={index}>
+                {/* Space lives outside the word span so a code chip's
+                    background hugs the word instead of the gap before it. */}
+                {spaced && index > 0 ? " " : ""}
+                <span
+                  className={cx(
+                    "transition-colors duration-160 ease-out",
+                    (flags & WORD_BOLD) !== 0 ? "font-extrabold" : "font-semibold",
+                    (flags & (WORD_ITALIC | WORD_QUOTED)) !== 0 && "italic",
+                    (flags & WORD_CODE) !== 0 &&
+                      "rounded-[5px] bg-[oklch(0.32_0.025_215/0.65)] px-[4px] font-mono",
+                    wordColor(flags, isActive, isUser)
+                  )}
+                >
+                  {text}
+                </span>
+              </Fragment>
             );
           })}
         </span>
       </span>
     </div>
   );
+}
+
+/**
+ * Picks the single text-color class for a word. Exactly one is returned —
+ * stacking two `text-[...]` utilities would leave the winner to stylesheet
+ * order instead of markup. The just-spoken word always gets the bright
+ * speaker color; styled words sit between it and the dim base.
+ */
+function wordColor(flags: number, isActive: boolean, isUser: boolean): string {
+  if (isActive) {
+    return isUser
+      ? "text-[oklch(0.92_0.12_150)] [text-shadow:0_0_12px_oklch(0.78_0.14_150/0.5)]"
+      : "text-[oklch(0.97_0.035_95)] [text-shadow:0_0_12px_oklch(0.85_0.13_90/0.5)]";
+  }
+  if ((flags & WORD_CODE) !== 0) return "text-[oklch(0.85_0.07_160)]";
+  if ((flags & WORD_QUOTED) !== 0) return "text-[oklch(0.8_0.06_220)]";
+  if ((flags & WORD_BOLD) !== 0) return "text-[oklch(0.87_0.03_95)]";
+  return "text-[oklch(0.68_0.015_215)]";
 }
