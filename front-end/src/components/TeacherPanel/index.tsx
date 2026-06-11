@@ -131,7 +131,9 @@ export function TeacherPanel({
         /> */}
       </div>
 
-      <div className="flex h-full min-h-0 w-full max-w-[520px] flex-col items-center justify-center gap-2.5">
+      {/* Explicit row: shares the flexible middle row with the caption strip
+          overlay, so auto-placement can't bump it down when the caption shows. */}
+      <div className="col-start-1 row-start-3 flex h-full min-h-0 w-full max-w-[520px] flex-col items-center justify-center gap-2.5">
         {error ? (
           <div
             className={cx(

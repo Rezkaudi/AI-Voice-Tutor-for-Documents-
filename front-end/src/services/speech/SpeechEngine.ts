@@ -52,13 +52,16 @@ export class SpeechEngine {
     const onSpeakingChange = (value: boolean) => this.onSpeakingChange(value);
 
     const push = (sentence: string, onPlaybackStart?: (durationMs: number) => void) => {
-      const text = sentence.trim().slice(0, MAX_TTS_CHARS);
-      if (!text) return;
+      // Segment once: markdown markers become per-word style flags for the
+      // caption, and `clean` is what TTS speaks — never raw asterisks.
+      const segmented = segmentText(sentence);
+      if (segmented.words.length === 0) return;
+      const speechText = segmented.clean.slice(0, MAX_TTS_CHARS);
 
       // Start synthesis immediately so it overlaps with playback of earlier clips.
       const clip = isStale()
         ? Promise.resolve(null)
-        : fetchSpeechClip(text, controller.signal);
+        : fetchSpeechClip(speechText, controller.signal);
 
       chain = chain.then(async () => {
         if (isStale()) return;
@@ -75,7 +78,7 @@ export class SpeechEngine {
           await playAudioClip({
             audio: (this.audio ??= new Audio()),
             blob,
-            text,
+            segmented,
             isStale,
             caption: this.caption,
             onSpeakingChange,
@@ -84,7 +87,7 @@ export class SpeechEngine {
         } else {
           // Fall back to browser speech if server TTS is unavailable (no API key).
           await playWithSpeechSynthesis({
-            text,
+            segmented,
             isStale,
             caption: this.caption,
             onSpeakingChange,

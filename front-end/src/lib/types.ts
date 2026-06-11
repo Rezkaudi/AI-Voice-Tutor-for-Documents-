@@ -81,6 +81,10 @@ export type StreamEvent =
 export interface SegmentedText {
   words: string[];
   offsets: number[];
+  /** Per-word style bitmask — see the WORD_* flags in lib/textSegmentation. */
+  styles: number[];
+  /** Sentence with markdown markers stripped; what `offsets` index into. */
+  clean: string;
   spaced: boolean;
   rtl: boolean;
 }
@@ -88,6 +92,8 @@ export interface SegmentedText {
 export interface SpeechCaption {
   speaker: CaptionSpeaker;
   words: string[];
+  /** Per-word style bitmask — see the WORD_* flags in lib/textSegmentation. */
+  styles: number[];
   spoken: number;
   spaced: boolean;
   rtl: boolean;
