@@ -84,11 +84,7 @@ export class TutorRequestFactory {
   ): Record<string, unknown> {
     return {
       model: settings.model,
-      instructions: buildTutorInstructions(
-        request.document.title,
-        request.language || undefined,
-        request.selectedPages
-      ),
+      instructions: buildTutorInstructions(),
       reasoning: { effort: settings.reasoningEffort },
       max_output_tokens: settings.maxOutputTokens,
       tools: this.toolsFor(request),
@@ -100,12 +96,12 @@ export class TutorRequestFactory {
 
   /**
    * The tools to expose this turn. A focused lesson injects the chosen pages in
-   * full, so the model never needs to search or fetch — we hand it only
-   * `cite_passages` (for highlighting) and seal it to the lesson pages. Whole-
-   * document mode keeps the full toolset.
+   * full, so the model never needs to search or fetch — it gets no tools and
+   * answers in a single step (citations ride in the reply's CITATIONS trailer).
+   * Whole-document mode keeps the reading toolset.
    */
   private toolsFor(request: TutorReplyRequest): readonly unknown[] {
     if (request.selectedPages.length === 0) return TUTOR_TOOLS;
-    return TUTOR_TOOLS.filter((tool) => tool.name === "cite_passages");
+    return [];
   }
 }

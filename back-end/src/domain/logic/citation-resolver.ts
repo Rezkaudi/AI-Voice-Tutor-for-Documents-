@@ -7,9 +7,10 @@ import type { AnswerAutoCiter } from "@/domain/logic/citation/answer-auto-citer"
 export type { CitationCandidate } from "@/domain/logic/citation/citation-types";
 
 /**
- * Turns the tutor's `cite_passages` output into renderable citations.
+ * Turns the tutor's recorded citations (its CITATIONS trailer) into renderable
+ * citations.
  *
- * The tool gives us `{ page, quote }`; the PDF.js text layer needs
+ * The trailer gives us `{ page, quote }`; the PDF.js text layer needs
  * `{ start, end }` to wrap the matching glyphs. {@link resolve} delegates the
  * per-quote location to {@link QuoteLocator} and de-duplicates the results;
  * {@link autoCiteFromAnswer} falls back to {@link AnswerAutoCiter} when the

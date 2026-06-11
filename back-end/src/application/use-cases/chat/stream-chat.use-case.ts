@@ -60,12 +60,7 @@ export class StreamChatUseCase {
       throw new NotFoundError("Document not found.");
     }
 
-    // The tutor reads the document agentically via tools, so hand it
-    // everything: every page (get_page) and every chunk (search_document).
-    const [pages, chunks] = await Promise.all([
-      this.repository.getPages(documentId),
-      this.repository.getChunks(documentId)
-    ]);
+    const pages = await this.repository.getPages(documentId);
 
     const history = this.historySanitizer.sanitize(input.messages);
 
@@ -77,9 +72,18 @@ export class StreamChatUseCase {
       .sort((a, b) => a - b)
       .slice(0, MAX_LESSON_PAGES);
 
+    // A focused lesson exposes no tools, so `search_document` can never run —
+    // skip the chunk query, whose embedding vectors dominate document load
+    // time. Whole-document mode still needs every chunk for ranking.
+    const chunks =
+      selectedPages.length > 0 ? [] : await this.repository.getChunks(documentId);
+
     log.info(
       `loaded document "${document.title}" · ${pages.length} page(s) · ` +
-        `${chunks.length} chunk(s) · ${history.length} history turn(s) · ` +
+        (selectedPages.length > 0
+          ? "chunks skipped (lesson mode)"
+          : `${chunks.length} chunk(s)`) +
+        ` · ${history.length} history turn(s) · ` +
         `lesson pages=[${selectedPages.join(", ")}] → streaming answer`
     );
 
