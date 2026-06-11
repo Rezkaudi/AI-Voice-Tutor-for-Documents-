@@ -36,47 +36,5 @@ export const TUTOR_TOOLS = [
       additionalProperties: false
     },
     strict: true
-  },
-  {
-    type: "function",
-    name: "cite_passages",
-    description:
-      "Record the verbatim passages from the document that ground your next " +
-      "spoken reply. Call this once, right before you produce that reply. Each " +
-      "quote MUST be an exact substring of the page text returned by the other " +
-      "tools — never paraphrase, never invent. Keep each quote short (one or " +
-      "two sentences) and include only the minimal supporting text. Provide " +
-      "one citation for every passage your answer leans on — list ALL of them, " +
-      "across as many pages as needed. Omit the call only when no quote " +
-      "supports what you are about to say.",
-    parameters: {
-      type: "object",
-      properties: {
-        citations: {
-          type: "array",
-          minItems: 1,
-          maxItems: 8,
-          items: {
-            type: "object",
-            properties: {
-              page: {
-                type: "integer",
-                description: "1-based page number the quote was taken from."
-              },
-              quote: {
-                type: "string",
-                description:
-                  "A short verbatim substring of that page — never paraphrased."
-              }
-            },
-            required: ["page", "quote"],
-            additionalProperties: false
-          }
-        }
-      },
-      required: ["citations"],
-      additionalProperties: false
-    },
-    strict: true
   }
 ] as const;

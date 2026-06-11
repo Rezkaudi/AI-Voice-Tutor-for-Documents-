@@ -20,6 +20,8 @@ export function TeachingWorkspace() {
   const speechLanguage = useSessionStore((s) => s.speechLanguage);
   const saveCost = useSessionStore((s) => s.saveCost);
   const error = useSessionStore((s) => s.error);
+  const selectedPages = useSessionStore((s) => s.selectedPages);
+  const pageDialogOpen = useSessionStore((s) => s.pageDialogOpen);
 
   const loadedDocument = useDocumentStore((s) => s.loadedDocument);
   const uploadState = useDocumentStore((s) => s.uploadState);
@@ -57,7 +59,7 @@ export function TeachingWorkspace() {
     <>
       <MobilePaneTabs />
       <main
-        className="grid min-h-0 flex-1 grid-cols-[var(--split)_8px_1fr] overflow-hidden [--split:60%] max-[920px]:grid-cols-1 max-[920px]:grid-rows-1"
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,var(--split))_8px_minmax(400px,1fr)] overflow-hidden [--split:81.3%] max-[920px]:grid-cols-1 max-[920px]:grid-rows-1"
         data-pane={mobilePane}
         data-workspace
       >
@@ -78,6 +80,7 @@ export function TeachingWorkspace() {
             isLoading={uploadState === "processing"}
             onPageChange={documentStore.setActivePage}
             onFocusCitation={documentStore.focusCitation}
+            onEditPages={session.openPageDialog}
           />
         </section>
         <Splitter />
@@ -100,11 +103,16 @@ export function TeachingWorkspace() {
             speechLanguage={speechLanguage}
             saveCost={saveCost}
             error={error}
+            pageCount={loadedDocument.document.pageCount}
+            selectedPages={selectedPages}
+            pageDialogOpen={pageDialogOpen}
             onSpeechLanguageChange={session.setSpeechLanguage}
             onSaveCostToggle={session.toggleSaveCost}
             onMicToggle={session.handleMicToggle}
             onCallToggle={session.handleCallToggle}
             onClearChat={session.clearChat}
+            onClosePageDialog={session.closePageDialog}
+            onSubmitPageSelection={session.submitPageSelection}
           />
         </section>
       </main>

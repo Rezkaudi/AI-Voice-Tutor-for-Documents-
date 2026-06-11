@@ -5,13 +5,18 @@ import type { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 import type { TutorService } from "@/domain/services/tutor-service";
 import type { Logger } from "@/domain/services/logger";
+import { MAX_LESSON_PAGES } from "@/config/constant.config";
 
 /** The chat request payload, mirroring the front-end `ChatPayload`. */
 export interface StreamChatInput {
+  /** The signed-in user; the document must belong to them. */
+  readonly userId: string;
   readonly documentId: string;
   readonly message: string;
   readonly language: string;
   readonly messages: ChatMessage[];
+  /** 1-based page numbers the student chose to study this call (max 5). */
+  readonly selectedPages: number[];
   readonly saveCost: boolean;
 }
 
@@ -49,24 +54,50 @@ export class StreamChatUseCase {
     );
     log.detail("student message", message);
 
-    const document = await this.repository.findById(documentId);
+    const document = await this.repository.findById(documentId, input.userId);
     if (!document) {
       log.warn(`document ${documentId} not found`);
       throw new NotFoundError("Document not found.");
     }
 
-    // The tutor reads the document agentically via tools, so hand it
-    // everything: every page (get_page) and every chunk (search_document).
-    const [pages, chunks] = await Promise.all([
-      this.repository.getPages(documentId),
-      this.repository.getChunks(documentId)
-    ]);
+    const pages = await this.repository.getPages(documentId);
 
     const history = this.historySanitizer.sanitize(input.messages);
+
+    // Keep only real, in-range page numbers, de-duplicated, ordered, capped at
+    // MAX_LESSON_PAGES — the UI enforces this too, but never trust the wire.
+    const validPages = new Set(pages.map((page) => page.pageNumber));
+    const selectedPages = Array.from(new Set(input.selectedPages))
+      .filter((pageNumber) => validPages.has(pageNumber))
+      .sort((a, b) => a - b)
+      .slice(0, MAX_LESSON_PAGES);
+
+    // ─── CHUNKS DISABLED ─────────────────────────────────────────────────────
+    // Chunking + embedding are turned off at upload time, so there are no chunk
+    // rows to read and the tutor teaches only the selected pages (full page text
+    // injected directly). We always run with an empty chunk list. Re-enable the
+    // upload chunking/embedding blocks AND the conditional load below together to
+    // restore whole-document retrieval.
+    // const chunks =
+    //   selectedPages.length > 0 ? [] : await this.repository.getChunks(documentId);
+    const chunks: never[] = [];
+
     log.info(
       `loaded document "${document.title}" · ${pages.length} page(s) · ` +
-        `${chunks.length} chunk(s) · ${history.length} history turn(s) → streaming answer`
+        `chunks disabled · ${history.length} history turn(s) · ` +
+        `lesson pages=[${selectedPages.join(", ")}] → streaming answer`
     );
+
+    // Log the verbatim text of the pages the student chose to study, so the
+    // exact material handed to the tutor is visible in the logs.
+    if (selectedPages.length > 0) {
+      const byNumber = new Map(pages.map((page) => [page.pageNumber, page]));
+      for (const pageNumber of selectedPages) {
+        const page = byNumber.get(pageNumber);
+        log.detail(`selected page ${pageNumber} content`, page?.text ?? "");
+      }
+    }
+
     const tutor = this.tutor;
 
     return (async function* stream(): AsyncGenerator<StreamEvent> {
@@ -82,6 +113,7 @@ export class StreamChatUseCase {
             history,
             pages,
             chunks,
+            selectedPages,
             saveCost: input.saveCost
           },
           signal

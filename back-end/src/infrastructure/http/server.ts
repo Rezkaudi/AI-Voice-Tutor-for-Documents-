@@ -1,5 +1,6 @@
+import cookieParser from "cookie-parser";
 import cors from "cors";
-import express, { Router, type Application } from "express";
+import express, { Router, type Application, type RequestHandler } from "express";
 import type { Server as HttpServer } from "node:http";
 import { corsOptions } from "@/config/cors.config";
 
@@ -9,11 +10,13 @@ import type { ChatController } from "@/infrastructure/http/controllers/chat.cont
 import type { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
 import type { SpeechController } from "@/infrastructure/http/controllers/speech.controller";
 import type { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
+import type { AuthController } from "@/infrastructure/http/controllers/auth.controller";
 
 import { buildChatRoutes } from "@/infrastructure/http/routes/chat.routes";
 import { buildDocumentRoutes } from "@/infrastructure/http/routes/documents.routes";
 import { buildSpeechRoutes } from "@/infrastructure/http/routes/speech.routes";
 import { buildTranscriptionRoutes } from "@/infrastructure/http/routes/transcription.routes";
+import { buildAuthRoutes } from "@/infrastructure/http/routes/auth.routes";
 
 import { logger } from "@/shared/logger";
 
@@ -22,6 +25,9 @@ export interface ServerDependencies {
   chat: ChatController;
   speech: SpeechController;
   transcription: TranscriptionController;
+  auth: AuthController;
+  /** The gate applied to every non-auth API route. */
+  requireAuth: RequestHandler;
 }
 
 export class Server {
@@ -45,11 +51,18 @@ export class Server {
     this.app.use(cors(corsOptions));
     // JSON for normal endpoints; multipart bodies are handled per-route by multer.
     this.app.use(express.json({ limit: "5mb" }));
+    // Parse the HTTP-only session cookies the auth flow reads.
+    this.app.use(cookieParser());
   }
 
   private configureRoutes(): void {
     const apiRoutes = Router();
 
+    // Auth routes are public (sign-in must work without a session); mount them
+    // before the gate. Everything after `requireAuth` needs a valid session.
+    apiRoutes.use(buildAuthRoutes(this.deps.auth, this.deps.requireAuth));
+
+    apiRoutes.use(this.deps.requireAuth);
     apiRoutes.use(buildDocumentRoutes(this.deps.documents));
     apiRoutes.use(buildChatRoutes(this.deps.chat));
     apiRoutes.use(buildSpeechRoutes(this.deps.speech));

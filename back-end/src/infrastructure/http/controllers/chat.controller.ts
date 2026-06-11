@@ -17,8 +17,10 @@ export class ChatController {
     const controller = new AbortController();
     req.on("close", () => controller.abort());
 
+    // Identity comes from the verified session, never the request body.
+    const input = { ...req.body, userId: req.auth!.userId };
     // May throw (404 / 501) — handled as JSON before any SSE byte is written.
-    const events = await this.streamChat.execute(req.body, controller.signal);
+    const events = await this.streamChat.execute(input, controller.signal);
 
     res.writeHead(200, {
       "Content-Type": "text/event-stream",

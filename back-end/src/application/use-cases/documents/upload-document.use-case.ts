@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type {
   DocumentChunk,
   DocumentRecord
@@ -8,6 +7,7 @@ import type { DocumentRepository } from "@/domain/repositories/document-reposito
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
 import type { EmbeddingService } from "@/domain/services/embedding-service";
 import type { FileStorage } from "@/domain/services/file-storage";
+import type { IdGenerator } from "@/domain/services/id-generator";
 import type { DocumentChunker } from "@/domain/logic/document-chunker";
 import type { UploadValidator } from "@/domain/logic/upload-validator";
 import type { FileNaming } from "@/domain/logic/file-naming";
@@ -15,6 +15,8 @@ import type { Logger } from "@/domain/services/logger";
 
 /** The uploaded file as received by the application layer. */
 export interface UploadDocumentInput {
+  /** The owner this document belongs to. */
+  readonly userId: string;
   readonly buffer: Buffer;
   readonly filename: string;
   readonly mimeType: string;
@@ -30,11 +32,13 @@ export interface UploadDocumentResult {
  * Processes an uploaded lesson file:
  *   1. validates type and size,
  *   2. extracts ordered pages of text,
- *   3. chunks the pages for retrieval,
- *   4. stores the original file in object storage,
- *   5. persists the document, pages, and chunks (embeddings empty),
- *   6. computes embeddings *in the background* so the upload returns fast —
- *      until they land, chat retrieval falls back to keyword ranking.
+ *   3. stores the original file in object storage,
+ *   4. persists the document and its pages.
+ *
+ * NOTE: chunking and embedding are currently DISABLED (see the inline notes in
+ * `execute` and the unused `embedInBackground` below). The tutor teaches only
+ * the learner's selected pages, so chunks/embeddings are never read. Re-enable
+ * those two blocks to restore whole-document retrieval.
  */
 export class UploadDocumentUseCase {
   constructor(
@@ -45,6 +49,7 @@ export class UploadDocumentUseCase {
     private readonly validator: UploadValidator,
     private readonly chunker: DocumentChunker,
     private readonly naming: FileNaming,
+    private readonly idGenerator: IdGenerator,
     private readonly logger: Logger
   ) {}
 
@@ -66,23 +71,35 @@ export class UploadDocumentUseCase {
     }
     log.info(`validated as ${validation.kind} → extracting text`);
 
-    const id = randomUUID();
+    const id = this.idGenerator.uuid();
     const pages = (await this.extractor.extract(input.buffer, validation.kind)).map(
-      (page) => ({ ...page, id: randomUUID(), documentId: id })
+      (page) => ({ ...page, id: this.idGenerator.uuid(), documentId: id })
     );
-    log.info(`extracted ${pages.length} page(s) → chunking`);
-    const chunks: DocumentChunk[] = this.chunker.chunk(pages).map((chunk) => ({
-      ...chunk,
-      documentId: id
-    }));
+    log.info(`extracted ${pages.length} page(s)`);
 
-    if (chunks.length === 0) {
-      log.warn("no searchable text found after chunking — rejecting");
+    // ─── CHUNKING + EMBEDDING DISABLED ───────────────────────────────────────
+    // The tutor now teaches only the learner's selected pages (their full text
+    // is injected straight into the prompt), so chunks and their embeddings are
+    // never read at answer time. We skip creating and storing them to save the
+    // embedding API cost, the DB rows, and the upload latency. Re-enable BOTH
+    // this block and `embedInBackground` below to restore whole-document
+    // retrieval (`search_document`).
+    // const chunks: DocumentChunk[] = this.chunker.chunk(pages).map((chunk) => ({
+    //   ...chunk,
+    //   documentId: id
+    // }));
+    const chunks: DocumentChunk[] = [];
+
+    // Reject files with no extractable text. This used to check the chunk count;
+    // with chunking off we check the page text directly instead.
+    const hasText = pages.some((page) => page.text.trim().length > 0);
+    if (!hasText) {
+      log.warn("no searchable text found in any page — rejecting");
       throw new UnprocessableEntityError(
         "No searchable text was found in this file."
       );
     }
-    log.info(`chunked into ${chunks.length} chunk(s) · documentId=${id}`);
+    log.info(`documentId=${id} (chunking/embedding disabled)`);
 
     const storagePath = `${id}/${this.naming.safe(input.filename)}`;
     await this.storage.put({
@@ -95,6 +112,7 @@ export class UploadDocumentUseCase {
     const now = new Date().toISOString();
     const record: DocumentRecord = {
       id,
+      userId: input.userId,
       title: this.naming.toTitle(input.filename),
       fileName: input.filename,
       mimeType: input.mimeType || this.validator.defaultContentType(validation.kind),
@@ -108,13 +126,16 @@ export class UploadDocumentUseCase {
       error: null
     };
 
+    // `chunks` is intentionally empty (see note above), so no chunk rows are
+    // written — only the document record and its pages are persisted.
     await this.repository.save({ record, pages, chunks });
-    log.info(`persisted document, pages, and chunks · status=${record.status}`);
+    log.info(`persisted document and pages · status=${record.status}`);
 
-    // Fire-and-forget: embeddings improve retrieval but the learner can start
-    // immediately. Failures are logged, never surfaced to the upload caller.
-    log.info(`embedding ${chunks.length} chunk(s) in background → returning now`);
-    void this.embedInBackground(id, chunks, log);
+    // ─── EMBEDDING DISABLED (see note above) ─────────────────────────────────
+    // No chunks were created, so there is nothing to embed. Re-enable alongside
+    // the chunking block above to restore background embeddings.
+    // log.info(`embedding ${chunks.length} chunk(s) in background → returning now`);
+    // void this.embedInBackground(id, chunks, log);
 
     return { documentId: id, status: record.status };
   }

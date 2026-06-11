@@ -6,6 +6,7 @@ import type {
 } from "@/lib/types";
 import { ConfirmDialog } from "../ConfirmDialog";
 import { MicPermissionDialog } from "../MicPermissionDialog";
+import { PageSelectionDialog } from "../PageSelectionDialog";
 import { TeacherAvatar } from "../TeacherAvatar";
 import { CallControls } from "./CallControls";
 import { CaptionStrip } from "./CaptionStrip";
@@ -13,7 +14,7 @@ import { CornerButtons } from "./CornerButtons";
 import { LanguagePicker } from "./LanguagePicker";
 import { MicStatusBanner } from "./MicStatusBanner";
 import { TranscriptLog } from "./TranscriptLog";
-import { bubbleBase, callHint } from "./styles";
+import { bubbleBase } from "./styles";
 import { deriveOrbState, deriveStatusLabel } from "./status";
 import { useMicDialog } from "./useMicDialog";
 import { cx } from "@/lib/uiClasses";
@@ -31,11 +32,16 @@ interface TeacherPanelProps {
   speechLanguage: SpeechLanguage;
   saveCost: boolean;
   error: string | null;
+  pageCount: number;
+  selectedPages: number[];
+  pageDialogOpen: boolean;
   onSpeechLanguageChange: (language: SpeechLanguage) => void;
   onSaveCostToggle: () => void;
   onMicToggle: () => void;
   onCallToggle: () => void | Promise<void>;
   onClearChat: () => void;
+  onClosePageDialog: () => void;
+  onSubmitPageSelection: (pages: number[]) => void;
 }
 
 /** Avatar-led voice-call panel: transcript, language picker, and call controls. */
@@ -52,11 +58,16 @@ export function TeacherPanel({
   speechLanguage,
   saveCost,
   error,
+  pageCount,
+  selectedPages,
+  pageDialogOpen,
   onSpeechLanguageChange,
   onSaveCostToggle,
   onMicToggle,
   onCallToggle,
-  onClearChat
+  onClearChat,
+  onClosePageDialog,
+  onSubmitPageSelection
 }: TeacherPanelProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   // Transcript starts hidden — the call leads with the avatar and live caption;
@@ -111,11 +122,13 @@ export function TeacherPanel({
         >
           {statusLabel}
         </p>
-        <LanguagePicker
+        {/* Language picker ("I SPEAK" + language options) hidden; default language (auto) still applies.
+            Uncomment to let users see and change the spoken language. */}
+        {/* <LanguagePicker
           value={speechLanguage}
           disabled={langDisabled}
           onChange={onSpeechLanguageChange}
-        />
+        /> */}
       </div>
 
       <div className="flex h-full min-h-0 w-full max-w-[520px] flex-col items-center justify-center gap-2.5">
@@ -133,11 +146,6 @@ export function TeacherPanel({
 
         {showTranscript ? (
           <TranscriptLog messages={messages} />
-        ) : !callMode && !error ? (
-          <p className={cx(callHint, "mx-auto max-w-[340px]")}>
-            Press <strong>Call</strong>. Your teacher will introduce the lesson and
-            listen for your reply — no typing needed.
-          </p>
         ) : null}
       </div>
 
@@ -161,6 +169,16 @@ export function TeacherPanel({
       />
 
       <MicPermissionDialog open={micDialog.open} onClose={() => micDialog.setOpen(false)} />
+
+      {pageDialogOpen ? (
+        <PageSelectionDialog
+          pageCount={pageCount}
+          selectedPages={selectedPages}
+          callMode={callMode}
+          onConfirm={onSubmitPageSelection}
+          onCancel={onClosePageDialog}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={confirmOpen}

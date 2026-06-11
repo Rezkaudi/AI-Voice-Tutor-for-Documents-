@@ -15,6 +15,10 @@ interface SessionStore {
   mobilePane: MobilePane;
   speechLanguage: SpeechLanguage;
   saveCost: boolean;
+  /** Pages the student chose for this lesson (1-based, max MAX_LESSON_PAGES). */
+  selectedPages: number[];
+  /** Whether the page-picker modal is open. */
+  pageDialogOpen: boolean;
   setError: (error: string | null) => void;
   setMobilePane: (mobilePane: MobilePane) => void;
   setSpeechLanguage: (speechLanguage: SpeechLanguage) => void;
@@ -25,6 +29,9 @@ interface SessionStore {
   clearChat: () => void;
   handleMicToggle: () => void;
   handleCallToggle: () => Promise<void>;
+  openPageDialog: () => void;
+  closePageDialog: () => void;
+  submitPageSelection: (pages: number[]) => Promise<void>;
   handleUpload: (file: File | null) => void;
   handleSwitchDocument: (documentId: string) => Promise<void>;
 }
@@ -41,10 +48,13 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   callMode: false,
   hasIntroduced: false,
   mobilePane: "teacher",
-  speechLanguage: "ja",
+  speechLanguage: "",
   // "Save-cost mode": cheaper tutor model + shorter history. Off by default;
   // the learner's choice is restored from localStorage via initSaveCost().
   saveCost: false,
+  // The focused lesson defaults to page 1; the picker lets the learner change it.
+  selectedPages: [1],
+  pageDialogOpen: false,
 
   setError: (error) => set({ error }),
   setMobilePane: (mobilePane) => set({ mobilePane }),
@@ -93,42 +103,71 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     useSpeechStore.getState().stopSpeaking();
   },
 
-  /** Mic button: toggle listening, stopping playback before a new turn. */
+  /**
+   * Mic button: toggle listening. Tapping it while the teacher is talking is a
+   * barge-in — abort the in-flight answer (LLM stream + queued TTS) and cut the
+   * current playback so the learner can take the floor immediately.
+   */
   handleMicToggle: () => {
     const voice = useVoiceStore.getState();
     if (voice.isListening) {
       voice.stop();
     } else {
+      useChatStore.getState().abort();
       useSpeechStore.getState().stopSpeaking();
       voice.start();
     }
   },
 
-  /** Call button: start or end the hands-free voice call. */
+  /**
+   * Call button. Ending a call tears everything down immediately; starting one
+   * opens the page-picker first so the learner confirms which pages to study —
+   * the actual call begins from {@link submitPageSelection}.
+   */
   handleCallToggle: async () => {
-    const voice = useVoiceStore.getState();
-
     if (get().callMode) {
       set({ callMode: false });
       // End the call: abort every in-flight request — chat stream,
       // transcription, and TTS — alongside stopping the mic and playback.
       useChatStore.getState().abort();
-      voice.cancel();
+      useVoiceStore.getState().cancel();
       useSpeechStore.getState().stopSpeaking();
       return;
     }
 
-    if (!voice.isSupported) {
+    if (!useVoiceStore.getState().isSupported) {
       set({ error: "Microphone is not supported in this browser." });
       return;
     }
 
+    // Always confirm the lesson pages before a call starts — this is the
+    // learner's chance to edit them every time they call.
+    set({ pageDialogOpen: true });
+  },
+
+  /** Open the page-picker (e.g. to edit the lesson pages mid-call). */
+  openPageDialog: () => set({ pageDialogOpen: true }),
+
+  /** Close the page-picker without changing anything. */
+  closePageDialog: () => set({ pageDialogOpen: false }),
+
+  /**
+   * Confirm the chosen lesson pages. Mid-call this just updates the selection
+   * (the next message picks it up). Before a call it also starts the call:
+   * grab the mic, then either greet-and-teach or resume listening.
+   */
+  submitPageSelection: async (pages) => {
+    const cleaned = pages.length > 0 ? pages : [1];
+    set({ selectedPages: cleaned, pageDialogOpen: false });
+
+    // Editing pages during an active call — nothing else to do.
+    if (get().callMode) return;
+
+    const voice = useVoiceStore.getState();
     // Ask for the mic up front, on this click — the one chance for a clean
     // one-click grant before the user can block it.
     const granted = await voice.requestPermission();
-    if (!granted) {
-      return;
-    }
+    if (!granted) return;
 
     set({ callMode: true });
 
@@ -143,6 +182,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   /** Upload button: reset the chat, then upload the new lesson document. */
   handleUpload: (file) => {
     useChatStore.getState().resetMessages();
+    // A new document is a fresh lesson — reset the page selection to page 1.
+    set({ selectedPages: [1], pageDialogOpen: false });
     useDocumentStore.getState().uploadFile(file);
   },
 
@@ -158,7 +199,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       set({ callMode: false });
       useVoiceStore.getState().cancel();
     }
-    set({ hasIntroduced: false });
+    // A different document is a fresh lesson — reset the page selection.
+    set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false });
     await docs.selectDocument(documentId);
   }
 }));

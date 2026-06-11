@@ -1,6 +1,11 @@
+import { AuthGate } from "@/components/AuthGate";
 import { TeachingApp } from "@/components/TeachingApp";
 
 /** Root component. */
 export function App() {
-  return <TeachingApp />;
+  return (
+    <AuthGate>
+      <TeachingApp />
+    </AuthGate>
+  );
 }

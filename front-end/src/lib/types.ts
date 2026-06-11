@@ -67,6 +67,8 @@ export interface ChatPayload {
   message: string;
   language: SpeechLanguage;
   messages: ChatHistoryMessage[];
+  /** 1-based page numbers the student chose to study this call (max 5). */
+  selectedPages: number[];
   saveCost: boolean;
 }
 

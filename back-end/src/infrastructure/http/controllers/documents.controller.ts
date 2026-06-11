@@ -15,14 +15,14 @@ export class DocumentsController {
     private readonly deleteDocument: DeleteDocumentUseCase
   ) {}
 
-  /** GET /api/documents — returns the library of processed documents. */
-  list = async (_req: Request, res: Response): Promise<void> => {
-    res.json({ documents: await this.listDocuments.execute() });
+  /** GET /api/documents — returns the signed-in user's processed documents. */
+  list = async (req: Request, res: Response): Promise<void> => {
+    res.json({ documents: await this.listDocuments.execute(req.auth!.userId) });
   };
 
   /** DELETE /api/documents/:id — removes the document and its file. */
   remove = async (req: Request, res: Response): Promise<void> => {
-    await this.deleteDocument.execute(req.params.id);
+    await this.deleteDocument.execute(req.params.id, req.auth!.userId);
     res.status(204).end();
   };
 
@@ -30,6 +30,7 @@ export class DocumentsController {
   upload = async (req: Request, res: Response): Promise<void> => {
     const file = req.file!;
     const result = await this.uploadDocument.execute({
+      userId: req.auth!.userId,
       buffer: file.buffer,
       filename: file.originalname,
       mimeType: file.mimetype,
@@ -40,12 +41,12 @@ export class DocumentsController {
 
   /** GET /api/documents/:id — returns the processed document. */
   get = async (req: Request, res: Response): Promise<void> => {
-    res.json(await this.getDocument.execute(req.params.id));
+    res.json(await this.getDocument.execute(req.params.id, req.auth!.userId));
   };
 
   /** GET /api/documents/:id/file — streams the original uploaded file. */
   file = async (req: Request, res: Response): Promise<void> => {
-    const result = await this.getDocumentFile.execute(req.params.id);
+    const result = await this.getDocumentFile.execute(req.params.id, req.auth!.userId);
     res.setHeader("Content-Type", result.contentType);
     res.setHeader(
       "Content-Disposition",

@@ -106,7 +106,7 @@ function Eyes() {
         <circle cx="82" cy="103" r="3.4" fill="#1c1a17" />
         <circle cx="83.5" cy="101" r="1.1" fill="#fff" />
       </g>
-      <g className="animate-blink [animation-delay:0.06s] origin-center">
+      <g className="animate-blink origin-center">
         <ellipse cx="118" cy="102" rx="6.5" ry="7.5" fill="#fff" />
         <circle cx="118" cy="103" r="3.4" fill="#1c1a17" />
         <circle cx="119.5" cy="101" r="1.1" fill="#fff" />

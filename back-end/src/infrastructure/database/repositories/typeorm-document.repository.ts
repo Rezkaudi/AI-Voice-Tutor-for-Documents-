@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { DataSource } from "typeorm";
 import type {
   DocumentChunk,
@@ -10,6 +9,7 @@ import type {
   DocumentRepository,
   ProcessedDocument
 } from "@/domain/repositories/document-repository";
+import type { IdGenerator } from "@/domain/services/id-generator";
 import { DocumentOrmEntity } from "../entities/document.entity";
 import { DocumentPageOrmEntity } from "../entities/document-page.entity";
 import { DocumentChunkOrmEntity } from "../entities/document-chunk.entity";
@@ -19,13 +19,17 @@ import { DocumentChunkOrmEntity } from "../entities/document-chunk.entity";
  * entities; it maps between them and the domain types.
  */
 export class TypeOrmDocumentRepository implements DocumentRepository {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly idGenerator: IdGenerator
+  ) {}
 
   /** Persists the document, its pages, and its chunks in one transaction. */
   async save(input: ProcessedDocument): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const document = new DocumentOrmEntity();
       document.id = input.record.id;
+      document.userId = input.record.userId;
       document.title = input.record.title;
       document.fileName = input.record.fileName;
       document.mimeType = input.record.mimeType;
@@ -41,7 +45,7 @@ export class TypeOrmDocumentRepository implements DocumentRepository {
 
       const pages = input.pages.map((page) => {
         const row = new DocumentPageOrmEntity();
-        row.id = page.id ?? randomUUID();
+        row.id = page.id ?? this.idGenerator.uuid();
         row.documentId = input.record.id;
         row.pageNumber = page.pageNumber;
         row.text = page.text;
@@ -63,22 +67,22 @@ export class TypeOrmDocumentRepository implements DocumentRepository {
     });
   }
 
-  async findById(id: string): Promise<DocumentRecord | null> {
+  async findById(id: string, userId: string): Promise<DocumentRecord | null> {
     const row = await this.dataSource
       .getRepository(DocumentOrmEntity)
-      .findOne({ where: { id } });
+      .findOne({ where: { id, userId } });
     return row ? toDocumentRecord(row) : null;
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, userId: string): Promise<void> {
     // Pages and chunks cascade via the FK ON DELETE CASCADE.
-    await this.dataSource.getRepository(DocumentOrmEntity).delete({ id });
+    await this.dataSource.getRepository(DocumentOrmEntity).delete({ id, userId });
   }
 
-  async listReady(): Promise<DocumentRecord[]> {
+  async listReady(userId: string): Promise<DocumentRecord[]> {
     const rows = await this.dataSource
       .getRepository(DocumentOrmEntity)
-      .find({ where: { status: "ready" }, order: { updatedAt: "DESC" } });
+      .find({ where: { status: "ready", userId }, order: { updatedAt: "DESC" } });
     return rows.map(toDocumentRecord);
   }
 
@@ -138,6 +142,7 @@ export class TypeOrmDocumentRepository implements DocumentRepository {
 function toDocumentRecord(row: DocumentOrmEntity): DocumentRecord {
   return {
     id: row.id,
+    userId: row.userId,
     title: row.title,
     fileName: row.fileName,
     mimeType: row.mimeType,

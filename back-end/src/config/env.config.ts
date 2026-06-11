@@ -21,6 +21,17 @@ export type EnvConfig = {
   OPENAI_SPEECH_MODEL: string;
   OPENAI_SPEECH_VOICE: string;
   TUTOR_LOG_VERBOSE: boolean;
+
+  // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  GOOGLE_CALLBACK_URL: string;
+  JWT_ACCESS_SECRET: string;
+  JWT_REFRESH_SECRET: string;
+  ACCESS_TOKEN_TTL: string;
+  REFRESH_TOKEN_TTL: string;
+  FRONTEND_URL: string;
+  COOKIE_SECURE: boolean;
 };
 
 type EnvKey = keyof EnvConfig;
@@ -74,5 +85,20 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   TUTOR_LOG_VERBOSE: bool(
     getEnv("TUTOR_LOG_VERBOSE"),
     (getEnv("NODE_ENV") || "development") !== "production"
-  )
+  ),
+
+  // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
+  GOOGLE_CLIENT_ID: requireEnv("GOOGLE_CLIENT_ID"),
+  GOOGLE_CLIENT_SECRET: requireEnv("GOOGLE_CLIENT_SECRET"),
+  GOOGLE_CALLBACK_URL: requireEnv("GOOGLE_CALLBACK_URL"),
+  JWT_ACCESS_SECRET: requireEnv("JWT_ACCESS_SECRET"),
+  JWT_REFRESH_SECRET: requireEnv("JWT_REFRESH_SECRET"),
+  // Short-lived access token; long-lived refresh token ("1 week").
+  ACCESS_TOKEN_TTL: getEnv("ACCESS_TOKEN_TTL") || "1d",
+  REFRESH_TOKEN_TTL: getEnv("REFRESH_TOKEN_TTL") || "7d",
+  // Where the OAuth callback sends the browser once cookies are set.
+  FRONTEND_URL: getEnv("FRONTEND_URL") || "http://localhost:5173",
+  // Cookies use `SameSite=None` (cross-site), which requires `Secure`. Default
+  // Secure on; set COOKIE_SECURE=false only for a plain-HTTP localhost test.
+  COOKIE_SECURE: bool(getEnv("COOKIE_SECURE"), true)
 });

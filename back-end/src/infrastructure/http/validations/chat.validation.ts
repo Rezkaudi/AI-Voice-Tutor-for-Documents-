@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import { body } from "express-validator";
+import { MAX_LESSON_PAGES } from "@/config/constant.config";
 import { handleValidationErrors } from "./handle-validation-errors";
 
 export const streamChatValidation: RequestHandler[] = [
@@ -32,6 +33,14 @@ export const streamChatValidation: RequestHandler[] = [
   body("messages.*.content")
     .isString()
     .withMessage("Message content must be text."),
+  body("selectedPages")
+    .customSanitizer((value) => (value === undefined ? [] : value))
+    .isArray({ max: MAX_LESSON_PAGES })
+    .withMessage(`Pick at most ${MAX_LESSON_PAGES} pages.`),
+  body("selectedPages.*")
+    .isInt({ min: 1 })
+    .withMessage("Page numbers must be positive integers.")
+    .toInt(),
   body("saveCost")
     .customSanitizer((value) => (value === undefined ? false : value))
     .isBoolean()

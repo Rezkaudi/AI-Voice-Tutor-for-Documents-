@@ -8,6 +8,10 @@ import { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
 import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
 import { TranscribeAudioUseCase } from "@/application/use-cases/transcription/transcribe-audio.use-case";
+import { GetGoogleAuthUrlUseCase } from "@/application/use-cases/auth/get-google-auth-url.use-case";
+import { AuthenticateWithGoogleUseCase } from "@/application/use-cases/auth/authenticate-with-google.use-case";
+import { RefreshSessionUseCase } from "@/application/use-cases/auth/refresh-session.use-case";
+import { GetCurrentUserUseCase } from "@/application/use-cases/auth/get-current-user.use-case";
 
 import { TextTokenizer } from "@/domain/logic/text-tokenizer";
 import { ChunkRanker } from "@/domain/logic/chunk-ranker";
@@ -27,6 +31,11 @@ import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
 
 import { initializeDatabase } from "@/infrastructure/database/data-source";
 import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositories/typeorm-document.repository";
+import { TypeOrmUserRepository } from "@/infrastructure/database/repositories/typeorm-user.repository";
+
+import { GoogleOAuthService } from "@/infrastructure/services/auth/google-oauth.service";
+import { JwtTokenService } from "@/infrastructure/services/auth/jwt-token.service";
+import { CryptoIdGenerator } from "@/infrastructure/services/crypto-id-generator";
 
 import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage";
 import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
@@ -40,6 +49,8 @@ import { DocumentsController } from "@/infrastructure/http/controllers/documents
 import { ChatController } from "@/infrastructure/http/controllers/chat.controller";
 import { SpeechController } from "@/infrastructure/http/controllers/speech.controller";
 import { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
+import { AuthController } from "@/infrastructure/http/controllers/auth.controller";
+import { buildRequireAuth } from "@/infrastructure/http/middleware/require-auth";
 import type { ServerDependencies } from "@/infrastructure/http/server";
 
 import { ENV_CONFIG } from "@/config/env.config";
@@ -61,6 +72,8 @@ export async function buildContainer(): Promise<Container> {
   // One logger, injected as the `Logger` port wherever a flow needs tracing.
   // Verbosity is decided here, once, from the environment.
   const logger = new ConsoleLogger(ENV_CONFIG.TUTOR_LOG_VERBOSE);
+  // Single id/token source, injected wherever a UUID or random token is needed.
+  const idGenerator = new CryptoIdGenerator();
 
   // ─── Persistence ─────────────────────────────────────────────────────────
   const dataSource = await initializeDatabase();
@@ -74,13 +87,16 @@ export async function buildContainer(): Promise<Container> {
   const referenceFactory = new DocumentReferenceFactory();
   const referenceSelector = new ReferenceSelector(citationResolver, referenceFactory);
   const citationMarkerReconciler = new CitationMarkerReconciler();
-  const documentChunker = new DocumentChunker();
+  const documentChunker = new DocumentChunker(idGenerator);
   const uploadValidator = new UploadValidator();
   const fileNaming = new FileNaming();
   const historySanitizer = new ChatHistorySanitizer();
 
   // ─── Infrastructure adapters (implement domain ports) ────────────────────
-  const documentRepository = new TypeOrmDocumentRepository(dataSource);
+  const documentRepository = new TypeOrmDocumentRepository(dataSource, idGenerator);
+  const userRepository = new TypeOrmUserRepository(dataSource, idGenerator);
+  const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
+  const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
   const textExtractor = new PdfJsTextExtractor();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
@@ -108,6 +124,7 @@ export async function buildContainer(): Promise<Container> {
     uploadValidator,
     documentChunker,
     fileNaming,
+    idGenerator,
     logger
   );
   const getDocument = new GetDocumentUseCase(documentRepository);
@@ -126,6 +143,18 @@ export async function buildContainer(): Promise<Container> {
   const synthesizeSpeech = new SynthesizeSpeechUseCase(speechService, logger);
   const transcribeAudio = new TranscribeAudioUseCase(transcriptionService, logger);
 
+  const getGoogleAuthUrl = new GetGoogleAuthUrlUseCase(oauthProvider, idGenerator);
+  const authenticateWithGoogle = new AuthenticateWithGoogleUseCase(
+    oauthProvider,
+    userRepository,
+    tokenService
+  );
+  const refreshSession = new RefreshSessionUseCase(userRepository, tokenService);
+  const getCurrentUser = new GetCurrentUserUseCase(userRepository);
+
+  // The gate every protected route shares, built from the same token service.
+  const requireAuth = buildRequireAuth(tokenService);
+
   // ─── HTTP controllers ────────────────────────────────────────────────────
   const deps: ServerDependencies = {
     documents: new DocumentsController(
@@ -137,7 +166,14 @@ export async function buildContainer(): Promise<Container> {
     ),
     chat: new ChatController(streamChat),
     speech: new SpeechController(synthesizeSpeech),
-    transcription: new TranscriptionController(transcribeAudio)
+    transcription: new TranscriptionController(transcribeAudio),
+    auth: new AuthController(
+      getGoogleAuthUrl,
+      authenticateWithGoogle,
+      refreshSession,
+      getCurrentUser
+    ),
+    requireAuth
   };
 
   return { dataSource, deps };

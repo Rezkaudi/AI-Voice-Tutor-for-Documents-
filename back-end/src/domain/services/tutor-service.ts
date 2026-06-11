@@ -23,6 +23,12 @@ export interface TutorReplyRequest {
   readonly pages: DocumentPage[];
   /** Every chunk — searched by the `search_document` tool. */
   readonly chunks: DocumentChunk[];
+  /**
+   * The 1-based page numbers the student chose to study this call (max 5).
+   * When non-empty, their full text is injected as lesson material and the
+   * tutor teaches them in order, page by page. Empty means "the whole document".
+   */
+  readonly selectedPages: number[];
   /** When true, use the cheaper model and a smaller history window. */
   readonly saveCost: boolean;
 }

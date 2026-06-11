@@ -12,7 +12,7 @@ import type { EnvConfig } from "@/config/env.config";
 import type { Logger } from "@/domain/services/logger";
 import { TutorRequestFactory } from "./tutor-request-factory";
 import { TutorToolExecutor } from "./tutor-tool-executor";
-import { CitePassagesParser } from "./cite-passages-parser";
+import { CitationTrailerParser } from "./citation-trailer-parser";
 import {
   OpenAiResponseStreamReader,
   type PendingToolCall
@@ -36,15 +36,15 @@ interface TurnState {
  * `TutorService` backed by OpenAI.
  *
  * The model reads the document agentically: it calls `search_document` /
- * `get_page` (run by {@link TutorToolExecutor}) and records quotes via
- * `cite_passages`. This class only drives that loop — request
- * assembly, stream decoding, reference selection, and marker reconciliation are
- * each delegated to a collaborator.
+ * `get_page` (run by {@link TutorToolExecutor}) and grounds its reply with a
+ * CITATIONS trailer parsed by {@link CitationTrailerParser}. This class only
+ * drives that loop — request assembly, stream decoding, reference selection,
+ * and marker reconciliation are each delegated to a collaborator.
  */
 export class OpenAiTutorService implements TutorService {
   private readonly client: OpenAI;
   private readonly requests: TutorRequestFactory;
-  private readonly citePassages = new CitePassagesParser();
+  private readonly trailer = new CitationTrailerParser();
   private readonly streamReader = new OpenAiResponseStreamReader();
 
   constructor(
@@ -83,6 +83,16 @@ export class OpenAiTutorService implements TutorService {
     let pendingInput = this.requests.initialInput(request, settings);
     let previousResponseId: string | undefined;
 
+    // Confirm the chosen lesson pages were injected as developer-role material.
+    if (request.selectedPages.length > 0) {
+      const lesson = pendingInput.find((item) => item.role === "developer");
+      const chars = typeof lesson?.content === "string" ? lesson.content.length : 0;
+      log.info(
+        `lesson material → pages [${request.selectedPages.join(", ")}] injected ` +
+          `as developer input · ${chars} chars`
+      );
+    }
+
     for (let step = 0; step < settings.maxToolSteps; step += 1) {
       log.info(
         `step ${step + 1}/${settings.maxToolSteps} → requesting model response` +
@@ -102,12 +112,21 @@ export class OpenAiTutorService implements TutorService {
           (stepText ? ` · ${stepText.length} chars of text` : "")
       );
 
-      // No tool calls → the model has produced its final spoken answer.
+      // No tool calls → the model has produced its final spoken answer. Pull
+      // the CITATIONS trailer out of it before anything downstream sees it.
       if (toolCalls.length === 0) {
         if (stepText) {
-          log.info(`final answer (${stepText.length} chars): "${truncate(stepText)}"`);
-          log.detail("final answer (full)", stepText);
-          yield* this.emitAnswer(stepText, request, state, log);
+          const { spokenText, candidates } = this.trailer.parse(stepText);
+          if (candidates.length > 0) {
+            state.citedCandidates.push(...candidates);
+            log.info(`citations trailer → ${candidates.length} citation(s)`);
+            log.detail("citations trailer", formatCitations(candidates));
+          }
+          log.info(
+            `final answer (${spokenText.length} chars): "${truncate(spokenText)}"`
+          );
+          log.detail("final answer (full)", spokenText);
+          yield* this.emitAnswer(spokenText, request, state, log);
         } else {
           log.warn("model returned neither tool calls nor text — ending turn");
         }
@@ -157,15 +176,6 @@ export class OpenAiTutorService implements TutorService {
   ): Promise<Record<string, unknown>[]> {
     const outputs: Record<string, unknown>[] = [];
     for (const call of toolCalls) {
-      if (call.name === "cite_passages") {
-        const recorded = this.citePassages.parse(call.args);
-        state.citedCandidates.push(...recorded);
-        log.info(`tool cite_passages → recorded ${recorded.length} citation(s)`);
-        log.detail("cite_passages result", formatCitations(recorded));
-        outputs.push(this.functionOutput(call.callId, this.citeMessage(recorded.length)));
-        continue;
-      }
-
       log.info(`tool ${call.name}(${truncate(call.args, 160)})`);
       const result = await this.tools.execute(call.name, call.args, request, log);
       log.info(
@@ -184,12 +194,6 @@ export class OpenAiTutorService implements TutorService {
       outputs.push(this.functionOutput(call.callId, result.output));
     }
     return outputs;
-  }
-
-  private citeMessage(count: number): string {
-    return count
-      ? `Recorded ${count} citation(s).`
-      : "No usable citations were recorded — quotes must be exact substrings of the page text.";
   }
 
   private functionOutput(callId: string, output: string): Record<string, unknown> {

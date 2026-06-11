@@ -18,14 +18,13 @@ export const SPEECH_LANGUAGES = [
  * Mirrors `GREETING_PROMPT` in the original backend project.
  */
 export const GREETING_PROMPT =
-  "Greet the student warmly in 2-3 short spoken sentences. Introduce yourself as their AI teacher " +
-  "for this document. Assume they have not read it and know nothing about it yet — reassure them " +
-  "you will walk them through it together, step by step, and that you will not just talk at them: " +
-  "you will teach a little, then have them try it themselves with their own examples, and coach them " +
-  "as they go, like a real teacher. Tell them they can ask you anything or ask to be quizzed at any time. " +
-  "End by asking whether they'd " +
-  "like you to start teaching the document from the beginning, or to jump to something specific. " +
-  "Do not include citations or page numbers in this greeting.";
+  "START THE LESSON";
+
+/**
+ * The most pages a student may pick for one focused lesson. Mirrors
+ * `MAX_LESSON_PAGES` on the back-end.
+ */
+export const MAX_LESSON_PAGES = 5;
 
 /** Gap before listening resumes so playback fully releases the audio device. */
 export const CALL_RESUME_DELAY_MS = 350;

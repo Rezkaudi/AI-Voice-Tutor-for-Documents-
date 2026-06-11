@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
 import type { DocumentChunk, DocumentPage } from "@/domain/entities/document";
+import type { IdGenerator } from "@/domain/services/id-generator";
 import { normalizeText } from "@/shared/text";
 
 export interface ChunkOptions {
@@ -16,6 +16,8 @@ export interface ChunkOptions {
 export class DocumentChunker {
   private static readonly DEFAULT_MAX_CHARS = 1600;
   private static readonly DEFAULT_OVERLAP_CHARS = 220;
+
+  constructor(private readonly idGenerator: IdGenerator) {}
 
   /** Splits pages into overlapping chunks, in reading order. */
   chunk(
@@ -43,7 +45,7 @@ export class DocumentChunker {
         overlapChars
       )) {
         chunks.push({
-          id: randomUUID(),
+          id: this.idGenerator.uuid(),
           documentId: page.documentId ?? "",
           pageNumber: page.pageNumber,
           chunkIndex: chunks.length,
