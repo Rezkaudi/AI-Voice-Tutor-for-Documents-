@@ -12,7 +12,7 @@ function baseOptions(): CookieOptions {
   return {
     httpOnly: true,
     secure: ENV_CONFIG.COOKIE_SECURE,
-    sameSite: "none",
+    sameSite: "lax",
     path: "/"
   };
 }
