@@ -44,6 +44,9 @@ import { TutorToolExecutor } from "@/infrastructure/services/ai/tutor-tool-execu
 import { OpenAiEmbeddingService } from "@/infrastructure/services/ai/openai-embedding.service";
 import { OpenAiSpeechSynthesisService, OpenAiTranscriptionService } from "@/infrastructure/services/ai/openai-speech.service";
 import { ConsoleLogger } from "@/infrastructure/logging/console-logger";
+import { ConsoleCostReporter } from "@/infrastructure/logging/console-cost-reporter";
+import { CostCalculator } from "@/domain/logic/cost/cost-calculator";
+import { PRICING } from "@/config/pricing.config";
 
 import { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
 import { ChatController } from "@/infrastructure/http/controllers/chat.controller";
@@ -75,6 +78,9 @@ export async function buildContainer(): Promise<Container> {
   // Single id/token source, injected wherever a UUID or random token is needed.
   const idGenerator = new CryptoIdGenerator();
 
+  const costCalculator = new CostCalculator(PRICING);
+  const costReporter = new ConsoleCostReporter();
+
   // ─── Persistence ─────────────────────────────────────────────────────────
   const dataSource = await initializeDatabase();
 
@@ -99,7 +105,12 @@ export async function buildContainer(): Promise<Container> {
   const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
   const textExtractor = new PdfJsTextExtractor();
-  const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
+  const embeddingService = new OpenAiEmbeddingService(
+    ENV_CONFIG,
+    logger,
+    costCalculator,
+    costReporter
+  );
   const tutorToolExecutor = new TutorToolExecutor(
     embeddingService,
     chunkRanker,
@@ -110,10 +121,20 @@ export async function buildContainer(): Promise<Container> {
     tutorToolExecutor,
     referenceSelector,
     citationMarkerReconciler,
-    logger
+    logger,
+    costCalculator,
+    costReporter
   );
-  const speechService = new OpenAiSpeechSynthesisService(ENV_CONFIG);
-  const transcriptionService = new OpenAiTranscriptionService(ENV_CONFIG);
+  const speechService = new OpenAiSpeechSynthesisService(
+    ENV_CONFIG,
+    costCalculator,
+    costReporter
+  );
+  const transcriptionService = new OpenAiTranscriptionService(
+    ENV_CONFIG,
+    costCalculator,
+    costReporter
+  );
 
   // ─── Application use cases ───────────────────────────────────────────────
   const uploadDocument = new UploadDocumentUseCase(

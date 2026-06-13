@@ -10,6 +10,9 @@ import type {
 } from "@/domain/services/tutor-service";
 import type { EnvConfig } from "@/config/env.config";
 import type { Logger } from "@/domain/services/logger";
+import type { CostCalculator } from "@/domain/logic/cost/cost-calculator";
+import type { CostReporter } from "@/domain/services/cost-reporter";
+import type { Cost } from "@/domain/logic/cost/cost";
 import { TutorRequestFactory } from "./tutor-request-factory";
 import { TutorToolExecutor } from "./tutor-tool-executor";
 import { CitationTrailerParser } from "./citation-trailer-parser";
@@ -52,7 +55,9 @@ export class OpenAiTutorService implements TutorService {
     private readonly tools: TutorToolExecutor,
     private readonly referenceSelector: ReferenceSelector,
     private readonly markerReconciler: CitationMarkerReconciler,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly costCalculator: CostCalculator,
+    private readonly costReporter: CostReporter
   ) {
     this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
     this.requests = new TutorRequestFactory(config);
@@ -73,9 +78,9 @@ export class OpenAiTutorService implements TutorService {
 
     log.info(
       `turn start — "${truncate(request.message)}" · model=${settings.model} ` +
-        `· saveCost=${request.saveCost} · effort=${settings.reasoningEffort} ` +
-        `· maxSteps=${settings.maxToolSteps} · history=${request.history.length} ` +
-        `· pages=${request.pages.length} · chunks=${request.chunks.length}`
+      `· saveCost=${request.saveCost} · effort=${settings.reasoningEffort} ` +
+      `· maxSteps=${settings.maxToolSteps} · history=${request.history.length} ` +
+      `· pages=${request.pages.length} · chunks=${request.chunks.length}`
     );
 
     // First turn carries history + the student's message; later turns chain off
@@ -83,33 +88,53 @@ export class OpenAiTutorService implements TutorService {
     let pendingInput = this.requests.initialInput(request, settings);
     let previousResponseId: string | undefined;
 
+    // Per-turn LLM costs, summed into one per-question total when the turn ends.
+    const turnCosts: Cost[] = [];
+
     // Confirm the chosen lesson pages were injected as developer-role material.
     if (request.selectedPages.length > 0) {
       const lesson = pendingInput.find((item) => item.role === "developer");
       const chars = typeof lesson?.content === "string" ? lesson.content.length : 0;
       log.info(
         `lesson material → pages [${request.selectedPages.join(", ")}] injected ` +
-          `as developer input · ${chars} chars`
+        `as developer input · ${chars} chars`
       );
     }
 
     for (let step = 0; step < settings.maxToolSteps; step += 1) {
       log.info(
         `step ${step + 1}/${settings.maxToolSteps} → requesting model response` +
-          (previousResponseId ? " (chained)" : "")
+        (previousResponseId ? " (chained)" : "")
       );
       const stream = await createResponse(
         this.requests.body(request, settings, pendingInput, previousResponseId),
         { signal }
       );
-      const { toolCalls, stepText, responseId } = await this.streamReader.read(stream);
+      const { toolCalls, stepText, responseId, usage } =
+        await this.streamReader.read(stream);
       if (responseId) {
         previousResponseId = responseId;
       }
+      // Meter this turn from the exact token usage the model just reported.
+      if (usage) {
+        const cost = this.costCalculator.llm(settings.model, usage);
+        turnCosts.push(cost);
+        this.costReporter.report({
+          operation: "tutor-turn",
+          cost,
+          context: `step ${step + 1}/${settings.maxToolSteps}`,
+          meta: {
+            input: usage.inputTokens,
+            cached: usage.cachedInputTokens,
+            output: usage.outputTokens,
+            reasoning: usage.reasoningTokens
+          }
+        });
+      }
       log.info(
         `step ${step + 1} ← ${toolCalls.length} tool call(s)` +
-          (toolCalls.length ? `: ${toolCalls.map((call) => call.name).join(", ")}` : "") +
-          (stepText ? ` · ${stepText.length} chars of text` : "")
+        (toolCalls.length ? `: ${toolCalls.map((call) => call.name).join(", ")}` : "") +
+        (stepText ? ` · ${stepText.length} chars of text` : "")
       );
 
       // No tool calls → the model has produced its final spoken answer. Pull
@@ -130,6 +155,7 @@ export class OpenAiTutorService implements TutorService {
         } else {
           log.warn("model returned neither tool calls nor text — ending turn");
         }
+        this.reportQuestionTotal(request, settings.model, turnCosts);
         return;
       }
 
@@ -142,6 +168,21 @@ export class OpenAiTutorService implements TutorService {
     }
 
     log.warn(`reached maxToolSteps (${settings.maxToolSteps}) without a final answer`);
+    this.reportQuestionTotal(request, settings.model, turnCosts);
+  }
+
+  private reportQuestionTotal(
+    request: TutorReplyRequest,
+    model: string,
+    turnCosts: ReadonlyArray<Cost>
+  ): void {
+    if (turnCosts.length === 0) return;
+    this.costReporter.report({
+      operation: "tutor-question",
+      cost: this.costCalculator.total(model, turnCosts),
+      context: `"${truncate(request.message, 60)}"`,
+      meta: { turns: turnCosts.length, doc: request.document.id }
+    });
   }
 
   /** Resolves the reference, reconciles `[[N]]` markers, and emits the answer. */
@@ -180,7 +221,7 @@ export class OpenAiTutorService implements TutorService {
       const result = await this.tools.execute(call.name, call.args, request, log);
       log.info(
         `tool ${call.name} ← ${result.output.length} chars · ` +
-          `${result.references.length} reference(s)`
+        `${result.references.length} reference(s)`
       );
       log.detail(`${call.name} result`, result.output);
       for (const reference of result.references) {

@@ -1,3 +1,5 @@
+import type { LlmUsage } from "@/domain/logic/cost/cost";
+
 /** A pending tool call surfaced by one response step. */
 export interface PendingToolCall {
   callId: string;
@@ -10,6 +12,7 @@ export interface StreamStep {
   toolCalls: PendingToolCall[];
   stepText: string;
   responseId?: string;
+  usage?: LlmUsage;
 }
 
 /**
@@ -25,6 +28,7 @@ export class OpenAiResponseStreamReader {
     const toolCalls: PendingToolCall[] = [];
     const textByOutputIndex = new Map<number, string>();
     let responseId: string | undefined;
+    let usage: LlmUsage | undefined;
 
     for await (const event of stream) {
       if (
@@ -47,6 +51,7 @@ export class OpenAiResponseStreamReader {
         if (response?.id) {
           responseId = String(response.id);
         }
+        usage = parseUsage(response?.usage) ?? usage;
       }
     }
 
@@ -54,6 +59,23 @@ export class OpenAiResponseStreamReader {
     const stepText =
       lastIndex === undefined ? "" : (textByOutputIndex.get(lastIndex) ?? "");
 
-    return { toolCalls, stepText, responseId };
+    return { toolCalls, stepText, responseId, usage };
   }
+}
+
+function parseUsage(raw: unknown): LlmUsage | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const usage = raw as Record<string, unknown>;
+  const inputDetails = (usage.input_tokens_details as Record<string, unknown>) ?? {};
+  const outputDetails = (usage.output_tokens_details as Record<string, unknown>) ?? {};
+  return {
+    inputTokens: num(usage.input_tokens),
+    cachedInputTokens: num(inputDetails.cached_tokens),
+    outputTokens: num(usage.output_tokens),
+    reasoningTokens: num(outputDetails.reasoning_tokens)
+  };
+}
+
+function num(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
