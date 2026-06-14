@@ -10,7 +10,9 @@ export class ConsoleCostReporter implements CostReporter {
   private runningTotalUsd = 0;
 
   report(entry: CostEntry): void {
-    this.runningTotalUsd += entry.cost.usd;
+    if (!entry.summary) {
+      this.runningTotalUsd += entry.cost.usd;
+    }
     const { operation, cost } = entry;
 
     const header =

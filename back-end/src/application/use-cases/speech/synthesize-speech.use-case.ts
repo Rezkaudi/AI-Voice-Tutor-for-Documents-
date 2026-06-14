@@ -14,9 +14,9 @@ export class SynthesizeSpeechUseCase {
   constructor(
     private readonly speech: SpeechSynthesisService,
     private readonly logger: Logger
-  ) {}
+  ) { }
 
-  async execute(text: unknown, signal?: AbortSignal): Promise<SynthesizedSpeech> {
+  async execute(text: unknown, userId: string, signal?: AbortSignal): Promise<SynthesizedSpeech> {
     const log = this.logger.scope("speak");
     if (typeof text !== "string" || text.trim().length === 0) {
       log.warn("rejected — text to speak is required");
@@ -25,7 +25,7 @@ export class SynthesizeSpeechUseCase {
 
     const clipped = text.trim().slice(0, SynthesizeSpeechUseCase.MAX_CHARS);
     log.info(`synthesizing ${clipped.length} char(s): "${truncate(clipped)}"`);
-    const clip = await this.speech.synthesize(clipped, signal);
+    const clip = await this.speech.synthesize(clipped, userId, signal);
     log.info(
       `speech ready · ${(clip.audio.length / 1024).toFixed(1)} KiB ${clip.contentType}`
     );

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import multer from "multer";
 import { asyncHandler } from "@/infrastructure/http/middleware/async-handler";
 import type { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
@@ -7,7 +7,8 @@ import { transcribeValidation } from "@/infrastructure/http/validations/transcri
 const AUDIO_LIMIT_BYTES = 8 * 1024 * 1024;
 
 export function buildTranscriptionRoutes(
-  controller: TranscriptionController
+  controller: TranscriptionController,
+  requireCredits: RequestHandler
 ): Router {
   const router = Router();
   const upload = multer({
@@ -17,6 +18,7 @@ export function buildTranscriptionRoutes(
 
   router.post(
     "/transcribe",
+    requireCredits,
     upload.single("audio"),
     transcribeValidation,
     asyncHandler(controller.transcribe)

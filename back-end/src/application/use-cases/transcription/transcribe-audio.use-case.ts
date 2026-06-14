@@ -9,6 +9,8 @@ export interface TranscribeAudioInput {
   readonly filename: string;
   readonly contentType: string;
   readonly language?: string;
+  /** The signed-in user, for crediting the transcription cost. */
+  readonly userId: string;
 }
 
 /** Transcribes a learner's recorded speech into text. */
@@ -16,7 +18,7 @@ export class TranscribeAudioUseCase {
   constructor(
     private readonly transcription: TranscriptionService,
     private readonly logger: Logger
-  ) {}
+  ) { }
 
   async execute(
     input: TranscribeAudioInput,
@@ -30,7 +32,7 @@ export class TranscribeAudioUseCase {
 
     log.info(
       `learner audio received · ${(input.audio.length / 1024).toFixed(1)} KiB · ` +
-        `${input.contentType} · lang=${input.language ?? "auto"} → transcribing`
+      `${input.contentType} · lang=${input.language ?? "auto"} → transcribing`
     );
     const text = (await this.transcription.transcribe(input, signal)).trim();
     log.info(`transcribed ${text.length} char(s): "${truncate(text)}"`);

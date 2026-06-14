@@ -5,6 +5,8 @@ import { useVoiceStore } from "@/store/voiceStore";
 import { AppHeader } from "./AppHeader";
 import { TeachingWorkspace } from "./TeachingWorkspace";
 import { UploadView } from "./UploadView";
+import { PaywallModal } from "./PaywallModal";
+import { BillingView } from "./BillingView";
 
 /**
  * Root of the voice tutor workspace. Bootstraps the stores once, then routes
@@ -25,6 +27,8 @@ export function TeachingApp() {
     <div className="flex h-dvh flex-col overflow-hidden">
       <AppHeader />
       {loadedDocument ? <TeachingWorkspace /> : <UploadView />}
+      <PaywallModal />
+      <BillingView />
     </div>
   );
 }

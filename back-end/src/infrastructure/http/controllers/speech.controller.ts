@@ -12,6 +12,7 @@ export class SpeechController {
 
     const clip = await this.synthesizeSpeech.execute(
       req.body?.text,
+      req.auth!.userId,
       controller.signal
     );
 

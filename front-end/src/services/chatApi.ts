@@ -1,5 +1,10 @@
 import type { ChatPayload } from "@/lib/types";
-import { api, extractErrorMessage } from "@/services/apiBase";
+import {
+  api,
+  extractErrorMessage,
+  isPaywallError,
+  PaywallError
+} from "@/services/apiBase";
 
 /**
  * Tutor chat transport. Opens the streaming `/api/chat` SSE response.
@@ -24,6 +29,8 @@ export async function streamChat(
     }
     return response.data;
   } catch (error) {
+    // A 402 already raised the paywall — propagate a silent sentinel.
+    if (isPaywallError(error)) throw new PaywallError();
     throw new Error(extractErrorMessage(error, "The teacher could not respond."), {
       cause: error
     });

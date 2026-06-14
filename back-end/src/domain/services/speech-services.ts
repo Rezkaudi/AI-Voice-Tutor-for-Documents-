@@ -8,8 +8,8 @@ export interface SynthesizedSpeech {
 
 /** Text-to-speech boundary. */
 export interface SpeechSynthesisService {
-  /** Synthesizes a single sentence into an audio clip. */
-  synthesize(text: string, signal?: AbortSignal): Promise<SynthesizedSpeech>;
+  /** Synthesizes a single sentence into an audio clip and bills the user. */
+  synthesize(text: string, userId: string, signal?: AbortSignal): Promise<SynthesizedSpeech>;
 }
 
 /** A recorded audio clip submitted for transcription. */
@@ -17,8 +17,8 @@ export interface TranscriptionInput {
   readonly audio: Buffer;
   readonly filename: string;
   readonly contentType: string;
-  /** Optional language hint (ISO-639-1) to improve accuracy. */
   readonly language?: string;
+  readonly userId: string;
 }
 
 /** Speech-to-text boundary. */

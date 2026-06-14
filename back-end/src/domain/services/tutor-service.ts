@@ -15,6 +15,7 @@ export type TutorStreamEvent =
 
 /** Everything the tutor needs to compose a streamed reply. */
 export interface TutorReplyRequest {
+  readonly userId: string;
   readonly document: DocumentRecord;
   readonly message: string;
   readonly language: string;

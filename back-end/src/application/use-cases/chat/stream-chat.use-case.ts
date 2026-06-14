@@ -107,6 +107,7 @@ export class StreamChatUseCase {
       try {
         for await (const event of tutor.streamReply(
           {
+            userId: input.userId,
             document,
             message,
             language: input.language,

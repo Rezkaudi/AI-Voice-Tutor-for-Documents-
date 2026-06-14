@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import multer from "multer";
 import { asyncHandler } from "@/infrastructure/http/middleware/async-handler";
 import type { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
@@ -6,7 +6,7 @@ import { documentIdParamValidation, uploadDocumentValidation } from "@/infrastru
 
 const DOCUMENT_LIMIT_BYTES = 25 * 1024 * 1024;
 
-export function buildDocumentRoutes(controller: DocumentsController): Router {
+export function buildDocumentRoutes(controller: DocumentsController, requireCredits: RequestHandler): Router {
   const router = Router();
   const upload = multer({
     storage: multer.memoryStorage(),
@@ -23,6 +23,7 @@ export function buildDocumentRoutes(controller: DocumentsController): Router {
   router.get("/documents", asyncHandler(controller.list));
   router.post(
     "/documents",
+    requireCredits,
     upload.single("file"),
     uploadDocumentValidation,
     asyncHandler(controller.upload)

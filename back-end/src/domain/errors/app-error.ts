@@ -59,3 +59,14 @@ export class UpstreamError extends AppError {
     super(message, 502, "UPSTREAM_ERROR");
   }
 }
+
+export type PaywallReason = "no_plan" | "insufficient_credits" | "daily_limit";
+
+export class PaymentRequiredError extends AppError {
+  public readonly reason: PaywallReason;
+
+  constructor(reason: PaywallReason, message = "Payment is required to continue.") {
+    super(message, 402, "PAYMENT_REQUIRED");
+    this.reason = reason;
+  }
+}

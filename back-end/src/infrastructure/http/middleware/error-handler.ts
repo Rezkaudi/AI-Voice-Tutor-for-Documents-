@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { MulterError } from "multer";
-import { AppError } from "@/domain/errors/app-error";
+import { AppError, PaymentRequiredError } from "@/domain/errors/app-error";
 import { logger } from "@/shared/logger";
 
 /**
@@ -28,6 +28,15 @@ export function errorHandler() {
         error: tooLarge
           ? "The upload is too large."
           : `Upload error: ${error.message}`
+      });
+      return;
+    }
+
+    if (error instanceof PaymentRequiredError) {
+      res.status(error.statusCode).json({
+        error: error.message,
+        code: error.code,
+        reason: error.reason
       });
       return;
     }

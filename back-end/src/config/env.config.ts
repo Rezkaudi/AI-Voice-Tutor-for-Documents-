@@ -32,6 +32,19 @@ export type EnvConfig = {
   REFRESH_TOKEN_TTL: string;
   FRONTEND_URL: string;
   COOKIE_SECURE: boolean;
+
+  // ─── Billing (Stripe + credit economy) ───────────────────────────────────
+  STRIPE_SECRET_KEY: string;
+  STRIPE_WEBHOOK_SECRET: string;
+  STRIPE_PRICE_SUBSCRIPTION: string;
+  STRIPE_PRICE_ONETIME: string;
+  BILLING_SUCCESS_URL: string;
+  BILLING_CANCEL_URL: string;
+  CREDITS_PER_DOLLAR: number;
+  PROFIT_MARGIN: number;
+  MIN_CREDITS: number;
+  SUBSCRIPTION_PRICE_USD: number;
+  ONETIME_PRICE_USD: number;
 };
 
 type EnvKey = keyof EnvConfig;
@@ -93,5 +106,18 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   ACCESS_TOKEN_TTL: getEnv("ACCESS_TOKEN_TTL") || "1d",
   REFRESH_TOKEN_TTL: getEnv("REFRESH_TOKEN_TTL") || "7d",
   FRONTEND_URL: getEnv("FRONTEND_URL") || "http://localhost:5173",
-  COOKIE_SECURE: bool(getEnv("COOKIE_SECURE"), true)
+  COOKIE_SECURE: bool(getEnv("COOKIE_SECURE"), true),
+
+  // ─── Billing (Stripe + credit economy) ───────────────────────────────────
+  STRIPE_SECRET_KEY: getEnv("STRIPE_SECRET_KEY") || "",
+  STRIPE_WEBHOOK_SECRET: getEnv("STRIPE_WEBHOOK_SECRET") || "",
+  STRIPE_PRICE_SUBSCRIPTION: getEnv("STRIPE_PRICE_SUBSCRIPTION") || "",
+  STRIPE_PRICE_ONETIME: getEnv("STRIPE_PRICE_ONETIME") || "",
+  BILLING_SUCCESS_URL: getEnv("BILLING_SUCCESS_URL") || `${getEnv("FRONTEND_URL") || "http://localhost:5173"}/?billing=success`,
+  BILLING_CANCEL_URL: getEnv("BILLING_CANCEL_URL") || `${getEnv("FRONTEND_URL") || "http://localhost:5173"}/?billing=cancel`,
+  CREDITS_PER_DOLLAR: Number(getEnv("CREDITS_PER_DOLLAR") || 100),
+  PROFIT_MARGIN: Number(getEnv("PROFIT_MARGIN") || 0.1),
+  MIN_CREDITS: Number(getEnv("MIN_CREDITS") || 1),
+  SUBSCRIPTION_PRICE_USD: Number(getEnv("SUBSCRIPTION_PRICE_USD") || 5),
+  ONETIME_PRICE_USD: Number(getEnv("ONETIME_PRICE_USD") || 5)
 });

@@ -11,12 +11,19 @@ import type { DocumentsController } from "@/infrastructure/http/controllers/docu
 import type { SpeechController } from "@/infrastructure/http/controllers/speech.controller";
 import type { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
 import type { AuthController } from "@/infrastructure/http/controllers/auth.controller";
+import type { PaymentController } from "@/infrastructure/http/controllers/payment.controller";
+import type { SubscriptionController } from "@/infrastructure/http/controllers/subscription.controller";
 
 import { buildChatRoutes } from "@/infrastructure/http/routes/chat.routes";
 import { buildDocumentRoutes } from "@/infrastructure/http/routes/documents.routes";
 import { buildSpeechRoutes } from "@/infrastructure/http/routes/speech.routes";
 import { buildTranscriptionRoutes } from "@/infrastructure/http/routes/transcription.routes";
 import { buildAuthRoutes } from "@/infrastructure/http/routes/auth.routes";
+import {
+  buildPaymentRoutes,
+  buildStripeWebhookRoute
+} from "@/infrastructure/http/routes/payment.routes";
+import { buildSubscriptionRoutes } from "@/infrastructure/http/routes/subscription.routes";
 
 import { logger } from "@/shared/logger";
 
@@ -26,8 +33,10 @@ export interface ServerDependencies {
   speech: SpeechController;
   transcription: TranscriptionController;
   auth: AuthController;
-  /** The gate applied to every non-auth API route. */
+  payment: PaymentController;
+  subscription: SubscriptionController;
   requireAuth: RequestHandler;
+  requireCredits: RequestHandler;
 }
 
 export class Server {
@@ -49,6 +58,9 @@ export class Server {
     this.app.disable("x-powered-by");
 
     this.app.use(cors(corsOptions));
+
+    this.app.use("/api", buildStripeWebhookRoute(this.deps.payment));
+
     // JSON for normal endpoints; multipart bodies are handled per-route by multer.
     this.app.use(express.json({ limit: "5mb" }));
     // Parse the HTTP-only session cookies the auth flow reads.
@@ -63,10 +75,12 @@ export class Server {
     apiRoutes.use(buildAuthRoutes(this.deps.auth, this.deps.requireAuth));
 
     apiRoutes.use(this.deps.requireAuth);
-    apiRoutes.use(buildDocumentRoutes(this.deps.documents));
-    apiRoutes.use(buildChatRoutes(this.deps.chat));
-    apiRoutes.use(buildSpeechRoutes(this.deps.speech));
-    apiRoutes.use(buildTranscriptionRoutes(this.deps.transcription));
+    apiRoutes.use(buildDocumentRoutes(this.deps.documents, this.deps.requireCredits));
+    apiRoutes.use(buildChatRoutes(this.deps.chat, this.deps.requireCredits));
+    apiRoutes.use(buildSpeechRoutes(this.deps.speech, this.deps.requireCredits));
+    apiRoutes.use(buildTranscriptionRoutes(this.deps.transcription, this.deps.requireCredits));
+    apiRoutes.use(buildPaymentRoutes(this.deps.payment));
+    apiRoutes.use(buildSubscriptionRoutes(this.deps.subscription));
 
     this.app.get("/health", (_req, res) => {
       res.json({ status: "ok" });

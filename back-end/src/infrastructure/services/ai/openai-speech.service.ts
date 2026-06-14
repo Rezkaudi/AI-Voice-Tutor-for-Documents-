@@ -9,6 +9,7 @@ import type {
 import type { EnvConfig } from "@/config/env.config";
 import type { CostCalculator } from "@/domain/logic/cost/cost-calculator";
 import type { CostReporter } from "@/domain/services/cost-reporter";
+import type { ICreditService } from "@/domain/services/credit-service";
 import type { TranscriptionUsage } from "@/domain/logic/cost/cost";
 
 /** Text-to-speech via OpenAI (`/api/speak`). */
@@ -18,12 +19,13 @@ export class OpenAiSpeechSynthesisService implements SpeechSynthesisService {
   constructor(
     private readonly config: EnvConfig,
     private readonly costCalculator: CostCalculator,
-    private readonly costReporter: CostReporter
+    private readonly costReporter: CostReporter,
+    private readonly creditService: ICreditService
   ) {
     this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
   }
 
-  async synthesize(text: string, signal?: AbortSignal): Promise<SynthesizedSpeech> {
+  async synthesize(text: string, userId: string, signal?: AbortSignal): Promise<SynthesizedSpeech> {
     try {
       const response = await this.client.audio.speech.create(
         {
@@ -35,11 +37,14 @@ export class OpenAiSpeechSynthesisService implements SpeechSynthesisService {
         signal ? { signal } : {}
       );
       // TTS returns no usage payload — cost is estimated from the input text.
+      const model = this.config.OPENAI_SPEECH_MODEL;
+      const cost = this.costCalculator.speech(model, text);
       this.costReporter.report({
         operation: "speech",
-        cost: this.costCalculator.speech(this.config.OPENAI_SPEECH_MODEL, text),
+        cost,
         context: `${text.length} char(s)`
       });
+      await this.creditService.deductForUsage({ userId, usd: cost.usd });
       return {
         audio: Buffer.from(await response.arrayBuffer()),
         contentType: "audio/mpeg"
@@ -57,7 +62,8 @@ export class OpenAiTranscriptionService implements TranscriptionService {
   constructor(
     private readonly config: EnvConfig,
     private readonly costCalculator: CostCalculator,
-    private readonly costReporter: CostReporter
+    private readonly costReporter: CostReporter,
+    private readonly creditService: ICreditService
   ) {
     this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
   }
@@ -78,7 +84,7 @@ export class OpenAiTranscriptionService implements TranscriptionService {
         },
         signal ? { signal } : {}
       );
-      this.reportCost(result, input.audio.length);
+      await this.reportCost(result, input.audio.length, input.userId);
       return (result.text || "").trim();
     } catch (error) {
       throw new UpstreamError(`Transcription failed: ${describe(error)}`);
@@ -86,10 +92,14 @@ export class OpenAiTranscriptionService implements TranscriptionService {
   }
 
   /**
-   * Reports STT cost. Uses the model's exact token usage when present;
-   * otherwise falls back to a byte-based estimate of the audio input tokens.
+   * Reports STT cost and deducts it. Uses the model's exact token usage when
+   * present; otherwise falls back to a byte-based estimate of audio input tokens.
    */
-  private reportCost(result: unknown, audioBytes: number): void {
+  private async reportCost(
+    result: unknown,
+    audioBytes: number,
+    userId: string
+  ): Promise<void> {
     const model = this.config.OPENAI_TRANSCRIBE_MODEL;
     const usage = parseTranscriptionUsage(result);
     const exact = usage !== undefined;
@@ -98,9 +108,10 @@ export class OpenAiTranscriptionService implements TranscriptionService {
       textInputTokens: 0,
       outputTokens: 0
     };
+    const cost = this.costCalculator.transcription(model, billed, !exact);
     this.costReporter.report({
       operation: "transcription",
-      cost: this.costCalculator.transcription(model, billed, !exact),
+      cost,
       context: exact ? "exact usage" : `~${(audioBytes / 1024).toFixed(1)} KiB est.`,
       meta: {
         audioInput: billed.audioInputTokens,
@@ -108,6 +119,7 @@ export class OpenAiTranscriptionService implements TranscriptionService {
         output: billed.outputTokens
       }
     });
+    await this.creditService.deductForUsage({ userId, usd: cost.usd });
   }
 }
 

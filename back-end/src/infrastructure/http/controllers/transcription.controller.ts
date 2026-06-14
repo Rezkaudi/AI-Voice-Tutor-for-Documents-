@@ -18,7 +18,8 @@ export class TranscriptionController {
         audio: file.buffer,
         filename: file.originalname || "recording.webm",
         contentType: file.mimetype || "audio/webm",
-        ...(language ? { language } : {})
+        ...(language ? { language } : {}),
+        userId: req.auth!.userId
       },
       controller.signal
     );

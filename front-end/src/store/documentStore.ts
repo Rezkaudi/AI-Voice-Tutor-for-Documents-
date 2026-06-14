@@ -5,6 +5,7 @@ import {
   listDocuments,
   uploadDocument
 } from "@/services/documentsApi";
+import { isPaywallError } from "@/services/apiBase";
 import { useSessionStore } from "./sessionStore";
 import type {
   DocumentCitation,
@@ -125,9 +126,12 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       window.localStorage.setItem(LAST_DOC_KEY, documentId);
       void get().loadLibrary();
     } catch (error) {
-      useSessionStore
-        .getState()
-        .setError(error instanceof Error ? error.message : "Upload failed.");
+      // A 402 already raised the paywall — don't surface a raw message too.
+      if (!isPaywallError(error)) {
+        useSessionStore
+          .getState()
+          .setError(error instanceof Error ? error.message : "Upload failed.");
+      }
     } finally {
       set({ uploadState: "idle" });
     }

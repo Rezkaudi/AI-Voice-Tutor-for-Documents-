@@ -1,4 +1,5 @@
 import { transcribeRecording } from "../transcribeApi";
+import { isPaywallError } from "../apiBase";
 import { SILENCE_TIMEOUT_MS } from "@/lib/constants";
 import type { SpeechLanguage, VoiceRecorderState } from "@/lib/types";
 import { pickAudioMimeType } from "./audioMime";
@@ -180,7 +181,8 @@ export class VoiceRecorder {
       const text = await transcribeRecording(blob, this.getLanguage(), controller.signal);
       if (text) this.onTranscript(text);
     } catch (error) {
-      if (!controller.signal.aborted) {
+      // A 402 already raised the paywall — stay silent here.
+      if (!controller.signal.aborted && !isPaywallError(error)) {
         this.onError(error instanceof Error ? error.message : "Transcription failed.");
       }
     } finally {
@@ -228,7 +230,13 @@ export class VoiceRecorder {
           this.autoStop();
         }
       }, VAD_CHECK_INTERVAL_MS);
-    } catch {
+    } catch (err) {
+      // VAD is a best-effort enhancement; recording still works without it.
+      // Tear down any partially-initialized audio graph so we don't leak it.
+      this.stopVad();
+      if (import.meta.env.DEV) {
+        console.warn("Voice activity detection unavailable:", err);
+      }
     }
   }
 

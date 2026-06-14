@@ -21,6 +21,29 @@ export function setSessionExpiredHandler(handler: () => void): void {
   onSessionExpired = handler;
 }
 
+/** Paywall reasons mirror the backend `PaymentRequiredError.reason`. */
+export type PaywallReason = "no_plan" | "insufficient_credits" | "daily_limit";
+
+let onPaywall: ((reason: PaywallReason) => void) | null = null;
+export function setPaywallHandler(handler: (reason: PaywallReason) => void): void {
+  onPaywall = handler;
+}
+
+/** Best-effort read of the `reason` off a 402 body (may be a Blob/stream). */
+function readPaywallReason(data: unknown): PaywallReason {
+  if (data && typeof data === "object" && "reason" in data) {
+    const reason = (data as { reason?: string }).reason;
+    if (
+      reason === "no_plan" ||
+      reason === "insufficient_credits" ||
+      reason === "daily_limit"
+    ) {
+      return reason;
+    }
+  }
+  return "insufficient_credits";
+}
+
 let refreshPromise: Promise<void> | null = null;
 
 function refreshOnce(): Promise<void> {
@@ -44,6 +67,13 @@ const NO_REFRESH_ON_401 = ["/api/auth/refresh", "/api/auth/logout"];
 api.interceptors.response.use(
   (response) => response,
   async (error: unknown) => {
+    // Paywall: a billable AI/billing call was blocked. Raise the modal and let
+    // the rejection propagate (callers swallow it; the user sees the modal).
+    if (error instanceof AxiosError && error.response?.status === 402) {
+      onPaywall?.(readPaywallReason(error.response.data));
+      return Promise.reject(error);
+    }
+
     if (!(error instanceof AxiosError) || error.response?.status !== 401) {
       return Promise.reject(error);
     }
@@ -69,6 +99,24 @@ api.interceptors.response.use(
     return api(original);
   }
 );
+
+/** Thrown by transports on a 402 so callers can stay silent (the paywall shows). */
+export class PaywallError extends Error {
+  constructor() {
+    super("payment_required");
+    this.name = "PaywallError";
+  }
+}
+
+/** True when an error is (or wraps) a 402 paywall response. */
+export function isPaywallError(error: unknown): boolean {
+  if (error instanceof PaywallError) return true;
+  if (error instanceof AxiosError) return error.response?.status === 402;
+  if (error instanceof Error && error.cause instanceof AxiosError) {
+    return error.cause.response?.status === 402;
+  }
+  return false;
+}
 
 export function extractErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof AxiosError) {

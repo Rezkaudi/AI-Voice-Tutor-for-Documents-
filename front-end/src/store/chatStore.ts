@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { streamChat } from "@/services/chatApi";
+import { isPaywallError } from "@/services/apiBase";
 import { runChatStream } from "./chatStreamRunner";
 import { useDocumentStore } from "./documentStore";
 import { useSessionStore } from "./sessionStore";
@@ -121,6 +122,13 @@ export const useChatStore = create<ChatStore>((set, get) => {
         if (controller.signal.aborted) {
           // Call ended mid-answer: drop the request silently and keep what
           // streamed so far instead of surfacing an error.
+          return;
+        }
+        // A 402 already raised the paywall modal — don't show a raw error too.
+        if (isPaywallError(error)) {
+          set({
+            messages: get().messages.filter((message) => message.id !== assistantId)
+          });
           return;
         }
         useSessionStore

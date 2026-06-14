@@ -12,6 +12,7 @@ import type { EnvConfig } from "@/config/env.config";
 import type { Logger } from "@/domain/services/logger";
 import type { CostCalculator } from "@/domain/logic/cost/cost-calculator";
 import type { CostReporter } from "@/domain/services/cost-reporter";
+import type { ICreditService } from "@/domain/services/credit-service";
 import type { Cost } from "@/domain/logic/cost/cost";
 import { TutorRequestFactory } from "./tutor-request-factory";
 import { TutorToolExecutor } from "./tutor-tool-executor";
@@ -57,7 +58,8 @@ export class OpenAiTutorService implements TutorService {
     private readonly markerReconciler: CitationMarkerReconciler,
     private readonly logger: Logger,
     private readonly costCalculator: CostCalculator,
-    private readonly costReporter: CostReporter
+    private readonly costReporter: CostReporter,
+    private readonly creditService: ICreditService
   ) {
     this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
     this.requests = new TutorRequestFactory(config);
@@ -155,7 +157,7 @@ export class OpenAiTutorService implements TutorService {
         } else {
           log.warn("model returned neither tool calls nor text — ending turn");
         }
-        this.reportQuestionTotal(request, settings.model, turnCosts);
+        await this.finishQuestion(request, settings.model, turnCosts);
         return;
       }
 
@@ -168,20 +170,28 @@ export class OpenAiTutorService implements TutorService {
     }
 
     log.warn(`reached maxToolSteps (${settings.maxToolSteps}) without a final answer`);
-    this.reportQuestionTotal(request, settings.model, turnCosts);
+    await this.finishQuestion(request, settings.model, turnCosts);
   }
 
-  private reportQuestionTotal(
+  /** Reports the per-question total cost and deducts it from the user's credits. */
+  private async finishQuestion(
     request: TutorReplyRequest,
     model: string,
     turnCosts: ReadonlyArray<Cost>
-  ): void {
+  ): Promise<void> {
     if (turnCosts.length === 0) return;
+    const total = this.costCalculator.total(model, turnCosts);
     this.costReporter.report({
       operation: "tutor-question",
-      cost: this.costCalculator.total(model, turnCosts),
+      cost: total,
       context: `"${truncate(request.message, 60)}"`,
-      meta: { turns: turnCosts.length, doc: request.document.id }
+      meta: { turns: turnCosts.length, doc: request.document.id },
+      // Rollup of the per-step "tutor-turn" reports already counted above.
+      summary: true
+    });
+    await this.creditService.deductForUsage({
+      userId: request.userId,
+      usd: total.usd
     });
   }
 

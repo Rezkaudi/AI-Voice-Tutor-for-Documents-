@@ -1,5 +1,10 @@
 import type { SpeechLanguage } from "@/lib/types";
-import { api, extractErrorMessage } from "@/services/apiBase";
+import {
+  api,
+  extractErrorMessage,
+  isPaywallError,
+  PaywallError
+} from "@/services/apiBase";
 
 /**
  * Speech-to-text transport. Talks to the backend's `/api/transcribe`.
@@ -28,6 +33,7 @@ export async function transcribeRecording(
     const { data } = await api.post<{ text?: string }>("/api/transcribe", formData, { signal });
     return typeof data.text === "string" ? data.text.trim() : "";
   } catch (error) {
+    if (isPaywallError(error)) throw new PaywallError();
     throw new Error(extractErrorMessage(error, "Transcription failed."), {
       cause: error
     });

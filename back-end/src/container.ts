@@ -13,6 +13,16 @@ import { AuthenticateWithGoogleUseCase } from "@/application/use-cases/auth/auth
 import { RefreshSessionUseCase } from "@/application/use-cases/auth/refresh-session.use-case";
 import { GetCurrentUserUseCase } from "@/application/use-cases/auth/get-current-user.use-case";
 
+import { CreateCheckoutSessionUseCase } from "@/application/use-cases/payment/create-checkout-session.use-case";
+import { HandleStripeWebhookUseCase } from "@/application/use-cases/payment/handle-stripe-webhook.use-case";
+import { GetUserBalanceUseCase } from "@/application/use-cases/payment/get-user-balance.use-case";
+import { PollPaymentStatusUseCase } from "@/application/use-cases/payment/poll-payment-status.use-case";
+import { CreateSubscriptionCheckoutUseCase } from "@/application/use-cases/subscription/create-subscription-checkout.use-case";
+import { GetSubscriptionStatusUseCase } from "@/application/use-cases/subscription/get-subscription-status.use-case";
+import { CancelSubscriptionUseCase } from "@/application/use-cases/subscription/cancel-subscription.use-case";
+import { ResumeSubscriptionUseCase } from "@/application/use-cases/subscription/resume-subscription.use-case";
+import { GetAvailablePlansUseCase } from "@/application/use-cases/subscription/get-available-plans.use-case";
+
 import { TextTokenizer } from "@/domain/logic/text-tokenizer";
 import { ChunkRanker } from "@/domain/logic/chunk-ranker";
 import { CitationResolver } from "@/domain/logic/citation-resolver";
@@ -32,10 +42,14 @@ import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
 import { initializeDatabase } from "@/infrastructure/database/data-source";
 import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositories/typeorm-document.repository";
 import { TypeOrmUserRepository } from "@/infrastructure/database/repositories/typeorm-user.repository";
+import { TypeOrmSubscriptionRepository } from "@/infrastructure/database/repositories/typeorm-subscription.repository";
+import { TypeOrmPaymentTransactionRepository } from "@/infrastructure/database/repositories/typeorm-payment-transaction.repository";
 
 import { GoogleOAuthService } from "@/infrastructure/services/auth/google-oauth.service";
 import { JwtTokenService } from "@/infrastructure/services/auth/jwt-token.service";
 import { CryptoIdGenerator } from "@/infrastructure/services/crypto-id-generator";
+import { StripeService } from "@/infrastructure/services/payment/stripe.service";
+import { CreditService } from "@/infrastructure/services/payment/credit.service";
 
 import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage";
 import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
@@ -53,7 +67,10 @@ import { ChatController } from "@/infrastructure/http/controllers/chat.controlle
 import { SpeechController } from "@/infrastructure/http/controllers/speech.controller";
 import { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
 import { AuthController } from "@/infrastructure/http/controllers/auth.controller";
+import { PaymentController } from "@/infrastructure/http/controllers/payment.controller";
+import { SubscriptionController } from "@/infrastructure/http/controllers/subscription.controller";
 import { buildRequireAuth } from "@/infrastructure/http/middleware/require-auth";
+import { buildRequireCredits } from "@/infrastructure/http/middleware/require-credits";
 import type { ServerDependencies } from "@/infrastructure/http/server";
 
 import { ENV_CONFIG } from "@/config/env.config";
@@ -101,6 +118,20 @@ export async function buildContainer(): Promise<Container> {
   // ─── Infrastructure adapters (implement domain ports) ────────────────────
   const documentRepository = new TypeOrmDocumentRepository(dataSource, idGenerator);
   const userRepository = new TypeOrmUserRepository(dataSource, idGenerator);
+  const subscriptionRepository = new TypeOrmSubscriptionRepository(dataSource);
+  const paymentTransactionRepository = new TypeOrmPaymentTransactionRepository(
+    dataSource
+  );
+
+  // Credit economy: gates billable AI calls and deducts their real cost.
+  const creditService = new CreditService(
+    userRepository,
+    subscriptionRepository,
+    ENV_CONFIG,
+    logger
+  );
+  const paymentGateway = new StripeService(ENV_CONFIG);
+
   const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
   const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
@@ -123,17 +154,20 @@ export async function buildContainer(): Promise<Container> {
     citationMarkerReconciler,
     logger,
     costCalculator,
-    costReporter
+    costReporter,
+    creditService
   );
   const speechService = new OpenAiSpeechSynthesisService(
     ENV_CONFIG,
     costCalculator,
-    costReporter
+    costReporter,
+    creditService
   );
   const transcriptionService = new OpenAiTranscriptionService(
     ENV_CONFIG,
     costCalculator,
-    costReporter
+    costReporter,
+    creditService
   );
 
   // ─── Application use cases ───────────────────────────────────────────────
@@ -173,8 +207,54 @@ export async function buildContainer(): Promise<Container> {
   const refreshSession = new RefreshSessionUseCase(userRepository, tokenService);
   const getCurrentUser = new GetCurrentUserUseCase(userRepository);
 
+  // ─── Billing use cases ───────────────────────────────────────────────────
+  const createCheckoutSession = new CreateCheckoutSessionUseCase(
+    userRepository,
+    paymentTransactionRepository,
+    paymentGateway,
+    idGenerator,
+    ENV_CONFIG,
+    logger
+  );
+  const handleStripeWebhook = new HandleStripeWebhookUseCase(
+    userRepository,
+    subscriptionRepository,
+    paymentTransactionRepository,
+    paymentGateway,
+    idGenerator,
+    logger
+  );
+  const getUserBalance = new GetUserBalanceUseCase(userRepository);
+  const pollPaymentStatus = new PollPaymentStatusUseCase(
+    paymentTransactionRepository,
+    userRepository
+  );
+  const createSubscriptionCheckout = new CreateSubscriptionCheckoutUseCase(
+    userRepository,
+    subscriptionRepository,
+    paymentGateway,
+    ENV_CONFIG,
+    logger
+  );
+  const getSubscriptionStatus = new GetSubscriptionStatusUseCase(
+    subscriptionRepository
+  );
+  const cancelSubscription = new CancelSubscriptionUseCase(
+    subscriptionRepository,
+    paymentGateway,
+    logger
+  );
+  const resumeSubscription = new ResumeSubscriptionUseCase(
+    subscriptionRepository,
+    paymentGateway,
+    logger
+  );
+  const getAvailablePlans = new GetAvailablePlansUseCase();
+
   // The gate every protected route shares, built from the same token service.
   const requireAuth = buildRequireAuth(tokenService);
+  // The paywall preflight applied to billable AI routes.
+  const requireCredits = buildRequireCredits(creditService);
 
   // ─── HTTP controllers ────────────────────────────────────────────────────
   const deps: ServerDependencies = {
@@ -194,7 +274,21 @@ export async function buildContainer(): Promise<Container> {
       refreshSession,
       getCurrentUser
     ),
-    requireAuth
+    payment: new PaymentController(
+      createCheckoutSession,
+      handleStripeWebhook,
+      getUserBalance,
+      pollPaymentStatus
+    ),
+    subscription: new SubscriptionController(
+      createSubscriptionCheckout,
+      getSubscriptionStatus,
+      cancelSubscription,
+      resumeSubscription,
+      getAvailablePlans
+    ),
+    requireAuth,
+    requireCredits
   };
 
   return { dataSource, deps };

@@ -5,6 +5,10 @@ export interface User {
   email: string;
   name: string;
   picture: string | null;
+  subscriptionCredits: number;
+  topupCredits: number;
+  stripeCustomerId: string | null;
+  hasPurchased: boolean;
   createdAt: string;
   updatedAt: string;
 }

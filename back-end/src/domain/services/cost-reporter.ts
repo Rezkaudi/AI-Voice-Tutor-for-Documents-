@@ -12,6 +12,7 @@ export interface CostEntry {
   readonly cost: Cost;
   readonly context?: string;
   readonly meta?: Readonly<Record<string, string | number>>;
+  readonly summary?: boolean;
 }
 
 export interface CostReporter {
