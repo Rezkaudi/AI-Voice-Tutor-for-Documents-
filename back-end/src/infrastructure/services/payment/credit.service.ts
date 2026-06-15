@@ -55,12 +55,27 @@ export class CreditService implements ICreditService {
     const credits = this.calculateCreditCost(input.usd);
     if (credits <= 0) return;
     try {
+      const subscription = await this.subscriptionRepository.findActiveByUserId(input.userId);
+
+      let maxFromSubscription: number | undefined;
+      if (subscription) {
+        const usedToday =
+          subscription.lastUsageResetDate === todayKey()
+            ? subscription.dailyCreditsUsed
+            : 0;
+        maxFromSubscription = Math.max(
+          0,
+          subscription.dailyCreditsLimit - usedToday
+        );
+      } else {
+        maxFromSubscription = 0;
+      }
+
       const result = await this.userRepository.spendCredits(
         input.userId,
-        credits
+        credits,
+        maxFromSubscription
       );
-      const subscription =
-        await this.subscriptionRepository.findActiveByUserId(input.userId);
       if (subscription && result.fromSubscription > 0) {
         await this.subscriptionRepository.incrementDailyCreditsUsed(
           subscription.id,

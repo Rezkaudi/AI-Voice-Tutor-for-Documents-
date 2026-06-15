@@ -76,12 +76,15 @@ export class TypeOrmUserRepository implements UserRepository {
     return Number(row?.subscription_credits ?? 0);
   }
 
-  async spendCredits(userId: string, credits: number): Promise<SpendResult> {
+  async spendCredits(userId: string, credits: number, maxFromSubscription?: number): Promise<SpendResult> {
+    const subCap = maxFromSubscription === undefined
+      ? credits
+      : Math.max(0, maxFromSubscription);
     const result = await this.dataSource.query(
       `WITH cur AS (
          SELECT "subscription_credits" AS sc FROM "users" WHERE "id" = $2 FOR UPDATE
        ),
-       calc AS (SELECT LEAST($1, GREATEST(sc, 0)) AS from_sub FROM cur)
+       calc AS (SELECT LEAST($1, GREATEST(sc, 0), $3) AS from_sub FROM cur)
        UPDATE "users" u
        SET "subscription_credits" = u."subscription_credits" - (SELECT from_sub FROM calc),
            "topup_credits" = u."topup_credits" - ($1 - (SELECT from_sub FROM calc)),
@@ -89,7 +92,7 @@ export class TypeOrmUserRepository implements UserRepository {
        WHERE u."id" = $2
        RETURNING u."subscription_credits", u."topup_credits",
                  (SELECT from_sub FROM calc) AS from_sub`,
-      [credits, userId]
+      [credits, userId, subCap]
     );
     const r = firstReturnedRow<{
       subscription_credits: string;

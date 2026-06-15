@@ -12,7 +12,7 @@ export interface UserRepository {
   upsertFromGoogle(profile: GoogleProfile): Promise<User>;
   addTopupCredits(userId: string, credits: number): Promise<number>;
   setSubscriptionCredits(userId: string, credits: number): Promise<number>;
-  spendCredits(userId: string, credits: number): Promise<SpendResult>;
+  spendCredits(userId: string, credits: number, maxFromSubscription?: number): Promise<SpendResult>;
   setStripeCustomerId(userId: string, stripeCustomerId: string): Promise<void>;
   markPurchased(userId: string): Promise<void>;
   findByStripeCustomerId(stripeCustomerId: string): Promise<User | null>;
