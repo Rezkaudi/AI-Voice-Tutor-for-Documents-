@@ -70,7 +70,7 @@ export function PaywallModal() {
           </button>
         </div>
 
-        <PlanCards />
+        <PlanCards subscriptionMode={reason === "daily_limit" ? "hidden" : "subscribe"} />
       </div>
     </div>
   );
