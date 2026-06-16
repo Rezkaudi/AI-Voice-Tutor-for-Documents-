@@ -31,7 +31,6 @@ export type EnvConfig = {
   ACCESS_TOKEN_TTL: string;
   REFRESH_TOKEN_TTL: string;
   FRONTEND_URL: string;
-  COOKIE_SECURE: boolean;
 };
 
 type EnvKey = keyof EnvConfig;
@@ -98,7 +97,4 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   REFRESH_TOKEN_TTL: getEnv("REFRESH_TOKEN_TTL") || "7d",
   // Where the OAuth callback sends the browser once cookies are set.
   FRONTEND_URL: getEnv("FRONTEND_URL") || "http://localhost:5173",
-  // Cookies use `SameSite=None` (cross-site), which requires `Secure`. Default
-  // Secure on; set COOKIE_SECURE=false only for a plain-HTTP localhost test.
-  COOKIE_SECURE: bool(getEnv("COOKIE_SECURE"), true)
 });
