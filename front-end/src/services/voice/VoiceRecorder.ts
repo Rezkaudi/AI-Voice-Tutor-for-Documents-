@@ -1,4 +1,5 @@
 import { transcribeRecording } from "../transcribeApi";
+import { SILENCE_TIMEOUT_MS } from "@/lib/constants";
 import type { SpeechLanguage, VoiceRecorderState } from "@/lib/types";
 import { pickAudioMimeType } from "./audioMime";
 import {
@@ -8,6 +9,14 @@ import {
 } from "./recorderErrors";
 
 const NOT_SUPPORTED_MESSAGE = "Microphone recording is not supported in this browser.";
+
+// VAD = Voice Activity Detection: deciding whether the mic input is actual
+// speech rather than silence/background noise, so we can auto-cancel silent clips.
+
+/** RMS (Root Mean Square — the audio signal's loudness/energy) mic level (0–1) above which a window counts as speech rather than noise. */
+const VAD_SPEECH_THRESHOLD = 0.015;
+/** How often the analyser samples the live mic level. */
+const VAD_CHECK_INTERVAL_MS = 250;
 
 /**
  * Records a single microphone clip, uploads it for transcription, and reports
@@ -23,10 +32,16 @@ export class VoiceRecorder {
   private transcribeAbort: AbortController | null = null;
   private cancelled = false;
 
-  onTranscript: (text: string) => void = () => {};
-  onError: (message: string) => void = () => {};
+  // Voice-activity detection state for the current clip.
+  private audioContext: AudioContext | null = null;
+  private vadTimer: ReturnType<typeof setInterval> | null = null;
+  private lastVoiceAt = 0;
+  private autoStopping = false;
+
+  onTranscript: (text: string) => void = () => { };
+  onError: (message: string) => void = () => { };
   getLanguage: () => SpeechLanguage | undefined = () => undefined;
-  onState: (patch: Partial<VoiceRecorderState>) => void = () => {};
+  onState: (patch: Partial<VoiceRecorderState>) => void = () => { };
 
   /** True when this browser supports microphone recording. */
   isSupportedNow(): boolean {
@@ -90,6 +105,7 @@ export class VoiceRecorder {
       this.mediaRecorder = recorder;
       this.cancelled = false;
       recorder.start();
+      this.startVad(stream);
       this.onState({ isListening: true });
     } catch (error) {
       this.cleanupStream();
@@ -176,7 +192,68 @@ export class VoiceRecorder {
     }
   }
 
+  private startVad(stream: MediaStream): void {
+    this.stopVad();
+    this.autoStopping = false;
+    this.lastVoiceAt = Date.now();
+
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const context = new AudioCtx();
+      this.audioContext = context;
+      if (context.state === "suspended") void context.resume().catch(() => { });
+      const source = context.createMediaStreamSource(stream);
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 1024;
+      source.connect(analyser);
+      const samples = new Uint8Array(analyser.fftSize).fill(128);
+
+      this.vadTimer = setInterval(() => {
+        analyser.getByteTimeDomainData(samples);
+        let sumSquares = 0;
+        for (let i = 0; i < samples.length; i += 1) {
+          const deviation = (samples[i] - 128) / 128;
+          sumSquares += deviation * deviation;
+        }
+        const level = Math.sqrt(sumSquares / samples.length);
+
+        const now = Date.now();
+        if (level >= VAD_SPEECH_THRESHOLD) {
+          this.lastVoiceAt = now;
+          return;
+        }
+        if (now - this.lastVoiceAt >= SILENCE_TIMEOUT_MS) {
+          this.autoStop();
+        }
+      }, VAD_CHECK_INTERVAL_MS);
+    } catch {
+    }
+  }
+
+  private autoStop(): void {
+    if (this.autoStopping) return;
+    this.autoStopping = true;
+    this.cancel();
+  }
+
+  private stopVad(): void {
+    if (this.vadTimer !== null) {
+      clearInterval(this.vadTimer);
+      this.vadTimer = null;
+    }
+    if (this.audioContext) {
+      void this.audioContext.close().catch(() => { });
+      this.audioContext = null;
+    }
+  }
+
   private cleanupStream(): void {
+    this.stopVad();
     this.stream?.getTracks().forEach((track) => track.stop());
     this.stream = null;
   }
