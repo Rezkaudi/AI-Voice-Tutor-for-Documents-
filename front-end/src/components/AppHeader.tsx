@@ -14,6 +14,7 @@ export function AppHeader() {
   const deletingId = useDocumentStore((s) => s.deletingId);
 
   const user = useAuthStore((s) => s.user);
+  const uploadError = useDocumentStore((s) => s.uploadError);
 
   const session = useSessionStore.getState();
   const documentStore = useDocumentStore.getState();
@@ -40,6 +41,7 @@ export function AppHeader() {
           activeId={loadedDocument?.document.id ?? null}
           uploadState={uploadState}
           deletingId={deletingId}
+          error={uploadError}
           onSelect={session.handleSwitchDocument}
           onFile={session.handleUpload}
           onDelete={documentStore.deleteDocument}
