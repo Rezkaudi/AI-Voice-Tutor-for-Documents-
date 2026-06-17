@@ -7,17 +7,22 @@ import { avatarStyleFor } from "./avatarStyles";
 
 interface TeacherAvatarProps {
   state: AvatarState;
+  /** Override the sizing/spacing utilities (e.g. for the compact floating puck). */
+  className?: string;
 }
 
 /** Animated illustrated teacher whose expression reflects the call state. */
-function TeacherAvatarComponent({ state }: TeacherAvatarProps) {
+function TeacherAvatarComponent({ state, className }: TeacherAvatarProps) {
   const styles = avatarStyleFor(state);
   const { haloTone, haloAnimation, headAnimation, activeHalo, listening, speaking, thinking } =
     styles;
 
   return (
     <div
-      className="relative mt-1 grid aspect-[1/1.05] w-[clamp(180px,26vh,260px)] place-items-center"
+      className={cx(
+        "relative grid aspect-[1/1.05] place-items-center",
+        className ?? "mt-1 w-[clamp(180px,26vh,260px)]"
+      )}
       aria-hidden
     >
       <span
