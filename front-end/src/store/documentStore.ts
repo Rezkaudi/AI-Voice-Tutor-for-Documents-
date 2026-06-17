@@ -27,7 +27,10 @@ interface DocumentStore {
   library: DocumentSummary[];
   libraryLoading: boolean;
   deletingId: string | null;
+  /** Upload-specific failure, surfaced in the upload panel/library — not the document view. */
+  uploadError: string | null;
   setActivePage: (activePage: number) => void;
+  setUploadError: (uploadError: string | null) => void;
   applyReference: (reference: DocumentReference | null) => void;
   focusCitation: (citation: DocumentCitation) => void;
   uploadFile: (file: File | null) => Promise<void>;
@@ -51,8 +54,11 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   library: [],
   libraryLoading: false,
   deletingId: null,
+  uploadError: null,
 
   setActivePage: (activePage) => set({ activePage, activeCitationKey: null }),
+
+  setUploadError: (uploadError) => set({ uploadError }),
 
   applyReference: (reference) => {
     const firstCitation = reference?.citations[0] ?? null;
@@ -115,7 +121,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       return;
     }
 
-    set({ uploadState: "processing", highlight: null, activeCitationKey: null });
+    set({ uploadState: "processing", highlight: null, activeCitationKey: null, uploadError: null });
     useSessionStore.getState().setError(null);
 
     try {
@@ -125,9 +131,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       window.localStorage.setItem(LAST_DOC_KEY, documentId);
       void get().loadLibrary();
     } catch (error) {
-      useSessionStore
-        .getState()
-        .setError(error instanceof Error ? error.message : "Upload failed.");
+      set({ uploadError: error instanceof Error ? error.message : "Upload failed." });
     } finally {
       set({ uploadState: "idle" });
     }

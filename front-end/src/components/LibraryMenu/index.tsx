@@ -1,5 +1,6 @@
 import { Library } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { useDocumentStore } from "@/store/documentStore";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentSummary, UploadState } from "@/lib/types";
 import { MenuDropdown } from "./MenuDropdown";
@@ -11,6 +12,7 @@ interface LibraryMenuProps {
   activeId: string | null;
   uploadState: UploadState;
   deletingId: string | null;
+  error: string | null;
   onSelect: (documentId: string) => void;
   onFile: (file: File | null) => void;
   onDelete: (documentId: string) => void;
@@ -23,6 +25,7 @@ export function LibraryMenu({
   activeId,
   uploadState,
   deletingId,
+  error,
   onSelect,
   onFile,
   onDelete
@@ -39,6 +42,15 @@ export function LibraryMenu({
     onSelect(id);
   };
 
+  const toggle = () => {
+    setOpen((value) => {
+      // Clear any stale error from a previous action when reopening, so the
+      // sheet only ever surfaces feedback for the upload started inside it.
+      if (!value) useDocumentStore.getState().setUploadError(null);
+      return !value;
+    });
+  };
+
   return (
     <div className="relative" ref={containerRef}>
       <button
@@ -46,7 +58,7 @@ export function LibraryMenu({
         className={cx(ui.button, "min-h-11 px-3 py-2 text-[0.86rem]")}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+        onClick={toggle}
       >
         <Library size={16} aria-hidden /> Library
         {library.length > 0 ? (
@@ -66,6 +78,7 @@ export function LibraryMenu({
           activeId={activeId}
           deletingId={deletingId}
           isUploading={isUploading}
+          error={error}
           onSelect={handleSelect}
           onDelete={onDelete}
           onFile={onFile}

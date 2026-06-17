@@ -5,7 +5,7 @@ import { UploadPanel } from "./UploadPanel";
 
 /** Landing view shown before any document is loaded: the upload dropzone + library. */
 export function UploadView() {
-  const error = useSessionStore((s) => s.error);
+  const uploadError = useDocumentStore((s) => s.uploadError);
   const uploadState = useDocumentStore((s) => s.uploadState);
   const library = useDocumentStore((s) => s.library);
   const libraryLoading = useDocumentStore((s) => s.libraryLoading);
@@ -21,7 +21,7 @@ export function UploadView() {
     >
       <UploadPanel
         uploadState={uploadState}
-        error={error}
+        error={uploadError}
         library={library}
         libraryLoading={libraryLoading}
         deletingId={deletingId}
