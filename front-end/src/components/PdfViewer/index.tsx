@@ -209,7 +209,7 @@ export function PdfViewer({
   return (
     <div
       ref={scrollRef}
-      className="relative h-full w-full overflow-x-hidden overflow-y-auto bg-[oklch(0.92_0.012_86)] p-3"
+      className="relative h-full w-full overflow-x-hidden overflow-y-auto bg-[oklch(0.92_0.012_86)]"
     >
       {error ? (
         <div className="grid h-full place-items-center px-6 text-center text-sm text-muted">

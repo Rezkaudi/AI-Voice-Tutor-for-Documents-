@@ -47,7 +47,7 @@ export function CaptionStrip({ caption }: CaptionStripProps) {
           anchors to the bottom, so the latest two lines stay whole and older
           lines clip cleanly above — no half-rows top and bottom.
           Font size and line height live here so 2lh is exactly two rows. */}
-      <span className="flex max-h-[2lh] min-w-0 flex-1 items-end overflow-hidden text-[clamp(1.18rem,3vh,1.58rem)] leading-[1.4]">
+      <span className="flex max-h-[2lh] min-w-0 flex-1 items-end overflow-hidden text-[clamp(0.9rem,2.3vh,1.12rem)] leading-[1.4] min-[920px]:text-[clamp(1.18rem,3vh,1.58rem)]">
         <span className="block">
           {words.map((text, index) => {
             const isActive = index === activeIndex;

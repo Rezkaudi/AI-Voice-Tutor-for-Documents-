@@ -63,28 +63,28 @@ export function PageSelectionDialog({
   return (
     <div className={ui.modalBackdrop} onClick={onCancel}>
       <div
-        className={cx(ui.modalCard, "max-h-[88vh] overflow-hidden")}
+        className={cx(ui.modalCard, "max-h-[88vh] gap-3! overflow-hidden")}
         role="dialog"
         aria-modal="true"
         aria-labelledby="pages-title"
         aria-describedby="pages-body"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className={ui.modalHead}>
+        <div className={cx(ui.modalHead, "gap-2.5")}>
           <div
             className={cx(
               ui.modalIcon,
-              "!border-[oklch(0.82_0.07_165)] !bg-[oklch(0.95_0.04_165)] !text-[oklch(0.45_0.13_165)]"
+              "h-8! w-8! border-[oklch(0.82_0.07_165)]! bg-[oklch(0.95_0.04_165)]! text-[oklch(0.45_0.13_165)]!"
             )}
             aria-hidden
           >
-            <BookOpen size={20} />
+            <BookOpen size={17} />
           </div>
           <div>
-            <h3 id="pages-title" className={ui.modalTitle}>
+            <h3 id="pages-title" className={cx(ui.modalTitle, "text-[0.98rem]!")}>
               Pick your lesson pages
             </h3>
-            <p id="pages-body" className={ui.modalBody}>
+            <p id="pages-body" className={cx(ui.modalBody, "text-[0.8rem]! leading-snug!")}>
               Choose up to {MAX_LESSON_PAGES} pages. Your teacher will explain them
               one by one, from the first page, checking you understood each idea
               before moving on.
@@ -93,7 +93,7 @@ export function PageSelectionDialog({
         </div>
 
         <div
-          className="flex items-center justify-between text-[0.85rem] font-semibold text-[oklch(0.42_0.02_244)]"
+          className="flex items-center justify-between text-[0.78rem] font-semibold text-[oklch(0.42_0.02_244)]"
           aria-live="polite"
         >
           <span>
@@ -107,7 +107,7 @@ export function PageSelectionDialog({
         </div>
 
         <div className="relative -mx-1">
-          <div className="grid max-h-[44vh] grid-cols-[repeat(auto-fill,minmax(50px,1fr))] gap-2.5 overflow-y-auto overscroll-contain rounded-xl border border-line bg-paper p-3 pr-2 [scrollbar-color:oklch(0.7_0.03_86)_transparent] scrollbar-thin [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[oklch(0.7_0.03_86/0.6)] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5">
+          <div className="grid max-h-[42vh] grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-1.5 overflow-y-auto overscroll-contain rounded-xl border border-line bg-paper p-2.5 pr-2 [scrollbar-color:oklch(0.7_0.03_86)_transparent] scrollbar-thin [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[oklch(0.7_0.03_86/0.6)] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5">
             {pages.map((page) => {
               const active = chosen.includes(page);
               const disabled = !active && atLimit;
@@ -121,7 +121,7 @@ export function PageSelectionDialog({
                   disabled={disabled}
                   onClick={() => toggle(page)}
                   className={cx(
-                    "relative grid aspect-square min-h-[44px] place-items-center rounded-[10px] border text-[0.9rem] font-bold transition-[transform,background,border-color,box-shadow] duration-140 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40",
+                    "relative grid aspect-square min-h-[38px] place-items-center rounded-lg border text-[0.8rem] font-bold transition-[transform,background,border-color,box-shadow] duration-140 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40",
                     active
                       ? "border-transparent bg-accent text-[oklch(0.98_0.01_138)] shadow-app"
                       : "border-line bg-paper-strong text-ink [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:border-accent [&:hover:not(:disabled)]:shadow-app"

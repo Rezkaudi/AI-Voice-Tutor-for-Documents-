@@ -20,7 +20,7 @@ export const callHint =
 // would resize on every revealed word — the two-line window inside handles
 // overflow instead.
 export const captionBase =
-  "pointer-events-none z-30 col-start-1 row-start-3 flex w-[min(640px,calc(100%_-_24px))] flex-nowrap items-center gap-2.5 rounded-2xl border border-[oklch(1_0_0/0.1)] bg-[oklch(0.13_0.022_244/0.9)] px-[18px] py-[11px] shadow-[0_14px_36px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[10px] animate-caption-rise motion-reduce:animate-none";
+  "pointer-events-none z-30 col-start-1 row-start-3 flex w-[min(560px,calc(100%_-_24px))] flex-nowrap items-center gap-2 rounded-xl border border-[oklch(1_0_0/0.1)] bg-[oklch(0.13_0.022_244/0.9)] px-3.5 py-2 shadow-[0_14px_36px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[10px] animate-caption-rise motion-reduce:animate-none min-[920px]:w-[min(640px,calc(100%_-_24px))] min-[920px]:gap-2.5 min-[920px]:rounded-2xl min-[920px]:px-[18px] min-[920px]:py-[11px]";
 
 export const langOptionBase =
   "min-h-[38px] appearance-none rounded-full border-0 bg-transparent px-4 py-2 text-[0.8rem] font-semibold leading-none text-[oklch(0.78_0.02_215)] transition-colors duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.78_0.13_165)] [&:hover:not(:disabled)]:bg-[oklch(0.3_0.03_230)] [&:hover:not(:disabled)]:text-[oklch(0.92_0.01_215)]";

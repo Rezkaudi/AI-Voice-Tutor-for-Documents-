@@ -35,7 +35,7 @@ export class PdfJsTextExtractor implements DocumentTextExtractor {
     const searchablePages = cleaned.filter((page) => page.text.trim().length > 0);
     if (searchablePages.length === 0) {
       throw new UnprocessableEntityError(
-        "This looks like a scanned PDF. The MVP supports text-based PDFs only."
+        "We couldn't read any text in this PDF. Image-only or scanned files aren't supported — please upload a text-based PDF."
       );
     }
     return cleaned;
