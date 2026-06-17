@@ -1,5 +1,5 @@
-import { BookOpen, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
-import { memo, useState } from "react";
+import { BookOpen, ExternalLink } from "lucide-react";
+import { memo, useEffect, useState } from "react";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentReference } from "@/lib/types";
 import { citationKey } from "@/store/documentStore";
@@ -33,25 +33,19 @@ function DocumentBoardComponent({
   highlight,
   activeCitationKey,
   isLoading = false,
-  onPageChange,
   onFocusCitation,
   onEditPages
 }: DocumentBoardProps) {
   const isPdf = mimeType === "application/pdf" && !!fileUrl;
   const [pdfLoading, setPdfLoading] = useState(isPdf);
-  const [pageInput, setPageInput] = useState("");
 
-  const commitPageInput = () => {
-    const parsed = Number.parseInt(pageInput, 10);
-    if (Number.isFinite(parsed)) {
-      const next = Math.min(pageCount, Math.max(1, parsed));
-      if (next !== activePage) onPageChange(next);
-    }
-    setPageInput("");
-  };
+
+  const [visiblePage, setVisiblePage] = useState(activePage);
+  useEffect(() => {
+    setVisiblePage(activePage);
+  }, [activePage]);
 
   const citations = highlight?.citations ?? [];
-  const pageCitations = citations.filter((c) => c.pageNumber === activePage);
 
   const showOverlay = isLoading || (isPdf && pdfLoading);
 
@@ -60,67 +54,26 @@ function DocumentBoardComponent({
       <div className={cx(ui.surface, "flex flex-col gap-2.5 p-3")}>
         <div className="flex items-center justify-between gap-3.5 max-[560px]:flex-col max-[560px]:items-stretch">
           <div className="min-w-0">
-            <h2 className="m-0 text-base">Page {activePage}</h2>
+            <h2 className="m-0 text-base">Page {visiblePage}</h2>
             {/* {citations.length > 0 && (
               <p className="mb-0 mt-1 text-[0.85rem] text-muted">
                 {`${citations.length} cited passage${citations.length === 1 ? "" : "s"}`}
               </p>
             )} */}
           </div>
-          {onEditPages ? (
-            <button
-              className={ui.button}
-              type="button"
-              aria-label="Choose which pages to study"
-              title="Choose which pages to study"
-              onClick={onEditPages}
-            >
-              <BookOpen size={17} aria-hidden />
-              Teaching pages
-            </button>
-          ) : null}
-          <div className={ui.buttonRow}>
-            <button
-              className={ui.iconButton}
-              type="button"
-              title="Previous page"
-              disabled={activePage <= 1}
-              onClick={() => onPageChange(Math.max(1, activePage - 1))}
-            >
-              <ChevronLeft size={18} aria-hidden />
-            </button>
-            <span className={cx(ui.pill, "gap-1")}>
-              <input
-                className="w-9 rounded border border-[oklch(0.82_0.016_86)] bg-transparent text-center text-inherit outline-none focus:border-[oklch(0.55_0.13_245)]"
-                type="text"
-                inputMode="numeric"
-                aria-label="Go to page"
-                title="Type a page number and press Enter"
-                value={pageInput === "" ? String(activePage) : pageInput}
-                onFocus={() => setPageInput(String(activePage))}
-                onChange={(e) => setPageInput(e.target.value.replace(/[^\d]/g, ""))}
-                onBlur={commitPageInput}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    e.currentTarget.blur();
-                  } else if (e.key === "Escape") {
-                    setPageInput("");
-                    e.currentTarget.blur();
-                  }
-                }}
-              />
-              / {pageCount}
-            </span>
-            <button
-              className={ui.iconButton}
-              type="button"
-              title="Next page"
-              disabled={activePage >= pageCount}
-              onClick={() => onPageChange(Math.min(pageCount, activePage + 1))}
-            >
-              <ChevronRight size={18} aria-hidden />
-            </button>
+          <div className={cx(ui.buttonRow, "max-[560px]:justify-end")}>
+            {onEditPages ? (
+              <button
+                className={ui.button}
+                type="button"
+                aria-label="Choose which pages to study"
+                title="Choose which pages to study"
+                onClick={onEditPages}
+              >
+                <BookOpen size={17} aria-hidden />
+                Teaching pages
+              </button>
+            ) : null}
             {fileUrl ? (
               <a className={ui.button} href={fileUrl} target="_blank" rel="noreferrer">
                 <ExternalLink size={17} aria-hidden />
@@ -148,9 +101,10 @@ function DocumentBoardComponent({
             <PdfViewer
               fileUrl={fileUrl}
               page={activePage}
-              citations={pageCitations}
+              citations={citations}
               focusCitationKey={activeCitationKey}
               onLoaded={() => setPdfLoading(false)}
+              onVisiblePageChange={setVisiblePage}
             />
           </div>
         ) : (
