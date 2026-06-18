@@ -26,9 +26,14 @@ interface CallOverlayProps {
   pageCount: number;
   selectedPages: number[];
   pageDialogOpen: boolean;
+  showTranscript: boolean;
+  showCaption: boolean;
   onMicToggle: () => void;
   onCallToggle: () => void | Promise<void>;
   onClearChat: () => void;
+  onEditPages: () => void;
+  onToggleTranscript: () => void;
+  onToggleCaption: () => void;
   onClosePageDialog: () => void;
   onSubmitPageSelection: (pages: number[]) => void;
 }
@@ -47,16 +52,18 @@ export function CallOverlay({
   pageCount,
   selectedPages,
   pageDialogOpen,
+  showTranscript,
+  showCaption,
   onMicToggle,
   onCallToggle,
   onClearChat,
+  onEditPages,
+  onToggleTranscript,
+  onToggleCaption,
   onClosePageDialog,
   onSubmitPageSelection
 }: CallOverlayProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(false);
-
-  const [showCaption, setShowCaption] = useState(true);
   const micDialog = useMicDialog(micBlocked);
 
   const status = { isStreaming, isSpeaking, isListening, isTranscribing, callMode };
@@ -126,15 +133,16 @@ export function CallOverlay({
         showCaption={showCaption}
         showTranscript={showTranscript}
         clearDisabled={!hasMessages && !callMode}
-        onToggleCaption={() => setShowCaption((on) => !on)}
-        onToggleTranscript={() => setShowTranscript((open) => !open)}
+        onEditPages={onEditPages}
+        onToggleCaption={onToggleCaption}
+        onToggleTranscript={onToggleTranscript}
         onClear={handleClearClick}
       />
 
       <TranscriptDrawer
         open={showTranscript}
         messages={messages}
-        onClose={() => setShowTranscript(false)}
+        onClose={onToggleTranscript}
       />
 
       <MicPermissionDialog open={micDialog.open} onClose={() => micDialog.setOpen(false)} />

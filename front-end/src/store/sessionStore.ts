@@ -19,7 +19,13 @@ interface SessionStore {
   selectedPages: number[];
   /** Whether the page-picker modal is open. */
   pageDialogOpen: boolean;
+  /** Whether the full lesson transcript is shown. */
+  showTranscript: boolean;
+  /** Whether live spoken captions are shown. */
+  showCaption: boolean;
   setError: (error: string | null) => void;
+  toggleTranscript: () => void;
+  toggleCaption: () => void;
   setMobilePane: (mobilePane: MobilePane) => void;
   setSpeechLanguage: (speechLanguage: SpeechLanguage) => void;
   initSaveCost: () => void;
@@ -55,8 +61,14 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   // The focused lesson defaults to page 1; the picker lets the learner change it.
   selectedPages: [1],
   pageDialogOpen: false,
+  // Transcript starts hidden (the call leads with the avatar + caption);
+  // captions are on by default.
+  showTranscript: false,
+  showCaption: true,
 
   setError: (error) => set({ error }),
+  toggleTranscript: () => set((s) => ({ showTranscript: !s.showTranscript })),
+  toggleCaption: () => set((s) => ({ showCaption: !s.showCaption })),
   setMobilePane: (mobilePane) => set({ mobilePane }),
   setSpeechLanguage: (speechLanguage) => set({ speechLanguage }),
 

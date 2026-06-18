@@ -1,16 +1,13 @@
-import { useState } from "react";
 import type {
   ChatMessage,
   SpeechCaption,
   SpeechLanguage
 } from "@/lib/types";
-import { ConfirmDialog } from "../ConfirmDialog";
 import { MicPermissionDialog } from "../MicPermissionDialog";
 import { PageSelectionDialog } from "../PageSelectionDialog";
 import { TeacherAvatar } from "../TeacherAvatar";
 import { CallControls } from "./CallControls";
 import { CaptionStrip } from "./CaptionStrip";
-import { CornerButtons } from "./CornerButtons";
 import { LanguagePicker } from "./LanguagePicker";
 import { MicStatusBanner } from "./MicStatusBanner";
 import { TranscriptLog } from "./TranscriptLog";
@@ -30,16 +27,15 @@ interface TeacherPanelProps {
   micBlocked: boolean;
   callMode: boolean;
   speechLanguage: SpeechLanguage;
-  saveCost: boolean;
+  showTranscript: boolean;
+  showCaption: boolean;
   error: string | null;
   pageCount: number;
   selectedPages: number[];
   pageDialogOpen: boolean;
   onSpeechLanguageChange: (language: SpeechLanguage) => void;
-  onSaveCostToggle: () => void;
   onMicToggle: () => void;
   onCallToggle: () => void | Promise<void>;
-  onClearChat: () => void;
   onClosePageDialog: () => void;
   onSubmitPageSelection: (pages: number[]) => void;
 }
@@ -56,31 +52,24 @@ export function TeacherPanel({
   micBlocked,
   callMode,
   speechLanguage,
-  saveCost,
+  showTranscript,
+  showCaption,
   error,
   pageCount,
   selectedPages,
   pageDialogOpen,
   onSpeechLanguageChange,
-  onSaveCostToggle,
   onMicToggle,
   onCallToggle,
-  onClearChat,
   onClosePageDialog,
   onSubmitPageSelection
 }: TeacherPanelProps) {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  // Transcript starts hidden — the call leads with the avatar and live caption;
-  // the learner opts into the full text history.
-  const [showTranscript, setShowTranscript] = useState(false);
   const micDialog = useMicDialog(micBlocked);
 
   const status = { isStreaming, isSpeaking, isListening, isTranscribing, callMode };
   const orbState = deriveOrbState(status);
   const statusLabel = deriveStatusLabel(status, messages.length);
-  const hasMessages = messages.length > 0;
   const langDisabled = isListening || isTranscribing || micBlocked;
-  const saveCostDisabled = isStreaming || isListening || isTranscribing;
 
   // While blocked, the mic button explains the fix instead of failing silently.
   const handleMicClick = () => {
@@ -91,26 +80,8 @@ export function TeacherPanel({
     onMicToggle();
   };
 
-  const handleClearClick = () => {
-    if (!hasMessages) {
-      onClearChat();
-    } else {
-      setConfirmOpen(true);
-    }
-  };
-
   return (
     <div className="relative grid h-full min-h-0 w-full flex-1 grid-rows-[auto_auto_minmax(0,1fr)_auto] place-items-center gap-[clamp(14px,2.2vh,26px)] px-3 pb-1 pt-[clamp(60px,8vh,72px)]">
-      <CornerButtons
-        showTranscript={showTranscript}
-        onToggleTranscript={() => setShowTranscript((open) => !open)}
-        saveCost={saveCost}
-        onSaveCostToggle={onSaveCostToggle}
-        saveCostDisabled={saveCostDisabled}
-        onClear={handleClearClick}
-        clearDisabled={!hasMessages && !callMode}
-      />
-
       <TeacherAvatar state={orbState} />
 
       <div className="text-center">
@@ -151,7 +122,7 @@ export function TeacherPanel({
         ) : null}
       </div>
 
-      {caption ? <CaptionStrip caption={caption} /> : null}
+      {showCaption && caption ? <CaptionStrip caption={caption} /> : null}
 
       <CallControls
         callMode={callMode}
@@ -181,19 +152,6 @@ export function TeacherPanel({
           onCancel={onClosePageDialog}
         />
       ) : null}
-
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Restart the lesson?"
-        body="This clears the current chat and starts a fresh session from the beginning. This action cannot be undone."
-        confirmLabel="Clear & restart"
-        cancelLabel="Cancel"
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          setConfirmOpen(false);
-          onClearChat();
-        }}
-      />
     </div>
   );
 }

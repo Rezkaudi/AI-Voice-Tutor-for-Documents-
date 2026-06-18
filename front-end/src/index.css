@@ -65,6 +65,40 @@
   }
 }
 
+@layer utilities {
+  /* Refined, unobtrusive scrollbar for the document viewer. */
+  .scrollbar-doc {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.7 0.022 245 / 0.5) transparent;
+  }
+
+  .scrollbar-doc::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  .scrollbar-doc::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-doc::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    background-color: oklch(0.7 0.022 245 / 0.42);
+    transition: background-color 140ms ease-out;
+  }
+
+  .scrollbar-doc:hover::-webkit-scrollbar-thumb {
+    background-color: oklch(0.6 0.028 245 / 0.62);
+  }
+
+  .scrollbar-doc::-webkit-scrollbar-thumb:hover,
+  .scrollbar-doc::-webkit-scrollbar-thumb:active {
+    background-color: oklch(0.5 0.034 245 / 0.8);
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

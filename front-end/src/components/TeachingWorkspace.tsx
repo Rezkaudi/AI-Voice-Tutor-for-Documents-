@@ -9,6 +9,7 @@ import { CallOverlay } from "./CallOverlay";
 import { DocumentBoard } from "./DocumentBoard";
 import { Splitter } from "./Splitter";
 import { TeacherPanel } from "./TeacherPanel";
+import { WorkspaceMenu } from "./WorkspaceMenu";
 
 /** Viewport at/above which the desktop split-pane layout is used. */
 const DESKTOP_QUERY = "(min-width: 920px)";
@@ -24,10 +25,11 @@ const DESKTOP_QUERY = "(min-width: 920px)";
 export function TeachingWorkspace() {
   const callMode = useSessionStore((s) => s.callMode);
   const speechLanguage = useSessionStore((s) => s.speechLanguage);
-  const saveCost = useSessionStore((s) => s.saveCost);
   const error = useSessionStore((s) => s.error);
   const selectedPages = useSessionStore((s) => s.selectedPages);
   const pageDialogOpen = useSessionStore((s) => s.pageDialogOpen);
+  const showTranscript = useSessionStore((s) => s.showTranscript);
+  const showCaption = useSessionStore((s) => s.showCaption);
 
   const loadedDocument = useDocumentStore((s) => s.loadedDocument);
   const uploadState = useDocumentStore((s) => s.uploadState);
@@ -66,18 +68,31 @@ export function TeachingWorkspace() {
       isLoading={uploadState === "processing"}
       onPageChange={documentStore.setActivePage}
       onFocusCitation={documentStore.focusCitation}
+    />
+  );
+
+  const restartDisabled = messages.length === 0 && !callMode;
+
+  const workspaceMenu = (
+    <WorkspaceMenu
+      showTranscript={showTranscript}
+      showCaption={showCaption}
+      restartDisabled={restartDisabled}
       onEditPages={session.openPageDialog}
+      onToggleTranscript={session.toggleTranscript}
+      onToggleCaption={session.toggleCaption}
+      onRestart={session.clearChat}
     />
   );
 
   // ----- Desktop: split pane (document + teacher panel) -----
   if (isDesktop) {
     const documentPaneClass = cx(
-      "h-full min-w-0 overflow-hidden border-r border-line p-[clamp(14px,2vw,26px)]",
+      "relative h-full min-w-0 overflow-hidden pr-2",
       "[background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0/36px_36px,var(--color-panel)]"
     );
     const teacherPaneClass =
-      "flex h-full min-w-0 overflow-hidden p-[clamp(14px,2vw,26px)] text-[oklch(0.96_0.008_100)] [background:radial-gradient(120%_80%_at_50%_0%,oklch(0.34_0.06_232)_0%,oklch(0.22_0.035_240)_60%,oklch(0.18_0.03_244)_100%)]";
+      "relative flex h-full min-w-0 overflow-hidden p-[clamp(14px,2vw,26px)] text-[oklch(0.96_0.008_100)] [background:radial-gradient(120%_80%_at_50%_0%,oklch(0.34_0.06_232)_0%,oklch(0.22_0.035_240)_60%,oklch(0.18_0.03_244)_100%)]";
 
     return (
       <main
@@ -89,6 +104,7 @@ export function TeachingWorkspace() {
         </section>
         <Splitter />
         <section className={teacherPaneClass} aria-label="Teacher voice call">
+          {workspaceMenu}
           <TeacherPanel
             messages={messages}
             caption={caption}
@@ -100,16 +116,15 @@ export function TeachingWorkspace() {
             micBlocked={micBlocked}
             callMode={callMode}
             speechLanguage={speechLanguage}
-            saveCost={saveCost}
+            showTranscript={showTranscript}
+            showCaption={showCaption}
             error={error}
             pageCount={loadedDocument.document.pageCount}
             selectedPages={selectedPages}
             pageDialogOpen={pageDialogOpen}
             onSpeechLanguageChange={session.setSpeechLanguage}
-            onSaveCostToggle={session.toggleSaveCost}
             onMicToggle={session.handleMicToggle}
             onCallToggle={session.handleCallToggle}
-            onClearChat={session.clearChat}
             onClosePageDialog={session.closePageDialog}
             onSubmitPageSelection={session.submitPageSelection}
           />
@@ -125,7 +140,7 @@ export function TeachingWorkspace() {
       data-workspace
     >
       <section
-        className="h-full overflow-hidden px-[clamp(10px,2vw,24px)] pb-[120px] pt-[clamp(10px,1.6vh,18px)]"
+        className="h-full overflow-hidden pb-[120px]"
         aria-label="Document board"
       >
         {documentBoard}
@@ -145,9 +160,14 @@ export function TeachingWorkspace() {
         pageCount={loadedDocument.document.pageCount}
         selectedPages={selectedPages}
         pageDialogOpen={pageDialogOpen}
+        showTranscript={showTranscript}
+        showCaption={showCaption}
         onMicToggle={session.handleMicToggle}
         onCallToggle={session.handleCallToggle}
         onClearChat={session.clearChat}
+        onEditPages={session.openPageDialog}
+        onToggleTranscript={session.toggleTranscript}
+        onToggleCaption={session.toggleCaption}
         onClosePageDialog={session.closePageDialog}
         onSubmitPageSelection={session.submitPageSelection}
       />
