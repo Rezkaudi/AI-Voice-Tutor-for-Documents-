@@ -128,6 +128,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     } else {
       useChatStore.getState().abort();
       useSpeechStore.getState().stopSpeaking();
+      useSpeechStore.getState().unlockAudio();
       voice.start();
     }
   },
@@ -170,6 +171,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
    * grab the mic, then either greet-and-teach or resume listening.
    */
   submitPageSelection: async (pages) => {
+    useSpeechStore.getState().unlockAudio();
+
     const cleaned = pages.length > 0 ? pages : [1];
     set({ selectedPages: cleaned, pageDialogOpen: false });
 

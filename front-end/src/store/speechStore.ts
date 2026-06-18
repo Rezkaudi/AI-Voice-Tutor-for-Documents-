@@ -5,6 +5,7 @@ import type { SpeechCaption, SpeechSession } from "@/lib/types";
 interface SpeechStore {
   isSpeaking: boolean;
   caption: SpeechCaption | null;
+  unlockAudio: () => void;
   stopSpeaking: () => void;
   createSpeechSession: () => SpeechSession;
   showUserCaption: (text: string) => void;
@@ -24,6 +25,8 @@ export const useSpeechStore = create<SpeechStore>((set) => {
     isSpeaking: false,
     caption: null,
 
+    /** Unlocks iOS audio playback — call from a user-gesture handler. */
+    unlockAudio: () => engine.unlock(),
     /** Cancels every in-flight TTS fetch and playback. */
     stopSpeaking: () => engine.stopSpeaking(),
     /** Opens an ordered TTS session — see SpeechEngine.createSession. */
