@@ -8,6 +8,7 @@ import { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
 import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
 import { TranscribeAudioUseCase } from "@/application/use-cases/transcription/transcribe-audio.use-case";
+import { CostTracker } from "@/application/services/cost-tracker";
 import { GetGoogleAuthUrlUseCase } from "@/application/use-cases/auth/get-google-auth-url.use-case";
 import { AuthenticateWithGoogleUseCase } from "@/application/use-cases/auth/authenticate-with-google.use-case";
 import { RefreshSessionUseCase } from "@/application/use-cases/auth/refresh-session.use-case";
@@ -28,10 +29,14 @@ import { DocumentChunker } from "@/domain/logic/document-chunker";
 import { UploadValidator } from "@/domain/logic/upload-validator";
 import { FileNaming } from "@/domain/logic/file-naming";
 import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
+import { CostCalculator } from "@/domain/logic/cost-calculator";
 
 import { initializeDatabase } from "@/infrastructure/database/data-source";
 import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositories/typeorm-document.repository";
 import { TypeOrmUserRepository } from "@/infrastructure/database/repositories/typeorm-user.repository";
+import { TypeOrmUserCostRepository } from "@/infrastructure/database/repositories/typeorm-user-cost.repository";
+
+import { MODEL_PRICING } from "@/config/pricing.config";
 
 import { GoogleOAuthService } from "@/infrastructure/services/auth/google-oauth.service";
 import { JwtTokenService } from "@/infrastructure/services/auth/jwt-token.service";
@@ -91,10 +96,12 @@ export async function buildContainer(): Promise<Container> {
   const uploadValidator = new UploadValidator();
   const fileNaming = new FileNaming();
   const historySanitizer = new ChatHistorySanitizer();
+  const costCalculator = new CostCalculator(MODEL_PRICING, logger);
 
   // ─── Infrastructure adapters (implement domain ports) ────────────────────
   const documentRepository = new TypeOrmDocumentRepository(dataSource, idGenerator);
   const userRepository = new TypeOrmUserRepository(dataSource, idGenerator);
+  const userCostRepository = new TypeOrmUserCostRepository(dataSource);
   const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
   const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
@@ -114,6 +121,9 @@ export async function buildContainer(): Promise<Container> {
   );
   const speechService = new OpenAiSpeechSynthesisService(ENV_CONFIG);
   const transcriptionService = new OpenAiTranscriptionService(ENV_CONFIG);
+
+  // Single seam every AI flow calls to bill a user's usage (USD + questions).
+  const costTracker = new CostTracker(userCostRepository, costCalculator, logger);
 
   // ─── Application use cases ───────────────────────────────────────────────
   const uploadDocument = new UploadDocumentUseCase(
@@ -138,10 +148,19 @@ export async function buildContainer(): Promise<Container> {
     documentRepository,
     tutorService,
     historySanitizer,
+    costTracker,
     logger
   );
-  const synthesizeSpeech = new SynthesizeSpeechUseCase(speechService, logger);
-  const transcribeAudio = new TranscribeAudioUseCase(transcriptionService, logger);
+  const synthesizeSpeech = new SynthesizeSpeechUseCase(
+    speechService,
+    costTracker,
+    logger
+  );
+  const transcribeAudio = new TranscribeAudioUseCase(
+    transcriptionService,
+    costTracker,
+    logger
+  );
 
   const getGoogleAuthUrl = new GetGoogleAuthUrlUseCase(oauthProvider, idGenerator);
   const authenticateWithGoogle = new AuthenticateWithGoogleUseCase(

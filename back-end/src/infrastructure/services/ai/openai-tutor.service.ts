@@ -73,9 +73,9 @@ export class OpenAiTutorService implements TutorService {
 
     log.info(
       `turn start — "${truncate(request.message)}" · model=${settings.model} ` +
-        `· saveCost=${request.saveCost} · effort=${settings.reasoningEffort} ` +
-        `· maxSteps=${settings.maxToolSteps} · history=${request.history.length} ` +
-        `· pages=${request.pages.length} · chunks=${request.chunks.length}`
+      `· saveCost=${request.saveCost} · effort=${settings.reasoningEffort} ` +
+      `· maxSteps=${settings.maxToolSteps} · history=${request.history.length} ` +
+      `· pages=${request.pages.length} · chunks=${request.chunks.length}`
     );
 
     // First turn carries history + the student's message; later turns chain off
@@ -83,33 +83,43 @@ export class OpenAiTutorService implements TutorService {
     let pendingInput = this.requests.initialInput(request, settings);
     let previousResponseId: string | undefined;
 
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let cachedInputTokens = 0;
+
     // Confirm the chosen lesson pages were injected as developer-role material.
     if (request.selectedPages.length > 0) {
       const lesson = pendingInput.find((item) => item.role === "developer");
       const chars = typeof lesson?.content === "string" ? lesson.content.length : 0;
       log.info(
         `lesson material → pages [${request.selectedPages.join(", ")}] injected ` +
-          `as developer input · ${chars} chars`
+        `as developer input · ${chars} chars`
       );
     }
 
     for (let step = 0; step < settings.maxToolSteps; step += 1) {
       log.info(
         `step ${step + 1}/${settings.maxToolSteps} → requesting model response` +
-          (previousResponseId ? " (chained)" : "")
+        (previousResponseId ? " (chained)" : "")
       );
       const stream = await createResponse(
         this.requests.body(request, settings, pendingInput, previousResponseId),
         { signal }
       );
-      const { toolCalls, stepText, responseId } = await this.streamReader.read(stream);
+      const { toolCalls, stepText, responseId, usage } =
+        await this.streamReader.read(stream);
       if (responseId) {
         previousResponseId = responseId;
       }
+      if (usage) {
+        inputTokens += usage.inputTokens;
+        outputTokens += usage.outputTokens;
+        cachedInputTokens += usage.cachedInputTokens;
+      }
       log.info(
         `step ${step + 1} ← ${toolCalls.length} tool call(s)` +
-          (toolCalls.length ? `: ${toolCalls.map((call) => call.name).join(", ")}` : "") +
-          (stepText ? ` · ${stepText.length} chars of text` : "")
+        (toolCalls.length ? `: ${toolCalls.map((call) => call.name).join(", ")}` : "") +
+        (stepText ? ` · ${stepText.length} chars of text` : "")
       );
 
       // No tool calls → the model has produced its final spoken answer. Pull
@@ -130,6 +140,13 @@ export class OpenAiTutorService implements TutorService {
         } else {
           log.warn("model returned neither tool calls nor text — ending turn");
         }
+        yield this.usageEvent(
+          settings.model,
+          inputTokens,
+          outputTokens,
+          cachedInputTokens,
+          log
+        );
         return;
       }
 
@@ -142,6 +159,31 @@ export class OpenAiTutorService implements TutorService {
     }
 
     log.warn(`reached maxToolSteps (${settings.maxToolSteps}) without a final answer`);
+    yield this.usageEvent(
+      settings.model,
+      inputTokens,
+      outputTokens,
+      cachedInputTokens,
+      log
+    );
+  }
+
+  /** Builds the terminal usage event for the turn (and traces it). */
+  private usageEvent(
+    model: string,
+    inputTokens: number,
+    outputTokens: number,
+    cachedInputTokens: number,
+    log: Logger
+  ): TutorStreamEvent {
+    log.info(
+      `turn usage → model=${model} · in=${inputTokens} ` +
+      `(cached ${cachedInputTokens}) · out=${outputTokens} tokens`
+    );
+    return {
+      type: "usage",
+      usage: { model, inputTokens, outputTokens, cachedInputTokens }
+    };
   }
 
   /** Resolves the reference, reconciles `[[N]]` markers, and emits the answer. */
@@ -180,7 +222,7 @@ export class OpenAiTutorService implements TutorService {
       const result = await this.tools.execute(call.name, call.args, request, log);
       log.info(
         `tool ${call.name} ← ${result.output.length} chars · ` +
-          `${result.references.length} reference(s)`
+        `${result.references.length} reference(s)`
       );
       log.detail(`${call.name} result`, result.output);
       for (const reference of result.references) {

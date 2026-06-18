@@ -3,7 +3,7 @@ import type { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/syn
 
 /** HTTP adapter for text-to-speech (`/api/speak`). */
 export class SpeechController {
-  constructor(private readonly synthesizeSpeech: SynthesizeSpeechUseCase) {}
+  constructor(private readonly synthesizeSpeech: SynthesizeSpeechUseCase) { }
 
   /** POST /api/speak — returns an audio clip for one sentence. */
   speak = async (req: Request, res: Response): Promise<void> => {
@@ -11,6 +11,7 @@ export class SpeechController {
     req.on("close", () => controller.abort());
 
     const clip = await this.synthesizeSpeech.execute(
+      req.auth!.userId,
       req.body?.text,
       controller.signal
     );

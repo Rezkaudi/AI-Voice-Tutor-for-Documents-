@@ -5,11 +5,18 @@ export interface PendingToolCall {
   args: string;
 }
 
+export interface StepUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cachedInputTokens: number;
+}
+
 /** What one streamed response step yields once fully consumed. */
 export interface StreamStep {
   toolCalls: PendingToolCall[];
   stepText: string;
   responseId?: string;
+  usage?: StepUsage;
 }
 
 /**
@@ -25,6 +32,7 @@ export class OpenAiResponseStreamReader {
     const toolCalls: PendingToolCall[] = [];
     const textByOutputIndex = new Map<number, string>();
     let responseId: string | undefined;
+    let usage: StepUsage | undefined;
 
     for await (const event of stream) {
       if (
@@ -47,6 +55,7 @@ export class OpenAiResponseStreamReader {
         if (response?.id) {
           responseId = String(response.id);
         }
+        usage = readUsage(response?.usage);
       }
     }
 
@@ -54,6 +63,26 @@ export class OpenAiResponseStreamReader {
     const stepText =
       lastIndex === undefined ? "" : (textByOutputIndex.get(lastIndex) ?? "");
 
-    return { toolCalls, stepText, responseId };
+    return { toolCalls, stepText, responseId, usage };
   }
+}
+
+/** Extracts token counts from a Responses API `usage` object, if present. */
+function readUsage(raw: unknown): StepUsage | undefined {
+  if (!raw || typeof raw !== "object") {
+    return undefined;
+  }
+  const usage = raw as Record<string, unknown>;
+  const inputTokens = Number(usage.input_tokens ?? 0);
+  const outputTokens = Number(usage.output_tokens ?? 0);
+  if (!Number.isFinite(inputTokens) && !Number.isFinite(outputTokens)) {
+    return undefined;
+  }
+  const details = usage.input_tokens_details as Record<string, unknown> | undefined;
+  const cachedInputTokens = Number(details?.cached_tokens ?? 0);
+  return {
+    inputTokens: Number.isFinite(inputTokens) ? inputTokens : 0,
+    outputTokens: Number.isFinite(outputTokens) ? outputTokens : 0,
+    cachedInputTokens: Number.isFinite(cachedInputTokens) ? cachedInputTokens : 0
+  };
 }
