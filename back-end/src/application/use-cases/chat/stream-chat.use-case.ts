@@ -5,6 +5,7 @@ import type { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 import type { TutorService } from "@/domain/services/tutor-service";
 import type { Logger } from "@/domain/services/logger";
+import type { CostTracker } from "@/application/services/cost-tracker";
 import { MAX_LESSON_PAGES } from "@/config/constant.config";
 
 /** The chat request payload, mirroring the front-end `ChatPayload`. */
@@ -33,6 +34,7 @@ export class StreamChatUseCase {
     private readonly repository: DocumentRepository,
     private readonly tutor: TutorService,
     private readonly historySanitizer: ChatHistorySanitizer,
+    private readonly costTracker: CostTracker,
     private readonly logger: Logger
   ) {}
 
@@ -99,6 +101,8 @@ export class StreamChatUseCase {
     }
 
     const tutor = this.tutor;
+    const costTracker = this.costTracker;
+    const userId = input.userId;
 
     return (async function* stream(): AsyncGenerator<StreamEvent> {
       yield { event: "meta", data: { reference: null } };
@@ -121,6 +125,9 @@ export class StreamChatUseCase {
           if (event.type === "reference") {
             log.info(`emitting citation → page ${event.reference.pageNumber}`);
             yield { event: "meta", data: { reference: event.reference } };
+          } else if (event.type === "usage") {
+            // Bill the turn against the user — best-effort, never streamed out.
+            await costTracker.track(userId, event.usage, { countAsQuestion: true });
           } else {
             deltaCount += 1;
             yield { event: "delta", data: { text: event.text } };

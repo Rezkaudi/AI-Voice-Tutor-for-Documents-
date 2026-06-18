@@ -1,6 +1,7 @@
 import { ValidationError } from "@/domain/errors/app-error";
 import type { TranscriptionService } from "@/domain/services/speech-services";
 import type { Logger } from "@/domain/services/logger";
+import type { CostTracker } from "@/application/services/cost-tracker";
 import { truncate } from "@/shared/logger";
 
 /** A recorded clip submitted for transcription. */
@@ -15,10 +16,12 @@ export interface TranscribeAudioInput {
 export class TranscribeAudioUseCase {
   constructor(
     private readonly transcription: TranscriptionService,
+    private readonly costTracker: CostTracker,
     private readonly logger: Logger
   ) {}
 
   async execute(
+    userId: string,
     input: TranscribeAudioInput,
     signal?: AbortSignal
   ): Promise<{ text: string }> {
@@ -32,8 +35,10 @@ export class TranscribeAudioUseCase {
       `learner audio received · ${(input.audio.length / 1024).toFixed(1)} KiB · ` +
         `${input.contentType} · lang=${input.language ?? "auto"} → transcribing`
     );
-    const text = (await this.transcription.transcribe(input, signal)).trim();
+    const result = await this.transcription.transcribe(input, signal);
+    const text = result.text.trim();
     log.info(`transcribed ${text.length} char(s): "${truncate(text)}"`);
+    await this.costTracker.track(userId, result.usage);
     return { text };
   }
 }

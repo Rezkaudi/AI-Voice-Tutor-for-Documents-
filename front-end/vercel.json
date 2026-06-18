@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://ai-voice-tutor-for-documents.onrender.com/api/:path*"
+    },
+    {
+      "source": "/((?!pdfjs-wasm/).*)",
+      "destination": "/index.html"
     }
   ]
 }

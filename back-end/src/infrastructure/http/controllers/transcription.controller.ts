@@ -3,7 +3,7 @@ import type { TranscribeAudioUseCase } from "@/application/use-cases/transcripti
 
 /** HTTP adapter for speech-to-text (`/api/transcribe`). */
 export class TranscriptionController {
-  constructor(private readonly transcribeAudio: TranscribeAudioUseCase) {}
+  constructor(private readonly transcribeAudio: TranscribeAudioUseCase) { }
 
   /** POST /api/transcribe — accepts a multipart `audio` field. */
   transcribe = async (req: Request, res: Response): Promise<void> => {
@@ -14,6 +14,7 @@ export class TranscriptionController {
     req.on("close", () => controller.abort());
 
     const result = await this.transcribeAudio.execute(
+      req.auth!.userId,
       {
         audio: file.buffer,
         filename: file.originalname || "recording.webm",

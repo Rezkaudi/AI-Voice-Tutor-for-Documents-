@@ -4,9 +4,17 @@ import type {
   SpeechSynthesisService,
   SynthesizedSpeech,
   TranscriptionInput,
+  TranscriptionResult,
   TranscriptionService
 } from "@/domain/services/speech-services";
 import type { EnvConfig } from "@/config/env.config";
+
+const CHARS_PER_TOKEN = 4;
+
+const AUDIO_TOKENS_PER_TEXT_TOKEN = 6;
+
+const estimateTokens = (text: string): number =>
+  Math.ceil(text.length / CHARS_PER_TOKEN);
 
 /** Text-to-speech via OpenAI (`/api/speak`). */
 export class OpenAiSpeechSynthesisService implements SpeechSynthesisService {
@@ -27,9 +35,15 @@ export class OpenAiSpeechSynthesisService implements SpeechSynthesisService {
         },
         signal ? { signal } : {}
       );
+      const inputTokens = estimateTokens(text);
       return {
         audio: Buffer.from(await response.arrayBuffer()),
-        contentType: "audio/mpeg"
+        contentType: "audio/mpeg",
+        usage: {
+          model: this.config.OPENAI_SPEECH_MODEL,
+          inputTokens,
+          outputTokens: inputTokens * AUDIO_TOKENS_PER_TEXT_TOKEN
+        }
       };
     } catch (error) {
       throw new UpstreamError(`Speech synthesis failed: ${describe(error)}`);
@@ -48,7 +62,7 @@ export class OpenAiTranscriptionService implements TranscriptionService {
   async transcribe(
     input: TranscriptionInput,
     signal?: AbortSignal
-  ): Promise<string> {
+  ): Promise<TranscriptionResult> {
     try {
       const file = await toFile(input.audio, input.filename, {
         type: input.contentType
@@ -61,10 +75,36 @@ export class OpenAiTranscriptionService implements TranscriptionService {
         },
         signal ? { signal } : {}
       );
-      return (result.text || "").trim();
+      const text = (result.text || "").trim();
+      return {
+        text,
+        usage: this.transcriptionUsage(result, text)
+      };
     } catch (error) {
       throw new UpstreamError(`Transcription failed: ${describe(error)}`);
     }
+  }
+
+  private transcriptionUsage(
+    result: unknown,
+    text: string
+  ): { model: string; inputTokens: number; outputTokens: number } {
+    const usage = (result as { usage?: Record<string, unknown> } | undefined)?.usage;
+    const inputTokens = Number(usage?.input_tokens);
+    const outputTokens = Number(usage?.output_tokens);
+    if (Number.isFinite(inputTokens) || Number.isFinite(outputTokens)) {
+      return {
+        model: this.config.OPENAI_TRANSCRIBE_MODEL,
+        inputTokens: Number.isFinite(inputTokens) ? inputTokens : 0,
+        outputTokens: Number.isFinite(outputTokens) ? outputTokens : 0
+      };
+    }
+    // No usage reported — estimate the audio (input) from the transcript length.
+    return {
+      model: this.config.OPENAI_TRANSCRIBE_MODEL,
+      inputTokens: estimateTokens(text),
+      outputTokens: estimateTokens(text)
+    };
   }
 }
 

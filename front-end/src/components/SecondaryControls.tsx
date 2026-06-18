@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
-import { Captions, MoreVertical, RotateCcw, ScrollText, X } from "lucide-react";
+import {
+  BookOpen,
+  Captions,
+  Maximize2,
+  Minimize2,
+  MoreVertical,
+  RotateCcw,
+  ScrollText,
+  X
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cx } from "@/lib/uiClasses";
+import { useFullscreen } from "@/lib/useFullscreen";
 
 interface MenuItemProps {
   icon: LucideIcon;
@@ -65,6 +75,7 @@ interface SecondaryControlsProps {
   showCaption: boolean;
   showTranscript: boolean;
   clearDisabled: boolean;
+  onEditPages: () => void;
   onToggleCaption: () => void;
   onToggleTranscript: () => void;
   onClear: () => void;
@@ -75,11 +86,13 @@ export function SecondaryControls({
   showCaption,
   showTranscript,
   clearDisabled,
+  onEditPages,
   onToggleCaption,
   onToggleTranscript,
   onClear
 }: SecondaryControlsProps) {
   const [open, setOpen] = useState(false);
+  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   useEffect(() => {
     if (!open) return;
@@ -97,13 +110,31 @@ export function SecondaryControls({
         <div className="fixed inset-0 z-30" aria-hidden onClick={() => setOpen(false)} />
       ) : null}
 
-      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+16px)] right-3 z-40 flex flex-col items-end gap-2">
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+12px)] right-3 z-40 flex flex-col items-end gap-2">
         {open ? (
           <div
             className="mb-1 w-[204px] origin-bottom-right animate-modal-pop rounded-xl border border-[oklch(1_0_0/0.12)] bg-[oklch(0.16_0.022_244/0.95)] p-1 shadow-[0_24px_60px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[16px]"
             role="menu"
             aria-label="More controls"
           >
+            <MenuItem
+              icon={BookOpen}
+              label="Teaching pages"
+              onClick={() => {
+                onEditPages();
+                setOpen(false);
+              }}
+            />
+            <MenuItem
+              icon={isFullscreen ? Minimize2 : Maximize2}
+              label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              active={isFullscreen}
+              onClick={() => {
+                toggleFullscreen();
+                setOpen(false);
+              }}
+            />
+            <div className="mx-2 my-1 h-px bg-[oklch(1_0_0/0.1)]" aria-hidden />
             <MenuItem
               icon={Captions}
               label="Live captions"

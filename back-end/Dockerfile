@@ -20,7 +20,9 @@ ENV NODE_ENV=production \
 WORKDIR /app
 
 # Runtime libs for @napi-rs/canvas + pdfjs-dist (font rendering)
+# ghostscript: PDF compression/optimization (the `gs` binary)
 RUN apk add --no-cache \
+      ghostscript \
       fontconfig \
       freetype \
       ttf-dejavu \

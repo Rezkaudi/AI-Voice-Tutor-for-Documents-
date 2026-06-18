@@ -1,9 +1,12 @@
 /** Voice I/O boundaries: text-to-speech and speech-to-text. */
 
-/** A synthesized audio clip. */
+import type { AiUsage } from "@/domain/services/ai-usage";
+
+/** A synthesized audio clip, with the token usage producing it consumed. */
 export interface SynthesizedSpeech {
   readonly audio: Buffer;
   readonly contentType: string;
+  readonly usage: AiUsage;
 }
 
 /** Text-to-speech boundary. */
@@ -21,8 +24,17 @@ export interface TranscriptionInput {
   readonly language?: string;
 }
 
+/** A transcript plus the token usage producing it consumed. */
+export interface TranscriptionResult {
+  readonly text: string;
+  readonly usage: AiUsage;
+}
+
 /** Speech-to-text boundary. */
 export interface TranscriptionService {
   /** Transcribes a recorded clip into text. */
-  transcribe(input: TranscriptionInput, signal?: AbortSignal): Promise<string>;
+  transcribe(
+    input: TranscriptionInput,
+    signal?: AbortSignal
+  ): Promise<TranscriptionResult>;
 }

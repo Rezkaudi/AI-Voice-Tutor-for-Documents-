@@ -15,7 +15,7 @@ export function DocumentLoadingOverlay({
       role="status"
       aria-live="polite"
       aria-busy="true"
-      className="absolute inset-0 z-20 grid place-items-center rounded-md bg-[oklch(0.985_0.009_86/0.72)] backdrop-blur-[6px] [-webkit-backdrop-filter:blur(6px)] animate-modal-fade"
+      className="absolute inset-0 z-50 grid place-items-center rounded-md bg-[oklch(0.985_0.009_86/0.92)] backdrop-blur-[6px] [-webkit-backdrop-filter:blur(6px)] animate-modal-fade"
     >
       <div className="flex flex-col items-center gap-3.5 rounded-2xl border border-line bg-paper-strong px-6 py-5 shadow-app animate-modal-pop">
         <div className="relative grid h-14 w-14 place-items-center">

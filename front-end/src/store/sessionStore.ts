@@ -19,7 +19,13 @@ interface SessionStore {
   selectedPages: number[];
   /** Whether the page-picker modal is open. */
   pageDialogOpen: boolean;
+  /** Whether the full lesson transcript is shown. */
+  showTranscript: boolean;
+  /** Whether live spoken captions are shown. */
+  showCaption: boolean;
   setError: (error: string | null) => void;
+  toggleTranscript: () => void;
+  toggleCaption: () => void;
   setMobilePane: (mobilePane: MobilePane) => void;
   setSpeechLanguage: (speechLanguage: SpeechLanguage) => void;
   initSaveCost: () => void;
@@ -32,8 +38,9 @@ interface SessionStore {
   openPageDialog: () => void;
   closePageDialog: () => void;
   submitPageSelection: (pages: number[]) => Promise<void>;
-  handleUpload: (file: File | null) => void;
+  handleUpload: (file: File | null) => Promise<string | null>;
   handleSwitchDocument: (documentId: string) => Promise<void>;
+  closeDocument: () => void;
 }
 
 /**
@@ -55,8 +62,14 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   // The focused lesson defaults to page 1; the picker lets the learner change it.
   selectedPages: [1],
   pageDialogOpen: false,
+  // Transcript starts hidden (the call leads with the avatar + caption);
+  // captions are on by default.
+  showTranscript: false,
+  showCaption: true,
 
   setError: (error) => set({ error }),
+  toggleTranscript: () => set((s) => ({ showTranscript: !s.showTranscript })),
+  toggleCaption: () => set((s) => ({ showCaption: !s.showCaption })),
   setMobilePane: (mobilePane) => set({ mobilePane }),
   setSpeechLanguage: (speechLanguage) => set({ speechLanguage }),
 
@@ -180,11 +193,11 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   },
 
   /** Upload button: reset the chat, then upload the new lesson document. */
-  handleUpload: (file) => {
+  handleUpload: async (file) => {
     useChatStore.getState().resetMessages();
     // A new document is a fresh lesson — reset the page selection to page 1.
     set({ selectedPages: [1], pageDialogOpen: false });
-    useDocumentStore.getState().uploadFile(file);
+    return useDocumentStore.getState().uploadFile(file);
   },
 
   /** Library switch: reset the chat, then load an existing document. */
@@ -202,5 +215,17 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     // A different document is a fresh lesson — reset the page selection.
     set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false });
     await docs.selectDocument(documentId);
+  },
+
+  /** Back button: tear down the lesson and return to the upload/library view. */
+  closeDocument: () => {
+    useChatStore.getState().resetMessages();
+    useSpeechStore.getState().stopSpeaking();
+    if (get().callMode) {
+      set({ callMode: false });
+      useVoiceStore.getState().cancel();
+    }
+    set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false, error: null });
+    useDocumentStore.getState().closeDocument();
   }
 }));

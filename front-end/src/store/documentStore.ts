@@ -33,7 +33,8 @@ interface DocumentStore {
   setUploadError: (uploadError: string | null) => void;
   applyReference: (reference: DocumentReference | null) => void;
   focusCitation: (citation: DocumentCitation) => void;
-  uploadFile: (file: File | null) => Promise<void>;
+  uploadFile: (file: File | null) => Promise<string | null>;
+  closeDocument: () => void;
   loadLibrary: () => Promise<void>;
   selectDocument: (documentId: string) => Promise<void>;
   deleteDocument: (documentId: string) => Promise<void>;
@@ -118,7 +119,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   /** Uploads a file, waits for processing, then loads the document. */
   uploadFile: async (file) => {
     if (!file) {
-      return;
+      return null;
     }
 
     set({ uploadState: "processing", highlight: null, activeCitationKey: null, uploadError: null });
@@ -130,12 +131,23 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       set({ loadedDocument: data, activePage: data.pages[0]?.pageNumber ?? 1 });
       window.localStorage.setItem(LAST_DOC_KEY, documentId);
       void get().loadLibrary();
+      return documentId;
     } catch (error) {
       set({ uploadError: error instanceof Error ? error.message : "Upload failed." });
+      return null;
     } finally {
       set({ uploadState: "idle" });
     }
   },
+
+  /** Returns to the upload/library landing by unloading the current document. */
+  closeDocument: () =>
+    set({
+      loadedDocument: null,
+      highlight: null,
+      activePage: 1,
+      activeCitationKey: null
+    }),
 
   /** Deletes a document from the server and prunes it from local state. */
   deleteDocument: async (documentId) => {

@@ -4,6 +4,7 @@ import type {
   SynthesizedSpeech
 } from "@/domain/services/speech-services";
 import type { Logger } from "@/domain/services/logger";
+import type { CostTracker } from "@/application/services/cost-tracker";
 import { truncate } from "@/shared/logger";
 
 /** Synthesizes one sentence of tutor speech. */
@@ -13,10 +14,11 @@ export class SynthesizeSpeechUseCase {
 
   constructor(
     private readonly speech: SpeechSynthesisService,
+    private readonly costTracker: CostTracker,
     private readonly logger: Logger
-  ) {}
+  ) { }
 
-  async execute(text: unknown, signal?: AbortSignal): Promise<SynthesizedSpeech> {
+  async execute(userId: string, text: unknown, signal?: AbortSignal): Promise<SynthesizedSpeech> {
     const log = this.logger.scope("speak");
     if (typeof text !== "string" || text.trim().length === 0) {
       log.warn("rejected — text to speak is required");
@@ -29,6 +31,7 @@ export class SynthesizeSpeechUseCase {
     log.info(
       `speech ready · ${(clip.audio.length / 1024).toFixed(1)} KiB ${clip.contentType}`
     );
+    await this.costTracker.track(userId, clip.usage);
     return clip;
   }
 }

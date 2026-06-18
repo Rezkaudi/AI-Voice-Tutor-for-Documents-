@@ -9,7 +9,7 @@ import { SecondaryControls } from "./SecondaryControls";
 import { TranscriptDrawer } from "./TranscriptDrawer";
 import { CaptionStrip } from "./TeacherPanel/CaptionStrip";
 import { MicStatusBanner } from "./TeacherPanel/MicStatusBanner";
-import { deriveOrbState, deriveStatusLabel } from "./TeacherPanel/status";
+import { deriveOrbState } from "./TeacherPanel/status";
 import { useMicDialog } from "./TeacherPanel/useMicDialog";
 
 interface CallOverlayProps {
@@ -26,9 +26,14 @@ interface CallOverlayProps {
   pageCount: number;
   selectedPages: number[];
   pageDialogOpen: boolean;
+  showTranscript: boolean;
+  showCaption: boolean;
   onMicToggle: () => void;
   onCallToggle: () => void | Promise<void>;
   onClearChat: () => void;
+  onEditPages: () => void;
+  onToggleTranscript: () => void;
+  onToggleCaption: () => void;
   onClosePageDialog: () => void;
   onSubmitPageSelection: (pages: number[]) => void;
 }
@@ -47,21 +52,22 @@ export function CallOverlay({
   pageCount,
   selectedPages,
   pageDialogOpen,
+  showTranscript,
+  showCaption,
   onMicToggle,
   onCallToggle,
   onClearChat,
+  onEditPages,
+  onToggleTranscript,
+  onToggleCaption,
   onClosePageDialog,
   onSubmitPageSelection
 }: CallOverlayProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(false);
-
-  const [showCaption, setShowCaption] = useState(true);
   const micDialog = useMicDialog(micBlocked);
 
   const status = { isStreaming, isSpeaking, isListening, isTranscribing, callMode };
   const orbState = deriveOrbState(status);
-  const statusLabel = deriveStatusLabel(status, messages.length);
   const hasMessages = messages.length > 0;
 
   const handleMicClick = () => {
@@ -82,7 +88,7 @@ export function CallOverlay({
 
   return (
     <>
-      <FloatingTutor state={orbState} statusLabel={callMode ? statusLabel : ""} />
+      <FloatingTutor state={orbState} />
 
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col items-center gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
         {error ? (
@@ -126,15 +132,16 @@ export function CallOverlay({
         showCaption={showCaption}
         showTranscript={showTranscript}
         clearDisabled={!hasMessages && !callMode}
-        onToggleCaption={() => setShowCaption((on) => !on)}
-        onToggleTranscript={() => setShowTranscript((open) => !open)}
+        onEditPages={onEditPages}
+        onToggleCaption={onToggleCaption}
+        onToggleTranscript={onToggleTranscript}
         onClear={handleClearClick}
       />
 
       <TranscriptDrawer
         open={showTranscript}
         messages={messages}
-        onClose={() => setShowTranscript(false)}
+        onClose={onToggleTranscript}
       />
 
       <MicPermissionDialog open={micDialog.open} onClose={() => micDialog.setOpen(false)} />

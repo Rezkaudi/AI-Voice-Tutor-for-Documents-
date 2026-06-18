@@ -1,6 +1,5 @@
-import { BookOpen, ExternalLink } from "lucide-react";
 import { memo, useEffect, useState } from "react";
-import { cx, ui } from "@/lib/uiClasses";
+import { cx } from "@/lib/uiClasses";
 import type { DocumentReference } from "@/lib/types";
 import { citationKey } from "@/store/documentStore";
 import { CitationChips } from "./CitationChips";
@@ -17,7 +16,6 @@ interface DocumentBoardProps {
   isLoading?: boolean;
   onPageChange: (page: number) => void;
   onFocusCitation: (citation: DocumentReference["citations"][number]) => void;
-  onEditPages?: () => void;
 }
 
 /**
@@ -33,8 +31,7 @@ function DocumentBoardComponent({
   highlight,
   activeCitationKey,
   isLoading = false,
-  onFocusCitation,
-  onEditPages
+  onFocusCitation
 }: DocumentBoardProps) {
   const isPdf = mimeType === "application/pdf" && !!fileUrl;
   const [pdfLoading, setPdfLoading] = useState(isPdf);
@@ -50,70 +47,40 @@ function DocumentBoardComponent({
   const showOverlay = isLoading || (isPdf && pdfLoading);
 
   return (
-    <div className="grid h-full grid-rows-[auto_1fr] gap-2 min-[920px]:gap-3.5">
-      <div
-        className={cx(
-          ui.surface,
-          "flex items-center justify-between gap-2 px-3 py-1.5 min-[920px]:gap-3.5 min-[920px]:p-3"
-        )}
-      >
-        <h2 className="m-0 truncate text-[0.95rem] font-bold min-[920px]:text-base min-[920px]:font-semibold">
-          Page {visiblePage}
-        </h2>
-        <div className="flex flex-none items-center gap-1.5 min-[920px]:gap-2.5">
-          {onEditPages ? (
-            <button
-              className={cx(
-                ui.button,
-                "px-2.5! py-1.5! text-[0.85rem] min-[920px]:px-[13px]! min-[920px]:py-[9px]! min-[920px]:text-[1rem]"
-              )}
-              type="button"
-              aria-label="Choose which pages to study"
-              title="Choose which pages to study"
-              onClick={onEditPages}
-            >
-              <BookOpen size={16} aria-hidden />
-              <span className="max-[420px]:hidden">Teaching pages</span>
-            </button>
-          ) : null}
-          {fileUrl ? (
-            <a
-              className={cx(ui.button, "px-2! py-1.5! min-[920px]:px-[13px]! min-[920px]:py-[9px]!")}
-              href={fileUrl}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Open document in a new tab"
-              title="Open document in a new tab"
-            >
-              <ExternalLink size={16} aria-hidden />
-            </a>
-          ) : null}
+    <div
+      className={cx(
+        "relative h-full min-h-0 bg-paper",
+        isPdf
+          ? "overflow-hidden p-0"
+          : "overflow-auto p-[clamp(12px,2vw,22px)] max-[919px]:pb-[calc(env(safe-area-inset-bottom)+136px)]"
+      )}
+    >
+      {isPdf && fileUrl ? (
+        <div className="relative h-full w-full overflow-hidden">
+          <PdfViewer
+            fileUrl={fileUrl}
+            page={activePage}
+            citations={citations}
+            focusCitationKey={activeCitationKey}
+            onLoaded={() => setPdfLoading(false)}
+            onVisiblePageChange={setVisiblePage}
+          />
         </div>
-      </div>
-      <div
-        className={cx(
-          "relative min-h-0",
-          isPdf ? "overflow-hidden p-0" : "overflow-auto p-[clamp(12px,2vw,22px)]"
-        )}
+      ) : (
+        <div className="grid h-full place-items-center text-[0.9rem] text-muted">
+          Loading PDF…
+        </div>
+      )}
+
+      {/* Floating page indicator (bottom-left), overlaid on the document */}
+      <span
+        className="pointer-events-none absolute bottom-3 left-3 z-20 rounded-md bg-[oklch(0.2_0.02_245/0.62)] px-2.5 py-1 text-[0.8rem] font-semibold text-white backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)] max-[919px]:bottom-[calc(env(safe-area-inset-bottom)+24px)]"
+        aria-live="polite"
       >
-        {isPdf && fileUrl ? (
-          <div className="relative h-full w-full overflow-hidden rounded-md border border-[oklch(0.82_0.016_86)] shadow-[0_16px_28px_oklch(0.25_0.018_245/0.1)]">
-            <PdfViewer
-              fileUrl={fileUrl}
-              page={activePage}
-              citations={citations}
-              focusCitationKey={activeCitationKey}
-              onLoaded={() => setPdfLoading(false)}
-              onVisiblePageChange={setVisiblePage}
-            />
-          </div>
-        ) : (
-          <div className="grid h-full place-items-center text-[0.9rem] text-muted">
-            Loading PDF…
-          </div>
-        )}
-        {showOverlay ? <DocumentLoadingOverlay /> : null}
-      </div>
+        Page {visiblePage}
+      </span>
+
+      {showOverlay ? <DocumentLoadingOverlay /> : null}
     </div>
   );
 }
