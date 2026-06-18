@@ -9,7 +9,7 @@ import { SecondaryControls } from "./SecondaryControls";
 import { TranscriptDrawer } from "./TranscriptDrawer";
 import { CaptionStrip } from "./TeacherPanel/CaptionStrip";
 import { MicStatusBanner } from "./TeacherPanel/MicStatusBanner";
-import { deriveOrbState, deriveStatusLabel } from "./TeacherPanel/status";
+import { deriveOrbState } from "./TeacherPanel/status";
 import { useMicDialog } from "./TeacherPanel/useMicDialog";
 
 interface CallOverlayProps {
@@ -68,7 +68,6 @@ export function CallOverlay({
 
   const status = { isStreaming, isSpeaking, isListening, isTranscribing, callMode };
   const orbState = deriveOrbState(status);
-  const statusLabel = deriveStatusLabel(status, messages.length);
   const hasMessages = messages.length > 0;
 
   const handleMicClick = () => {
@@ -89,7 +88,7 @@ export function CallOverlay({
 
   return (
     <>
-      <FloatingTutor state={orbState} statusLabel={callMode ? statusLabel : ""} />
+      <FloatingTutor state={orbState} />
 
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col items-center gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
         {error ? (
