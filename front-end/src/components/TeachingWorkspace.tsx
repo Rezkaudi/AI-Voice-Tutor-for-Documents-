@@ -140,7 +140,7 @@ export function TeachingWorkspace() {
       data-workspace
     >
       <section
-        className="h-full overflow-hidden pb-[120px]"
+        className="h-full overflow-hidden"
         aria-label="Document board"
       >
         {documentBoard}

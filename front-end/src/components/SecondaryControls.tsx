@@ -110,7 +110,7 @@ export function SecondaryControls({
         <div className="fixed inset-0 z-30" aria-hidden onClick={() => setOpen(false)} />
       ) : null}
 
-      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+16px)] right-3 z-40 flex flex-col items-end gap-2">
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+12px)] right-3 z-40 flex flex-col items-end gap-2">
         {open ? (
           <div
             className="mb-1 w-[204px] origin-bottom-right animate-modal-pop rounded-xl border border-[oklch(1_0_0/0.12)] bg-[oklch(0.16_0.022_244/0.95)] p-1 shadow-[0_24px_60px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[16px]"

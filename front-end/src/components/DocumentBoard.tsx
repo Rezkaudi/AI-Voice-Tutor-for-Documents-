@@ -50,7 +50,9 @@ function DocumentBoardComponent({
     <div
       className={cx(
         "relative h-full min-h-0 bg-paper",
-        isPdf ? "overflow-hidden p-0" : "overflow-auto p-[clamp(12px,2vw,22px)]"
+        isPdf
+          ? "overflow-hidden p-0"
+          : "overflow-auto p-[clamp(12px,2vw,22px)] max-[919px]:pb-[calc(env(safe-area-inset-bottom)+136px)]"
       )}
     >
       {isPdf && fileUrl ? (
@@ -72,7 +74,7 @@ function DocumentBoardComponent({
 
       {/* Floating page indicator (bottom-left), overlaid on the document */}
       <span
-        className="pointer-events-none absolute bottom-3 left-3 z-20 rounded-md bg-[oklch(0.2_0.02_245/0.62)] px-2.5 py-1 text-[0.8rem] font-semibold text-white backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        className="pointer-events-none absolute bottom-3 left-3 z-20 rounded-md bg-[oklch(0.2_0.02_245/0.62)] px-2.5 py-1 text-[0.8rem] font-semibold text-white backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)] max-[919px]:bottom-[calc(env(safe-area-inset-bottom)+24px)]"
         aria-live="polite"
       >
         Page {visiblePage}
