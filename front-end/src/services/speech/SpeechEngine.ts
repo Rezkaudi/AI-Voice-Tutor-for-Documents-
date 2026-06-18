@@ -3,6 +3,7 @@ import { segmentText } from "@/lib/textSegmentation";
 import type { SpeechCaption, SpeechSession } from "@/lib/types";
 import { CaptionController } from "./CaptionController";
 import { playAudioClip, revokeBlobUrl } from "./audioPlayback";
+import { unlockAudioPlayback } from "./audioUnlock";
 import { playWithSpeechSynthesis } from "./speechSynthesisPlayback";
 import { ESTIMATED_WORD_SECONDS, MAX_TTS_CHARS } from "./constants";
 
@@ -20,8 +21,11 @@ export class SpeechEngine {
   // it at any time and the controller keeps emitting through the new handler.
   private readonly caption = new CaptionController((value) => this.onCaption(value));
 
-  onSpeakingChange: (speaking: boolean) => void = () => {};
-  onCaption: (caption: SpeechCaption | null) => void = () => {};
+  onSpeakingChange: (speaking: boolean) => void = () => { };
+  onCaption: (caption: SpeechCaption | null) => void = () => { };
+  unlock(): void {
+    unlockAudioPlayback((this.audio ??= new Audio()));
+  }
 
   /** Cancels every in-flight TTS fetch and playback, and clears the caption. */
   stopSpeaking(): void {
@@ -70,8 +74,8 @@ export class SpeechEngine {
 
         const onStart = onPlaybackStart
           ? (durationMs: number) => {
-              if (!isStale()) onPlaybackStart(durationMs);
-            }
+            if (!isStale()) onPlaybackStart(durationMs);
+          }
           : undefined;
 
         if (blob) {
