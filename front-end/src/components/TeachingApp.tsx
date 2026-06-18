@@ -23,8 +23,14 @@ export function TeachingApp() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <AppHeader />
-      {loadedDocument ? <TeachingWorkspace /> : <UploadView />}
+      {loadedDocument ? (
+        <TeachingWorkspace />
+      ) : (
+        <>
+          <AppHeader />
+          <UploadView />
+        </>
+      )}
     </div>
   );
 }
