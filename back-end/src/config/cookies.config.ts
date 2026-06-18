@@ -12,7 +12,7 @@ function baseOptions(): CookieOptions {
   return {
     httpOnly: true,
     secure: ENV_CONFIG.NODE_ENV !== "development",
-    sameSite: "lax",
+    sameSite: "none",
     path: "/"
   };
 }
