@@ -20,7 +20,7 @@ interface FloatingTutorProps {
 
 export function FloatingTutor({ state }: FloatingTutorProps) {
   const { ref, pos, dragging, handlers } = useDraggable(STORAGE_KEY, () => ({
-    x: 10,
+    x: Number.MAX_SAFE_INTEGER,
     y: 10
   }));
 

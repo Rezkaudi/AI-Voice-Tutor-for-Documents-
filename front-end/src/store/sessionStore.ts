@@ -40,6 +40,7 @@ interface SessionStore {
   submitPageSelection: (pages: number[]) => Promise<void>;
   handleUpload: (file: File | null) => void;
   handleSwitchDocument: (documentId: string) => Promise<void>;
+  closeDocument: () => void;
 }
 
 /**
@@ -214,5 +215,17 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     // A different document is a fresh lesson — reset the page selection.
     set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false });
     await docs.selectDocument(documentId);
+  },
+
+  /** Back button: tear down the lesson and return to the upload/library view. */
+  closeDocument: () => {
+    useChatStore.getState().resetMessages();
+    useSpeechStore.getState().stopSpeaking();
+    if (get().callMode) {
+      set({ callMode: false });
+      useVoiceStore.getState().cancel();
+    }
+    set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false, error: null });
+    useDocumentStore.getState().closeDocument();
   }
 }));

@@ -34,6 +34,7 @@ interface DocumentStore {
   applyReference: (reference: DocumentReference | null) => void;
   focusCitation: (citation: DocumentCitation) => void;
   uploadFile: (file: File | null) => Promise<void>;
+  closeDocument: () => void;
   loadLibrary: () => Promise<void>;
   selectDocument: (documentId: string) => Promise<void>;
   deleteDocument: (documentId: string) => Promise<void>;
@@ -136,6 +137,15 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       set({ uploadState: "idle" });
     }
   },
+
+  /** Returns to the upload/library landing by unloading the current document. */
+  closeDocument: () =>
+    set({
+      loadedDocument: null,
+      highlight: null,
+      activePage: 1,
+      activeCitationKey: null
+    }),
 
   /** Deletes a document from the server and prunes it from local state. */
   deleteDocument: async (documentId) => {
