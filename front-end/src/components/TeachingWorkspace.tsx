@@ -1,4 +1,6 @@
 import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { paths } from "@/routes/paths";
 import { useChatStore } from "@/store/chatStore";
 import { useDocumentStore } from "@/store/documentStore";
 import { useSessionStore } from "@/store/sessionStore";
@@ -50,9 +52,16 @@ export function TeachingWorkspace() {
   const micPermission = useVoiceStore((s) => s.permission);
 
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
+  const navigate = useNavigate();
 
   const session = useSessionStore.getState();
   const documentStore = useDocumentStore.getState();
+
+  // Leaving the workspace: tear the lesson down, then route to the library.
+  const handleBack = () => {
+    session.closeDocument();
+    navigate(paths.library);
+  };
 
   if (!loadedDocument) return null;
 
@@ -85,7 +94,7 @@ export function TeachingWorkspace() {
       )}
       aria-label="Back to documents"
       title="Back to documents"
-      onClick={session.closeDocument}
+      onClick={handleBack}
     >
       <ArrowLeft size={isDesktop ? 16 : 18} aria-hidden />
       {isDesktop ? <span>Documents</span> : null}

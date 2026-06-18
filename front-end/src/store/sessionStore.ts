@@ -38,7 +38,7 @@ interface SessionStore {
   openPageDialog: () => void;
   closePageDialog: () => void;
   submitPageSelection: (pages: number[]) => Promise<void>;
-  handleUpload: (file: File | null) => void;
+  handleUpload: (file: File | null) => Promise<string | null>;
   handleSwitchDocument: (documentId: string) => Promise<void>;
   closeDocument: () => void;
 }
@@ -193,11 +193,11 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   },
 
   /** Upload button: reset the chat, then upload the new lesson document. */
-  handleUpload: (file) => {
+  handleUpload: async (file) => {
     useChatStore.getState().resetMessages();
     // A new document is a fresh lesson — reset the page selection to page 1.
     set({ selectedPages: [1], pageDialogOpen: false });
-    useDocumentStore.getState().uploadFile(file);
+    return useDocumentStore.getState().uploadFile(file);
   },
 
   /** Library switch: reset the chat, then load an existing document. */

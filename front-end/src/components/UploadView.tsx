@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDocumentStore } from "@/store/documentStore";
 import { useSessionStore } from "@/store/sessionStore";
+import { paths } from "@/routes/paths";
 import { UploadPanel } from "./UploadPanel";
 
 /** Landing view shown before any document is loaded: the upload dropzone + library. */
@@ -11,8 +13,19 @@ export function UploadView() {
   const libraryLoading = useDocumentStore((s) => s.libraryLoading);
   const deletingId = useDocumentStore((s) => s.deletingId);
 
+  const navigate = useNavigate();
   const session = useSessionStore.getState();
   const documentStore = useDocumentStore.getState();
+
+  // Selecting or uploading a document is a navigation: the workspace route
+  // (`/documents/:id`) loads it. Upload first, then route to the new id.
+  const handleSelect = (documentId: string) => navigate(paths.document(documentId));
+  const handleUpload = async (file: File | null) => {
+    const documentId = await session.handleUpload(file);
+    if (documentId) {
+      navigate(paths.document(documentId));
+    }
+  };
 
   return (
     <main
@@ -25,8 +38,8 @@ export function UploadView() {
         library={library}
         libraryLoading={libraryLoading}
         deletingId={deletingId}
-        onFile={session.handleUpload}
-        onSelect={session.handleSwitchDocument}
+        onFile={handleUpload}
+        onSelect={handleSelect}
         onDelete={documentStore.deleteDocument}
       />
     </main>

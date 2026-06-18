@@ -33,7 +33,7 @@ interface DocumentStore {
   setUploadError: (uploadError: string | null) => void;
   applyReference: (reference: DocumentReference | null) => void;
   focusCitation: (citation: DocumentCitation) => void;
-  uploadFile: (file: File | null) => Promise<void>;
+  uploadFile: (file: File | null) => Promise<string | null>;
   closeDocument: () => void;
   loadLibrary: () => Promise<void>;
   selectDocument: (documentId: string) => Promise<void>;
@@ -119,7 +119,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   /** Uploads a file, waits for processing, then loads the document. */
   uploadFile: async (file) => {
     if (!file) {
-      return;
+      return null;
     }
 
     set({ uploadState: "processing", highlight: null, activeCitationKey: null, uploadError: null });
@@ -131,8 +131,10 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       set({ loadedDocument: data, activePage: data.pages[0]?.pageNumber ?? 1 });
       window.localStorage.setItem(LAST_DOC_KEY, documentId);
       void get().loadLibrary();
+      return documentId;
     } catch (error) {
       set({ uploadError: error instanceof Error ? error.message : "Upload failed." });
+      return null;
     } finally {
       set({ uploadState: "idle" });
     }
