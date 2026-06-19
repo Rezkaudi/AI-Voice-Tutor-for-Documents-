@@ -127,6 +127,7 @@ export function TeacherPanel({
       <CallControls
         callMode={callMode}
         isListening={isListening}
+        isSpeaking={isSpeaking}
         isStreaming={isStreaming}
         isTranscribing={isTranscribing}
         micSupported={micSupported}

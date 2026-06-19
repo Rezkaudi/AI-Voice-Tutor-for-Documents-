@@ -5,8 +5,10 @@ import {
   callButtonEnd,
   callButtonStart,
   micCircleActive,
-  micCircleBase
+  micCircleBase,
+  micCircleThinking
 } from "./styles";
+import { deriveDockStatus } from "./status";
 
 /** Animated purple voice equalizer shown while the mic is capturing the learner. */
 function VoiceWave() {
@@ -23,9 +25,25 @@ function VoiceWave() {
   );
 }
 
+/** Three bouncing dots — the universal "preparing a reply" signal. */
+function ThinkingDots() {
+  return (
+    <span className="flex h-7 items-center gap-[5px]" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="h-[6px] w-[6px] rounded-full bg-current animate-dot-bounce motion-reduce:animate-none"
+          style={{ animationDelay: `${i * 160}ms` }}
+        />
+      ))}
+    </span>
+  );
+}
+
 interface CallControlsProps {
   callMode: boolean;
   isListening: boolean;
+  isSpeaking: boolean;
   isStreaming: boolean;
   isTranscribing: boolean;
   micSupported: boolean;
@@ -38,6 +56,7 @@ interface CallControlsProps {
 export function CallControls({
   callMode,
   isListening,
+  isSpeaking,
   isStreaming,
   isTranscribing,
   micSupported,
@@ -45,14 +64,19 @@ export function CallControls({
   onCallToggle,
   onMicClick
 }: CallControlsProps) {
-  // While the teacher is talking, the mic doubles as a barge-in: tapping it
-  // cuts the answer short and hands the floor to the learner.
-  const isTeacherTalking = isStreaming && !isListening;
+
+  const dock = deriveDockStatus({ isSpeaking, isListening, isStreaming, isTranscribing, callMode });
+  // Reply is being prepared but nothing is audible yet — nothing to interrupt,
+  // so the mic shows a disabled "thinking" state instead of a barge-in cue.
+  const isThinking = callMode && dock.tone === "thinking";
+  const isTeacherTalking = isSpeaking && !isListening;
   const micLabel = isListening
     ? "Mute microphone"
-    : isTeacherTalking
-      ? "Interrupt and speak"
-      : "Speak now";
+    : isThinking
+      ? "Tutor is thinking, please wait"
+      : isTeacherTalking
+        ? "Interrupt and speak"
+        : "Speak now";
   return (
     <div
       className="flex items-center justify-center gap-[clamp(14px,3vw,26px)] pb-1 pt-1.5"
@@ -60,18 +84,24 @@ export function CallControls({
       aria-label="Call controls"
     >
       <button
-        className={cx(micCircleBase, isListening && micCircleActive)}
+        className={cx(
+          micCircleBase,
+          isListening && micCircleActive,
+          isThinking && micCircleThinking
+        )}
         type="button"
         aria-label={micLabel}
         aria-pressed={isListening}
         title={micLabel}
         onClick={onMicClick}
-        disabled={!callMode || isTranscribing || micBlocked}
+        disabled={!callMode || isTranscribing || micBlocked || isThinking}
       >
         {isTranscribing ? (
           <Loader2 className="animate-spin-fast" size={26} aria-hidden />
         ) : isListening ? (
           <VoiceWave />
+        ) : isThinking ? (
+          <ThinkingDots />
         ) : isTeacherTalking ? (
           <Mic size={26} aria-hidden />
         ) : (

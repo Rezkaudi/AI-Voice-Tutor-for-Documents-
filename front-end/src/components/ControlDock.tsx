@@ -1,5 +1,6 @@
 import { Loader2, Mic, MicOff, Phone, PhoneOff } from "lucide-react";
 import { cx } from "@/lib/uiClasses";
+import { deriveDockStatus } from "./TeacherPanel/status";
 
 function VoiceWave() {
   return (
@@ -15,9 +16,25 @@ function VoiceWave() {
   );
 }
 
+/** Three bouncing dots — the universal "preparing a reply" signal. */
+function ThinkingDots() {
+  return (
+    <span className="flex h-4 items-center gap-[3px]" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="h-[4px] w-[4px] animate-dot-bounce rounded-full bg-current motion-reduce:animate-none"
+          style={{ animationDelay: `${i * 160}ms` }}
+        />
+      ))}
+    </span>
+  );
+}
+
 interface ControlDockProps {
   callMode: boolean;
   isListening: boolean;
+  isSpeaking: boolean;
   isStreaming: boolean;
   isTranscribing: boolean;
   micSupported: boolean;
@@ -29,6 +46,7 @@ interface ControlDockProps {
 export function ControlDock({
   callMode,
   isListening,
+  isSpeaking,
   isStreaming,
   isTranscribing,
   micSupported,
@@ -36,20 +54,30 @@ export function ControlDock({
   onCallToggle,
   onMicClick
 }: ControlDockProps) {
+  const dock = deriveDockStatus({ isSpeaking, isListening, isStreaming, isTranscribing, callMode });
 
-  const isTeacherTalking = isStreaming && !isListening;
+
+  const isThinking = callMode && dock.tone === "thinking";
+  const canInterrupt = dock.interruptible;
+
   const micLabel = isTranscribing
     ? "Sending…"
     : isListening
       ? "Mute"
-      : isTeacherTalking
-        ? "Interrupt"
-        : "Speak";
+      : isThinking
+        ? "Thinking…"
+        : canInterrupt
+          ? "Interrupt"
+          : "Speak";
   const micAria = isListening
     ? "Mute microphone"
-    : isTeacherTalking
-      ? "Interrupt and speak"
-      : "Speak now";
+    : isThinking
+      ? "Tutor is thinking, please wait"
+      : canInterrupt
+        ? "Interrupt and speak"
+        : "Speak now";
+
+  const micDisabled = !callMode || isTranscribing || micBlocked || isThinking;
 
   return (
     <div
@@ -60,21 +88,25 @@ export function ControlDock({
       <button
         type="button"
         className={cx(
-          "inline-flex h-10 items-center gap-2 rounded-full border px-3.5 text-[0.82rem] font-semibold text-[oklch(0.95_0.012_100)] transition-[transform,background,border-color] duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-45 [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.82_0.09_200)]",
+          "inline-flex h-10 items-center gap-2 rounded-full border px-3.5 text-[0.82rem] font-semibold text-[oklch(0.95_0.012_100)] transition-[transform,background,border-color] duration-150 ease-out disabled:cursor-not-allowed [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.82_0.09_200)]",
           isListening
             ? "animate-speak-pulse border-[oklch(0.7_0.13_154)] bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))]"
-            : "border-[oklch(0.46_0.04_230)] bg-[oklch(0.3_0.035_232)] [&:hover:not(:disabled)]:bg-[oklch(0.36_0.04_232)]"
+            : isThinking
+              ? "border-[oklch(0.46_0.07_230)] bg-[oklch(0.26_0.04_232)] opacity-90 disabled:opacity-90"
+              : "border-[oklch(0.46_0.04_230)] bg-[oklch(0.3_0.035_232)] disabled:opacity-45 [&:hover:not(:disabled)]:bg-[oklch(0.36_0.04_232)]"
         )}
         aria-label={micAria}
         aria-pressed={isListening}
         onClick={onMicClick}
-        disabled={!callMode || isTranscribing || micBlocked}
+        disabled={micDisabled}
       >
         {isTranscribing ? (
           <Loader2 className="animate-spin-fast" size={17} aria-hidden />
         ) : isListening ? (
           <VoiceWave />
-        ) : isTeacherTalking ? (
+        ) : isThinking ? (
+          <ThinkingDots />
+        ) : canInterrupt ? (
           <Mic size={17} aria-hidden />
         ) : (
           <MicOff size={17} aria-hidden />

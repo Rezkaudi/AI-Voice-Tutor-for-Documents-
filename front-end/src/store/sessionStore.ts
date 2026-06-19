@@ -160,7 +160,11 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   },
 
   /** Open the page-picker (e.g. to edit the lesson pages mid-call). */
-  openPageDialog: () => set({ pageDialogOpen: true }),
+  openPageDialog: () => {
+    useChatStore.getState().abort();
+    useSpeechStore.getState().stopSpeaking();
+    set({ pageDialogOpen: true });
+  },
 
   /** Close the page-picker without changing anything. */
   closePageDialog: () => set({ pageDialogOpen: false }),
