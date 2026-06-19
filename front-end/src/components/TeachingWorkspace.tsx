@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { paths } from "@/routes/paths";
@@ -10,6 +11,7 @@ import { useMediaQuery } from "@/lib/useMediaQuery";
 import { cx } from "@/lib/uiClasses";
 import { CallOverlay } from "./CallOverlay";
 import { DocumentBoard } from "./DocumentBoard";
+import { DocumentLoadingOverlay } from "./DocumentLoadingOverlay";
 import { Splitter } from "./Splitter";
 import { TeacherPanel } from "./TeacherPanel";
 import { WorkspaceMenu } from "./WorkspaceMenu";
@@ -54,6 +56,14 @@ export function TeachingWorkspace() {
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
   const navigate = useNavigate();
 
+  const documentId = loadedDocument?.document.id;
+  const [boardReady, setBoardReady] = useState(false);
+  useEffect(() => {
+    setBoardReady(false);
+  }, [documentId]);
+  const handleBoardReady = useCallback(() => setBoardReady(true), []);
+  const showLoadingCover = !boardReady || uploadState === "processing";
+
   const session = useSessionStore.getState();
   const documentStore = useDocumentStore.getState();
 
@@ -75,11 +85,18 @@ export function TeachingWorkspace() {
       activePage={activePage}
       highlight={highlight}
       activeCitationKey={activeCitationKey}
-      isLoading={uploadState === "processing"}
       onPageChange={documentStore.setActivePage}
       onFocusCitation={documentStore.focusCitation}
+      onReady={handleBoardReady}
     />
   );
+
+  // Covers the whole workspace (controls included) so nothing flashes in early.
+  const loadingCover = showLoadingCover ? (
+    <div className="absolute inset-0 z-60 bg-paper">
+      <DocumentLoadingOverlay />
+    </div>
+  ) : null;
 
   const backButton = (
     <button
@@ -126,7 +143,7 @@ export function TeachingWorkspace() {
 
     return (
       <main
-        className="grid min-h-0 flex-1 grid-cols-[minmax(0,var(--split))_8px_minmax(400px,1fr)] overflow-hidden [--split:81.3%]"
+        className="relative grid min-h-0 flex-1 grid-cols-[minmax(0,var(--split))_8px_minmax(400px,1fr)] overflow-hidden [--split:81.3%]"
         data-workspace
       >
         <section className={documentPaneClass} aria-label="Document board">
@@ -160,6 +177,7 @@ export function TeachingWorkspace() {
             onSubmitPageSelection={session.submitPageSelection}
           />
         </section>
+        {loadingCover}
       </main>
     );
   }
@@ -203,6 +221,7 @@ export function TeachingWorkspace() {
         onClosePageDialog={session.closePageDialog}
         onSubmitPageSelection={session.submitPageSelection}
       />
+      {loadingCover}
     </main>
   );
 }

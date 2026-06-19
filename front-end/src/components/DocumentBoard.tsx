@@ -3,7 +3,6 @@ import { cx } from "@/lib/uiClasses";
 import type { DocumentReference } from "@/lib/types";
 import { citationKey } from "@/store/documentStore";
 import { CitationChips } from "./CitationChips";
-import { DocumentLoadingOverlay } from "./DocumentLoadingOverlay";
 import { PdfViewer } from "./PdfViewer";
 
 interface DocumentBoardProps {
@@ -13,9 +12,9 @@ interface DocumentBoardProps {
   activePage: number;
   highlight: DocumentReference | null;
   activeCitationKey: string | null;
-  isLoading?: boolean;
   onPageChange: (page: number) => void;
   onFocusCitation: (citation: DocumentReference["citations"][number]) => void;
+  onReady?: () => void;
 }
 
 /**
@@ -30,21 +29,21 @@ function DocumentBoardComponent({
   activePage,
   highlight,
   activeCitationKey,
-  isLoading = false,
-  onFocusCitation
+  onFocusCitation,
+  onReady
 }: DocumentBoardProps) {
   const isPdf = mimeType === "application/pdf" && !!fileUrl;
-  const [pdfLoading, setPdfLoading] = useState(isPdf);
-
 
   const [visiblePage, setVisiblePage] = useState(activePage);
   useEffect(() => {
     setVisiblePage(activePage);
   }, [activePage]);
 
-  const citations = highlight?.citations ?? [];
+  useEffect(() => {
+    if (!isPdf) onReady?.();
+  }, [isPdf, onReady]);
 
-  const showOverlay = isLoading || (isPdf && pdfLoading);
+  const citations = highlight?.citations ?? [];
 
   return (
     <div
@@ -62,7 +61,7 @@ function DocumentBoardComponent({
             page={activePage}
             citations={citations}
             focusCitationKey={activeCitationKey}
-            onLoaded={() => setPdfLoading(false)}
+            onLoaded={() => onReady?.()}
             onVisiblePageChange={setVisiblePage}
           />
         </div>
@@ -79,8 +78,6 @@ function DocumentBoardComponent({
       >
         Page {visiblePage}
       </span>
-
-      {showOverlay ? <DocumentLoadingOverlay /> : null}
     </div>
   );
 }
