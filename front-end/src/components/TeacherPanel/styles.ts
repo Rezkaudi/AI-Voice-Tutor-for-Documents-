@@ -42,3 +42,8 @@ export const micCircleBase =
 
 export const micCircleActive =
   "animate-speak-pulse border-[oklch(0.7_0.13_154)] bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))] text-[oklch(0.99_0.008_138)]";
+
+// Tutor is preparing a reply: keep the circle clearly legible (override the
+// dimmed disabled opacity) so the bouncing dots read as "thinking", not "off".
+export const micCircleThinking =
+  "border-[oklch(0.46_0.07_230)] bg-[oklch(0.28_0.04_232)] disabled:opacity-90";

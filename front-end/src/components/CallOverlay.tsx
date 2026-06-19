@@ -119,6 +119,7 @@ export function CallOverlay({
         <ControlDock
           callMode={callMode}
           isListening={isListening}
+          isSpeaking={isSpeaking}
           isStreaming={isStreaming}
           isTranscribing={isTranscribing}
           micSupported={micSupported}
