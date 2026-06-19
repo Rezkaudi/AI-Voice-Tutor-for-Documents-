@@ -41,6 +41,7 @@ export function playWithSpeechSynthesis({
 
     const estimatedMs = words.length * ESTIMATED_WORD_SECONDS * 1000;
     utterance.onstart = () => {
+      if (isStale()) return;
       onSpeakingChange(true);
       // The browser reports real word boundaries; estimate as a safety net only.
       caption.reveal(segmented, estimatedMs, "teacher");
@@ -48,7 +49,7 @@ export function playWithSpeechSynthesis({
     };
     // Boundary events give exact word timing — far better than the estimate.
     utterance.onboundary = (event) => {
-      if (event.name !== "word") return;
+      if (event.name !== "word" || isStale()) return;
       const spoken = countWordsUpTo(offsets, event.charIndex);
       if (spoken > 0) {
         caption.show({

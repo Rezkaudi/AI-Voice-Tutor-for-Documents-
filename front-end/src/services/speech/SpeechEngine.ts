@@ -27,6 +27,10 @@ export class SpeechEngine {
     unlockAudioPlayback((this.audio ??= new Audio()));
   }
 
+  clearCaption(): void {
+    this.caption.reset();
+  }
+
   /** Cancels every in-flight TTS fetch and playback, and clears the caption. */
   stopSpeaking(): void {
     this.sessionId += 1;

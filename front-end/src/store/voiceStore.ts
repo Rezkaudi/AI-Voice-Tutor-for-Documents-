@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { VoiceRecorder } from "@/services/voice";
 import { useSessionStore } from "./sessionStore";
+import { useSpeechStore } from "./speechStore";
 import type { MicPermission } from "@/lib/types";
 
 interface VoiceStore {
@@ -23,7 +24,10 @@ const recorder = new VoiceRecorder();
  * transcription round-trip.
  */
 export const useVoiceStore = create<VoiceStore>((set) => {
-  recorder.onState = (patch) => set(patch);
+  recorder.onState = (patch) => {
+    if (patch.isListening) useSpeechStore.getState().clearCaption();
+    set(patch);
+  };
   recorder.onTranscript = (text) =>
     useSessionStore.getState().handleVoiceTranscript(text);
   recorder.onError = (message) => useSessionStore.getState().setError(message);
