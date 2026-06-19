@@ -7,6 +7,7 @@ interface SpeechStore {
   caption: SpeechCaption | null;
   unlockAudio: () => void;
   stopSpeaking: () => void;
+  clearCaption: () => void;
   createSpeechSession: () => SpeechSession;
   showUserCaption: (text: string) => void;
 }
@@ -29,6 +30,8 @@ export const useSpeechStore = create<SpeechStore>((set) => {
     unlockAudio: () => engine.unlock(),
     /** Cancels every in-flight TTS fetch and playback. */
     stopSpeaking: () => engine.stopSpeaking(),
+    /** Drops the visible caption without stopping playback. */
+    clearCaption: () => engine.clearCaption(),
     /** Opens an ordered TTS session — see SpeechEngine.createSession. */
     createSpeechSession: () => engine.createSession(),
     /** Plays the learner's transcribed sentence back as a caption. */

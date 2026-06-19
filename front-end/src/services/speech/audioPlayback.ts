@@ -34,6 +34,7 @@ export function playAudioClip({
 
     audio.src = URL.createObjectURL(blob);
     audio.onplay = () => {
+      if (isStale()) return;
       onSpeakingChange(true);
       // Prefer the real clip length; fall back to an estimate if unknown.
       const seconds =
