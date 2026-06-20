@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 import { cx, ui } from "@/lib/uiClasses";
 
 /** Place the supplied teacher artwork at front-end/public/teacher-avatar.png */
-const AVATAR_SRC = "public/teacher-avatar.png";
+const AVATAR_SRC = "/teacher-avatar.png";
 
 function GoogleMark() {
   return (
