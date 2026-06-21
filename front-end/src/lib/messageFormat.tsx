@@ -16,9 +16,38 @@ export function renderMessageBody(
     .replace(/(^|\W)\*(.+?)\*(?=\W|$)/g, "$1$2")
     .replace(/(\[\[\d+\]\])(?:[\s,]*\[\[\d+\]\])+/g, "$1");
 
-  return cleaned.split(/\n{2,}/).map((paragraph, paragraphIndex) => (
-    <p key={paragraphIndex}>{renderWithCitations(paragraph, citations)}</p>
-  ));
+  return cleaned.split(/\n{2,}/).map((paragraph, paragraphIndex) => {
+    const dir = detectBaseDirection(paragraph);
+    return (
+      <p
+        key={paragraphIndex}
+        dir={dir}
+        style={{ textAlign: dir === "rtl" ? "right" : "left" }}
+      >
+        {renderWithCitations(paragraph, citations)}
+      </p>
+    );
+  });
+}
+
+/** Unicode ranges for right-to-left scripts (Arabic, Hebrew, etc.). */
+const RTL_CHAR =
+  /[֐-׿؀-ۿ܀-ݏݐ-ݿࢠ-ࣿיִ-ﭏﭐ-﷿ﹰ-﻿]/;
+/** Strong left-to-right scripts: Latin, CJK (Japanese/Chinese), Kana, Hangul. */
+const LTR_CHAR =
+  /[A-Za-zÀ-ɏͰ-Ͽ぀-ヿ㐀-䶿一-鿿가-힯＀-￯]/;
+
+/**
+ * Decide a paragraph's base writing direction from its first strong
+ * directional character — Arabic/Hebrew → RTL, English/Japanese/etc → LTR.
+ * Mirrors the browser's `dir="auto"` heuristic but lets us also align text.
+ */
+function detectBaseDirection(text: string): "rtl" | "ltr" {
+  for (const char of text) {
+    if (RTL_CHAR.test(char)) return "rtl";
+    if (LTR_CHAR.test(char)) return "ltr";
+  }
+  return "ltr";
 }
 
 function renderWithCitations(
