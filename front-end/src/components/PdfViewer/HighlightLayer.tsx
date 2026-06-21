@@ -6,7 +6,10 @@ import type { PlacedTextItem } from "./buildTextMap";
 
 interface HighlightBox {
   key: string;
-  rect: PlacedTextItem;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 
@@ -18,7 +21,51 @@ interface HighlightLayerProps {
 }
 
 
-/** Collects the text runs that overlap the *focused* citation's [start, end) range. */
+/** Strong RTL characters: Arabic and Hebrew, base and presentation blocks. */
+const RTL_CHARS = /[֐-ۿݐ-ݿࢠ-ࣿיִ-﷿ﹰ-﻿]/g;
+/** Strong LTR letters: Latin, Greek, Cyrillic, and CJK (all read left→right). */
+const LTR_CHARS = /[A-Za-zÀ-ɏͰ-ϿЀ-ӿ぀-ヿ㐀-鿿]/g;
+
+/** A run reads right-to-left when its strong RTL chars outnumber its LTR ones. */
+function isRightToLeft(text: string): boolean {
+  const rtl = text.match(RTL_CHARS)?.length ?? 0;
+  const ltr = text.match(LTR_CHARS)?.length ?? 0;
+  return rtl > ltr;
+}
+
+function clipRunToCitation(
+  item: PlacedTextItem,
+  citation: DocumentCitation
+): Omit<HighlightBox, "key"> {
+  const from = Math.max(item.start, citation.start);
+  const to = Math.min(item.end, citation.end);
+  const len = item.end - item.start;
+
+  // Whole-run overlap, zero-length run, or rotated text → don't apportion.
+  if (
+    len <= 0 ||
+    Math.abs(item.rotation) > 0.01 ||
+    (from <= item.start && to >= item.end)
+  ) {
+    return { x: item.x, y: item.y, width: item.width, height: item.height };
+  }
+
+  // RTL runs read right-to-left, so offset `start` sits at the run's right edge.
+  const leadFrac = isRightToLeft(item.text)
+    ? (item.end - to) / len
+    : (from - item.start) / len;
+  const spanFrac = (to - from) / len;
+
+  return {
+    x: item.x + item.width * leadFrac,
+    y: item.y,
+    width: item.width * spanFrac,
+    height: item.height
+  };
+}
+
+
+/** Collects the text runs that overlap the *focused* citation, clipped to the quote. */
 function collectBoxes(
   placed: PlacedTextItem[],
   highlights: DocumentCitation[],
@@ -31,7 +78,7 @@ function collectBoxes(
   const boxes: HighlightBox[] = [];
   placed.forEach((item, i) => {
     if (item.end <= citation.start || item.start >= citation.end) return;
-    boxes.push({ key: `${i}`, rect: item });
+    boxes.push({ key: `${i}`, ...clipRunToCitation(item, citation) });
   });
   return boxes;
 }
@@ -61,10 +108,10 @@ export function HighlightLayer({
           ref={index === 0 ? focusRef : undefined}
           className="absolute rounded-[3px] transition-colors duration-200"
           style={{
-            left: box.rect.x,
-            top: box.rect.y,
-            width: box.rect.width,
-            height: box.rect.height,
+            left: box.x,
+            top: box.y,
+            width: box.width,
+            height: box.height,
             background: "oklch(0.88 0.16 95 / 0.55)",
             boxShadow: "0 0 0 1px oklch(0.78 0.18 80 / 0.55)",
             mixBlendMode: "multiply"

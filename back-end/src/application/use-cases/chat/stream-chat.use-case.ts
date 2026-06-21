@@ -124,12 +124,14 @@ export class StreamChatUseCase {
         )) {
           if (event.type === "reference") {
             log.info(`emitting citation → page ${event.reference.pageNumber}`);
+            console.log(`[reference] ${JSON.stringify(event.reference)}`);
             yield { event: "meta", data: { reference: event.reference } };
           } else if (event.type === "usage") {
             // Bill the turn against the user — best-effort, never streamed out.
             await costTracker.track(userId, event.usage, { countAsQuestion: true });
           } else {
             deltaCount += 1;
+            console.log(`[text] ${event.text}`);
             yield { event: "delta", data: { text: event.text } };
           }
         }
