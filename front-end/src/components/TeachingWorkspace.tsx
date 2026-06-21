@@ -114,7 +114,6 @@ export function TeachingWorkspace() {
       onClick={handleBack}
     >
       <ArrowLeft size={isDesktop ? 16 : 18} aria-hidden />
-      {isDesktop ? <span>Documents</span> : null}
     </button>
   );
 
