@@ -3,6 +3,7 @@ import type { DocumentPage } from "@/domain/entities/document";
 import type { CitationCandidate } from "@/domain/logic/citation/citation-types";
 import type { QuoteLocator } from "@/domain/logic/citation/quote-locator";
 import type { AnswerAutoCiter } from "@/domain/logic/citation/answer-auto-citer";
+import { canonicalizeGlyphs } from "@/shared/text";
 
 export type { CitationCandidate } from "@/domain/logic/citation/citation-types";
 
@@ -48,7 +49,7 @@ export class CitationResolver {
 
     for (const candidate of candidates) {
       const page = pageByNumber.get(candidate.pageNumber);
-      const quote = candidate.quote?.trim();
+      const quote = candidate.quote ? canonicalizeGlyphs(candidate.quote).trim() : undefined;
       if (!page || !quote || !CitationResolver.longEnough(quote)) {
         continue;
       }
@@ -89,6 +90,6 @@ export class CitationResolver {
     page: DocumentPage,
     maxCitations: number = 2
   ): Citation[] {
-    return this.autoCiter.cite(answer, page, maxCitations);
+    return this.autoCiter.cite(canonicalizeGlyphs(answer), page, maxCitations);
   }
 }

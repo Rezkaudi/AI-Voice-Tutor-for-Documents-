@@ -2,6 +2,7 @@ import { DOMMatrix, ImageData, Path2D } from "@napi-rs/canvas";
 import type { DocumentPage, UploadKind } from "@/domain/entities/document";
 import { UnprocessableEntityError } from "@/domain/errors/app-error";
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
+import { canonicalizeGlyphs } from "@/shared/text";
 
 /**
  * `DocumentTextExtractor` backed by pdf.js. PDFs are the only supported upload
@@ -75,7 +76,7 @@ function itemsToLayoutText(items: readonly unknown[]): string {
     const transform = run.transform;
     if (!Array.isArray(transform) || transform.length < 6) continue;
     positioned.push({
-      str: run.str,
+      str: canonicalizeGlyphs(run.str),
       x: transform[4]!,
       y: transform[5]!,
       height: run.height ?? Math.abs(transform[3] ?? 0)
@@ -110,13 +111,27 @@ function positionedItemsToText(items: PositionedItem[]): string {
   }
 
   return lines
-    .map((line) =>
-      line
-        .sort((a, b) => a.x - b.x)
-        .map((run) => run.str)
-        .join(" ")
-    )
+    .map((line) => orderLineRuns(line).map((run) => run.str).join(" "))
     .join("\n");
+}
+
+function orderLineRuns(line: PositionedItem[]): PositionedItem[] {
+  const text = line.map((run) => run.str).join("");
+  return isRightToLeft(text)
+    ? [...line].sort((a, b) => b.x - a.x)
+    : [...line].sort((a, b) => a.x - b.x);
+}
+
+/** Strong RTL characters: Arabic and Hebrew, base and presentation blocks. */
+const RTL_CHARS = /[\u0590-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/g;
+/** Strong LTR letters: Latin, Greek, Cyrillic, and CJK (all read left→right). */
+const LTR_CHARS = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u3040-\u30FF\u3400-\u9FFF]/g;
+
+/** A line reads right-to-left when its strong RTL chars outnumber its LTR ones. */
+function isRightToLeft(text: string): boolean {
+  const rtl = text.match(RTL_CHARS)?.length ?? 0;
+  const ltr = text.match(LTR_CHARS)?.length ?? 0;
+  return rtl > ltr;
 }
 
 /**

@@ -6,11 +6,10 @@
  * sets gives a cheap overlap score for the sliding-window search.
  */
 export class TokenSimilarity {
-  /** Lowercased word set, dropping tokens of 2 chars or fewer. */
+  /** Lowercased, script-folded word set, dropping tokens of 2 chars or fewer. */
   tokenize(value: string): Set<string> {
     return new Set(
-      value
-        .toLowerCase()
+      foldArabic(value.toLowerCase())
         .match(/[\p{L}\p{N}]+/gu)
         ?.filter((word) => word.length > 2) ?? []
     );
@@ -28,4 +27,23 @@ export class TokenSimilarity {
     const union = a.size + b.size - intersection;
     return union === 0 ? 0 : intersection / union;
   }
+}
+
+/** Strip Arabic diacritics + tatweel (each maps to "" in this table). */
+const ARABIC_FOLD: Record<string, string> = {
+  // Alef variants (hamza/madda/wasla) → bare alef.
+  "آ": "ا", "أ": "ا", "إ": "ا", "ٱ": "ا",
+  // Alef maksura → yeh; teh marbuta → heh — the usual search-time equivalences.
+  "ى": "ي", "ة": "ه"
+};
+// Harakat, superscript alef, Quranic marks, and tatweel — all dropped.
+const ARABIC_STRIP = /[ؐ-ًؚ-ٰٟۖ-ۭـ]/g;
+
+function foldArabic(value: string): string {
+  if (!/[؀-ۿ]/.test(value)) return value;
+  let out = "";
+  for (const ch of value.replace(ARABIC_STRIP, "")) {
+    out += ARABIC_FOLD[ch] ?? ch;
+  }
+  return out;
 }

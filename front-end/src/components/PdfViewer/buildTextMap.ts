@@ -60,6 +60,7 @@ export function buildTextMap(
     const raw = item.str ?? "";
     if (!raw) continue;
     if (!Array.isArray(item.transform) || item.transform.length < 6) continue;
+    const canonical = raw.normalize("NFKC");
 
     // Project the PDF transform through the viewport to get the screen-space box.
     // Mirrors pdf.js's own text-layer math: the baseline sits at (tx4, tx5), the
@@ -72,7 +73,7 @@ export function buildTextMap(
     const fontHeight = Math.hypot(transform[2] ?? 0, transform[3] ?? 1);
 
     runs.push({
-      rawText: raw,
+      rawText: canonical,
       rect: {
         x: transform[4]!,
         y: transform[5]! - fontHeight,
@@ -151,9 +152,26 @@ function orderIntoLines(runs: OrderedRun[]): OrderedRun[][] {
     }
   }
   for (const line of lines) {
-    line.sort((a, b) => a.rawX - b.rawX);
+    const text = line.map((run) => run.rawText).join("");
+    if (isRightToLeft(text)) {
+      line.sort((a, b) => b.rawX - a.rawX);
+    } else {
+      line.sort((a, b) => a.rawX - b.rawX);
+    }
   }
   return lines;
+}
+
+/** Strong RTL characters: Arabic and Hebrew, base and presentation blocks. */
+const RTL_CHARS = /[\u0590-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/g;
+/** Strong LTR letters: Latin, Greek, Cyrillic, and CJK (all read left→right). */
+const LTR_CHARS = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u3040-\u30FF\u3400-\u9FFF]/g;
+
+/** A line reads right-to-left when its strong RTL chars outnumber its LTR ones. */
+function isRightToLeft(text: string): boolean {
+  const rtl = text.match(RTL_CHARS)?.length ?? 0;
+  const ltr = text.match(LTR_CHARS)?.length ?? 0;
+  return rtl > ltr;
 }
 
 /** Computes the 2x3 transform `a * b` (column-vector convention) like pdf.js. */
