@@ -101,7 +101,7 @@ export class UploadDocumentUseCase {
     }
     log.info(`documentId=${id} (chunking/embedding disabled)`);
 
-    const storagePath = `${id}/${this.naming.safe(input.filename)}`;
+    const storagePath = `${input.userId}/${id}/${this.naming.safe(input.filename)}`;
     await this.storage.put({
       key: storagePath,
       body: input.buffer,
