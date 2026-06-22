@@ -187,12 +187,16 @@ export function PdfViewer({
   useEffect(() => {
     if (!pdf) return;
     if (page === dominantRef.current) return;
+    if (focusCitationKey) {
+      dominantRef.current = page;
+      return;
+    }
     const el = slotRefs.current[page - 1];
     const root = scrollRef.current;
     if (!el || !root) return;
     dominantRef.current = page;
     root.scrollTo({ top: el.offsetTop, behavior: "smooth" });
-  }, [pdf, page]);
+  }, [pdf, page, focusCitationKey]);
 
   const numPages = pdf?.numPages ?? 0;
   const docKey = pdf?.fingerprints?.[0] ?? "doc";
