@@ -40,15 +40,26 @@ function tweenScrollTop(container: HTMLElement, to: number, duration: number): v
 
 export function scrollIntoContainerCenter(el: HTMLElement, smooth = true): void {
   const container = scrollableAncestor(el);
-  requestAnimationFrame(() => {
-    if (!container) {
-      el.scrollIntoView({ block: "center" });
-      return;
-    }
+
+  if (!container) {
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => el.scrollIntoView({ block: "center" }))
+    );
+    return;
+  }
+
+  const centre = (duration: number) => {
     const elRect = el.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     const delta =
       elRect.top - containerRect.top - (container.clientHeight - elRect.height) / 2;
-    tweenScrollTop(container, container.scrollTop + delta, smooth ? 340 : 0);
-  });
+    tweenScrollTop(container, container.scrollTop + delta, duration);
+  };
+
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      centre(smooth ? 340 : 0);
+      setTimeout(() => centre(0), 380);
+    })
+  );
 }

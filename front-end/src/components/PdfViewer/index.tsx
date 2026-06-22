@@ -186,14 +186,18 @@ export function PdfViewer({
   // a change we already caused by scrolling never triggers a counter-scroll.
   useEffect(() => {
     if (!pdf) return;
-    if (page === dominantRef.current) return;
+    const root = scrollRef.current;
+    const el = slotRefs.current[page - 1];
+    if (!root || !el) return;
     if (focusCitationKey) {
-      dominantRef.current = page;
+      if (page !== dominantRef.current) {
+        dominantRef.current = page;
+        root.scrollTo({ top: el.offsetTop });
+      }
       return;
     }
-    const el = slotRefs.current[page - 1];
-    const root = scrollRef.current;
-    if (!el || !root) return;
+
+    if (page === dominantRef.current) return;
     dominantRef.current = page;
     root.scrollTo({ top: el.offsetTop, behavior: "smooth" });
   }, [pdf, page, focusCitationKey]);
