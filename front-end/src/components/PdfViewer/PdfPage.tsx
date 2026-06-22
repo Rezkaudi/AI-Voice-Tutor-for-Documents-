@@ -50,7 +50,14 @@ export function PdfPage({
       <canvas
         ref={canvasRef}
         className="block bg-white shadow-md"
-        style={{ width: "100%", height: "100%" }}
+        style={{
+          width: "100%",
+          height: "100%",
+          position: "relative",
+          zIndex: 0,
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden"
+        }}
       />
       {rendered ? (
         <HighlightLayer
@@ -63,7 +70,7 @@ export function PdfPage({
       <div
         ref={textLayerRef}
         className="textLayer absolute inset-0"
-        style={{ cursor: "text" }}
+        style={{ cursor: "text", zIndex: 2 }}
       />
     </div>
   );
