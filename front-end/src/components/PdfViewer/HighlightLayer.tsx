@@ -20,6 +20,13 @@ interface HighlightLayerProps {
   focusCitationKey: string | null;
 }
 
+const isWebKitTouch = (): boolean => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  const iOS = /iP(hone|ad|od)/.test(ua);
+  const iPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  return iOS || iPadOS;
+};
 
 /** Strong RTL characters: Arabic and Hebrew, base and presentation blocks. */
 const RTL_CHARS = /[֐-ۿݐ-ݿࢠ-ࣿיִ-﷿ﹰ-﻿]/g;
@@ -99,6 +106,10 @@ export function HighlightLayer({
   const boxes = collectBoxes(placed, highlights, focusCitationKey);
   if (!boxes.length) return null;
 
+  const blendUnsupported = isWebKitTouch();
+  const fill = blendUnsupported
+    ? "rgba(250, 204, 21, 0.42)"
+    : "rgba(253, 224, 71, 0.55)";
 
   return (
     <div className="pointer-events-none absolute inset-0">
@@ -112,9 +123,9 @@ export function HighlightLayer({
             top: box.y,
             width: box.width,
             height: box.height,
-            background: "oklch(0.88 0.16 95 / 0.55)",
-            boxShadow: "0 0 0 1px oklch(0.78 0.18 80 / 0.55)",
-            mixBlendMode: "multiply"
+            background: fill,
+            boxShadow: "0 0 0 1px rgba(202, 138, 4, 0.55)",
+            ...(blendUnsupported ? {} : { mixBlendMode: "multiply" as const })
           }}
         />
       ))}
