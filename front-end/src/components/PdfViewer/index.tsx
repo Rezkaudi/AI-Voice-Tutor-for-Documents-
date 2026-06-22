@@ -188,9 +188,10 @@ export function PdfViewer({
     if (!pdf) return;
     if (page === dominantRef.current) return;
     const el = slotRefs.current[page - 1];
-    if (!el) return;
+    const root = scrollRef.current;
+    if (!el || !root) return;
     dominantRef.current = page;
-    el.scrollIntoView({ block: "start", behavior: "smooth" });
+    root.scrollTo({ top: el.offsetTop, behavior: "smooth" });
   }, [pdf, page]);
 
   const numPages = pdf?.numPages ?? 0;
