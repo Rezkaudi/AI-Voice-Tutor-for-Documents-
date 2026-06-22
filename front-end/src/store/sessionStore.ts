@@ -25,6 +25,7 @@ interface SessionStore {
   showCaption: boolean;
   setError: (error: string | null) => void;
   toggleTranscript: () => void;
+  setTranscript: (open: boolean) => void;
   toggleCaption: () => void;
   setMobilePane: (mobilePane: MobilePane) => void;
   setSpeechLanguage: (speechLanguage: SpeechLanguage) => void;
@@ -69,6 +70,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   setError: (error) => set({ error }),
   toggleTranscript: () => set((s) => ({ showTranscript: !s.showTranscript })),
+  setTranscript: (showTranscript) => set({ showTranscript }),
   toggleCaption: () => set((s) => ({ showCaption: !s.showCaption })),
   setMobilePane: (mobilePane) => set({ mobilePane }),
   setSpeechLanguage: (speechLanguage) => set({ speechLanguage }),

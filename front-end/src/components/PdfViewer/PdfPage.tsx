@@ -3,6 +3,7 @@ import "pdfjs-dist/web/pdf_viewer.css";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { DocumentCitation } from "@/lib/types";
 import { HighlightLayer } from "./HighlightLayer";
+import { scrollIntoContainerCenter } from "./scrollIntoContainer";
 import { usePdfPageRender } from "./usePdfPageRender";
 
 interface PdfPageProps {
@@ -36,7 +37,7 @@ export function PdfPage({
 
   useEffect(() => {
     if (focusCitationKey && focusRef.current) {
-      focusRef.current.scrollIntoView({ block: "center", behavior: "smooth" });
+      scrollIntoContainerCenter(focusRef.current);
     }
   }, [focusCitationKey, rendered]);
 

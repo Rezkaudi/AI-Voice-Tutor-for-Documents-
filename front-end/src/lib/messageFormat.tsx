@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import type { DocumentCitation } from "@/lib/types";
 import { useDocumentStore } from "@/store/documentStore";
+import { useSessionStore } from "@/store/sessionStore";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 /**
  * Strip simple markdown bold/italic markers, parse `[[N]]` inline citation
@@ -89,10 +91,15 @@ interface CitationBadgeProps {
 
 function CitationBadge({ number, citation }: CitationBadgeProps) {
   const focusCitation = useDocumentStore((s) => s.focusCitation);
+  const setTranscript = useSessionStore((s) => s.setTranscript);
+  const isMobile = useMediaQuery("(max-width: 919px)");
   return (
     <button
       type="button"
-      onClick={() => focusCitation(citation)}
+      onClick={() => {
+        focusCitation(citation);
+        if (isMobile) setTranscript(false);
+      }}
       aria-label={`Open reference ${number} on page ${citation.pageNumber}`}
       className="mx-0.5 inline-flex h-[1.45em] min-w-[1.7em] cursor-pointer items-center justify-center rounded-md border border-[oklch(0.78_0.18_80/0.6)] bg-[oklch(0.92_0.16_95)] px-1.5 align-[-0.15em] text-[0.72em] font-semibold leading-none tabular-nums text-[oklch(0.32_0.08_75)] transition-all duration-150 hover:-translate-y-px hover:border-[oklch(0.72_0.2_80)] hover:bg-[oklch(0.96_0.18_95)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
