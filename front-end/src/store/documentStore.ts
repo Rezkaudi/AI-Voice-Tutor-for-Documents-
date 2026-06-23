@@ -13,7 +13,7 @@ import type {
   DocumentSummary,
   LoadedDocument,
   UploadState
-} from "@/lib/types";
+} from "@/types";
 
 const LAST_DOC_KEY = "lastDocumentId";
 

@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { VoiceRecorder } from "@/services/voice";
 import { useSessionStore } from "./sessionStore";
 import { useSpeechStore } from "./speechStore";
-import type { MicPermission } from "@/lib/types";
+import type { MicPermission } from "@/types";
 
 interface VoiceStore {
   isListening: boolean;

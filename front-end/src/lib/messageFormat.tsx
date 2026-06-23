@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import type { DocumentCitation } from "@/lib/types";
+import type { DocumentCitation } from "@/types";
 import { useDocumentStore } from "@/store/documentStore";
 import { useSessionStore } from "@/store/sessionStore";
-import { useMediaQuery } from "@/lib/useMediaQuery";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 /**
  * Strip simple markdown bold/italic markers, parse `[[N]]` inline citation

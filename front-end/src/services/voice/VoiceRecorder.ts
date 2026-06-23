@@ -1,6 +1,6 @@
 import { transcribeRecording } from "../transcribeApi";
 import { SILENCE_TIMEOUT_MS } from "@/lib/constants";
-import type { SpeechLanguage, VoiceRecorderState } from "@/lib/types";
+import type { SpeechLanguage, VoiceRecorderState } from "@/types";
 import { pickAudioMimeType } from "./audioMime";
 import {
   describeRecorderError,

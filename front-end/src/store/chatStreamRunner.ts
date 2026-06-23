@@ -1,6 +1,6 @@
 import { extractSentences } from "@/lib/sentences";
 import { readEventStream } from "@/lib/sse";
-import type { DocumentCitation, DocumentReference, SpeechSession } from "@/lib/types";
+import type { DocumentCitation, DocumentReference, SpeechSession } from "@/types";
 
 interface RunChatStreamDeps {
   body: ReadableStream<Uint8Array>;

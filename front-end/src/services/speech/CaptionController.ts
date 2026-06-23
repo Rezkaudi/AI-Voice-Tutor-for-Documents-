@@ -1,4 +1,4 @@
-import type { CaptionSpeaker, SegmentedText, SpeechCaption } from "@/lib/types";
+import type { CaptionSpeaker, SegmentedText, SpeechCaption } from "@/types";
 
 type CaptionListener = (caption: SpeechCaption | null) => void;
 

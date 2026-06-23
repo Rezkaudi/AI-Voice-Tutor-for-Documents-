@@ -1,4 +1,4 @@
-import type { StreamEvent } from "@/lib/types";
+import type { StreamEvent } from "@/types";
 
 /**
  * Read a `text/event-stream` body and invoke `onEvent` for every complete

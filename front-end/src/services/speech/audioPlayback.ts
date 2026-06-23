@@ -1,4 +1,4 @@
-import type { SegmentedText } from "@/lib/types";
+import type { SegmentedText } from "@/types";
 import type { CaptionController } from "./CaptionController";
 import { ESTIMATED_WORD_SECONDS } from "./constants";
 

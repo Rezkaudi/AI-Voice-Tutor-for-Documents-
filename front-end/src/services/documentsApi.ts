@@ -1,4 +1,4 @@
-import type { DocumentSummary, LoadedDocument } from "@/lib/types";
+import type { DocumentSummary, LoadedDocument } from "@/types";
 import { api, extractErrorMessage, resolveApiUrl } from "@/services/apiBase";
 
 export async function deleteDocument(documentId: string): Promise<void> {

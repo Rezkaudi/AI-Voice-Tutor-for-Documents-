@@ -1,4 +1,4 @@
-import type { SpeechLanguage } from "@/lib/types";
+import type { SpeechLanguage } from "@/types";
 import { api, extractErrorMessage } from "@/services/apiBase";
 
 /**

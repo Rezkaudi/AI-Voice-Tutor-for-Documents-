@@ -1,4 +1,4 @@
-import type { SegmentedText } from "@/lib/types";
+import type { SegmentedText } from "@/types";
 
 /**
  * Text segmentation for the live caption: stripping the tutor's inline

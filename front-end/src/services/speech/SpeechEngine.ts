@@ -1,6 +1,6 @@
 import { fetchSpeechClip } from "../speechApi";
 import { segmentText } from "@/lib/textSegmentation";
-import type { SpeechCaption, SpeechSession } from "@/lib/types";
+import type { SpeechCaption, SpeechSession } from "@/types";
 import { CaptionController } from "./CaptionController";
 import { playAudioClip, revokeBlobUrl } from "./audioPlayback";
 import { unlockAudioPlayback } from "./audioUnlock";
