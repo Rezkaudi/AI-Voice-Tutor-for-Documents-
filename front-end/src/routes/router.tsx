@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { LoginView } from "@/components/LoginView";
+import { LoginPage } from "@/pages/LoginPage";
 import { LibraryPage } from "@/pages/LibraryPage";
 import { WorkspacePage } from "@/pages/WorkspacePage";
 import { DOCUMENT_ROUTE, LIBRARY_ROUTE, paths } from "./paths";
@@ -9,7 +9,7 @@ import { PublicOnlyRoute } from "./PublicOnlyRoute";
 export const router = createBrowserRouter([
   {
     element: <PublicOnlyRoute />,
-    children: [{ path: paths.login, element: <LoginView /> }]
+    children: [{ path: paths.login, element: <LoginPage /> }]
   },
   {
     element: <ProtectedRoute />,

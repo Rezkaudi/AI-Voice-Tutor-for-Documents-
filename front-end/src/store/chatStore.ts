@@ -4,7 +4,7 @@ import { runChatStream } from "./chatStreamRunner";
 import { useDocumentStore } from "./documentStore";
 import { useSessionStore } from "./sessionStore";
 import { useSpeechStore } from "./speechStore";
-import type { ChatMessage, DocumentReference } from "@/lib/types";
+import type { ChatMessage, DocumentReference } from "@/types";
 
 interface SendMessageOptions {
   hidden?: boolean;

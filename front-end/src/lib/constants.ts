@@ -1,4 +1,4 @@
-import type { SpeechLanguageOption } from "@/lib/types";
+import type { SpeechLanguageOption } from "@/types";
 
 /**
  * Business constants shared across the app.

@@ -4,7 +4,7 @@ import { useChatStore } from "./chatStore";
 import { useDocumentStore } from "./documentStore";
 import { useSpeechStore } from "./speechStore";
 import { useVoiceStore } from "./voiceStore";
-import type { MobilePane, SpeechLanguage } from "@/lib/types";
+import type { MobilePane, SpeechLanguage } from "@/types";
 
 const SAVE_COST_KEY = "saveCostMode";
 

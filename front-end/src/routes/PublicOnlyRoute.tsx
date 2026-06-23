@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { FullScreenLoader } from "@/components/FullScreenLoader";
+import { FullScreenLoader } from "@/components/common/FullScreenLoader";
 import { useAuthStore } from "@/store/authStore";
 import { paths } from "./paths";
 

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { FullScreenLoader } from "@/components/FullScreenLoader";
+import { FullScreenLoader } from "@/components/common/FullScreenLoader";
 import { useAuthStore } from "@/store/authStore";
 import { useDocumentStore } from "@/store/documentStore";
 import { useSessionStore } from "@/store/sessionStore";

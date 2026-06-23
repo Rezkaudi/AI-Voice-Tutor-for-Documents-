@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useParams } from "react-router-dom";
-import { FullScreenLoader } from "@/components/FullScreenLoader";
-import { TeachingWorkspace } from "@/components/TeachingWorkspace";
+import { FullScreenLoader } from "@/components/common/FullScreenLoader";
+import { TeachingWorkspace } from "@/components/workspace/TeachingWorkspace";
 import { useDocumentStore } from "@/store/documentStore";
 import { useSessionStore } from "@/store/sessionStore";
 import { paths } from "@/routes/paths";

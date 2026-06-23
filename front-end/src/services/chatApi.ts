@@ -1,4 +1,4 @@
-import type { ChatPayload } from "@/lib/types";
+import type { ChatPayload } from "@/types";
 import { api, extractErrorMessage } from "@/services/apiBase";
 
 /**

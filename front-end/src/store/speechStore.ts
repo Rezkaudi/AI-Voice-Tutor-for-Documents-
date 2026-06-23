@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { SpeechEngine } from "@/services/speech";
-import type { SpeechCaption, SpeechSession } from "@/lib/types";
+import type { SpeechCaption, SpeechSession } from "@/types";
 
 interface SpeechStore {
   isSpeaking: boolean;
