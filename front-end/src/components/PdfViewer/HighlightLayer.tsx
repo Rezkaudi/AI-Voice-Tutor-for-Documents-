@@ -108,28 +108,11 @@ export function HighlightLayer({
 
   const blendUnsupported = isWebKitTouch();
   const fill = blendUnsupported
-    ? "rgba(250, 204, 21, 0.45)"
+    ? "rgba(250, 204, 21, 0.42)"
     : "rgba(253, 224, 71, 0.55)";
 
-  const compositeOverCanvas = blendUnsupported
-    ? {
-      transform: "translate3d(0, 0, 0)",
-      WebkitTransform: "translate3d(0, 0, 0)",
-      backfaceVisibility: "hidden" as const,
-      WebkitBackfaceVisibility: "hidden" as const,
-      willChange: "transform",
-      isolation: "isolate" as const
-    }
-    : {};
-
   return (
-    <div
-      className="pointer-events-none absolute inset-0"
-      style={{
-        zIndex: 1,
-        ...compositeOverCanvas
-      }}
-    >
+    <div className="pointer-events-none absolute inset-0">
       {boxes.map((box, index) => (
         <div
           key={box.key}
