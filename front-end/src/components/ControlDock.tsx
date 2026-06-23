@@ -1,4 +1,5 @@
 import { Loader2, Mic, MicOff, Phone, PhoneOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 import { deriveDockStatus } from "./TeacherPanel/status";
 
@@ -54,6 +55,7 @@ export function ControlDock({
   onCallToggle,
   onMicClick
 }: ControlDockProps) {
+  const { t } = useTranslation();
   const dock = deriveDockStatus({ isSpeaking, isListening, isStreaming, isTranscribing, callMode });
 
 
@@ -61,21 +63,21 @@ export function ControlDock({
   const canInterrupt = dock.interruptible;
 
   const micLabel = isTranscribing
-    ? "Sending…"
+    ? t("controls.mic.sending")
     : isListening
-      ? "Mute"
+      ? t("controls.mic.mute")
       : isThinking
-        ? "Thinking…"
+        ? t("controls.mic.thinking")
         : canInterrupt
-          ? "Interrupt"
-          : "Speak";
+          ? t("controls.mic.interrupt")
+          : t("controls.mic.speak");
   const micAria = isListening
-    ? "Mute microphone"
+    ? t("controls.mic.muteAria")
     : isThinking
-      ? "Tutor is thinking, please wait"
+      ? t("controls.mic.thinkingAria")
       : canInterrupt
-        ? "Interrupt and speak"
-        : "Speak now";
+        ? t("controls.mic.interruptAria")
+        : t("controls.mic.speakAria");
 
   const micDisabled = !callMode || isTranscribing || micBlocked || isThinking;
 
@@ -83,7 +85,7 @@ export function ControlDock({
     <div
       className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-[oklch(1_0_0/0.12)] bg-[oklch(0.15_0.022_244/0.86)] p-1.5 shadow-[0_18px_48px_oklch(0.05_0.02_244/0.55)] backdrop-blur-[14px]"
       role="group"
-      aria-label="Call controls"
+      aria-label={t("controls.callControls")}
     >
       <button
         type="button"
@@ -122,13 +124,13 @@ export function ControlDock({
             ? "animate-listen-pulse-slow bg-[linear-gradient(to_bottom,oklch(0.53_0.045_27),oklch(0.6_0.24_27))]"
             : "bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))]"
         )}
-        aria-label={callMode ? "End voice call" : "Start voice call"}
+        aria-label={callMode ? t("controls.call.endAria") : t("controls.call.startAria")}
         aria-pressed={callMode}
         onClick={onCallToggle}
         disabled={!micSupported || micBlocked}
       >
         {callMode ? <PhoneOff size={18} aria-hidden /> : <Phone size={18} aria-hidden />}
-        <span>{callMode ? "End" : "Call"}</span>
+        <span>{callMode ? t("controls.call.end") : t("controls.call.start")}</span>
       </button>
     </div>
   );

@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 import type { DocumentReference } from "@/lib/types";
 import { citationKey } from "@/store/documentStore";
@@ -32,6 +33,7 @@ function DocumentBoardComponent({
   onFocusCitation,
   onReady
 }: DocumentBoardProps) {
+  const { t } = useTranslation();
   const isPdf = mimeType === "application/pdf" && !!fileUrl;
 
   const [visiblePage, setVisiblePage] = useState(activePage);
@@ -67,16 +69,16 @@ function DocumentBoardComponent({
         </div>
       ) : (
         <div className="grid h-full place-items-center text-[0.9rem] text-muted">
-          Loading PDF…
+          {t("workspace.loadingPdf")}
         </div>
       )}
 
       {/* Floating page indicator (bottom-left), overlaid on the document */}
       <span
-        className="pointer-events-none absolute bottom-3 left-3 z-20 rounded-md bg-[oklch(0.2_0.02_245/0.62)] px-2.5 py-1 text-[0.8rem] font-semibold text-white backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)] max-[919px]:bottom-[calc(env(safe-area-inset-bottom)+24px)]"
+        className="pointer-events-none absolute bottom-3 start-3 z-20 rounded-md bg-[oklch(0.2_0.02_245/0.62)] px-2.5 py-1 text-[0.8rem] font-semibold text-white backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)] max-[919px]:bottom-[calc(env(safe-area-inset-bottom)+24px)]"
         aria-live="polite"
       >
-        Page {visiblePage}
+        {t("workspace.page", { page: visiblePage })}
       </span>
     </div>
   );

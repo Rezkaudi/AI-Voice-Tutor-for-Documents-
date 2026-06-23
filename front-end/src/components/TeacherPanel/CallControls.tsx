@@ -1,4 +1,5 @@
 import { Loader2, Mic, MicOff, Phone, PhoneOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 import {
   callButtonBase,
@@ -64,6 +65,7 @@ export function CallControls({
   onCallToggle,
   onMicClick
 }: CallControlsProps) {
+  const { t } = useTranslation();
 
   const dock = deriveDockStatus({ isSpeaking, isListening, isStreaming, isTranscribing, callMode });
   // Reply is being prepared but nothing is audible yet — nothing to interrupt,
@@ -71,17 +73,17 @@ export function CallControls({
   const isThinking = callMode && dock.tone === "thinking";
   const isTeacherTalking = isSpeaking && !isListening;
   const micLabel = isListening
-    ? "Mute microphone"
+    ? t("controls.mic.muteAria")
     : isThinking
-      ? "Tutor is thinking, please wait"
+      ? t("controls.mic.thinkingAria")
       : isTeacherTalking
-        ? "Interrupt and speak"
-        : "Speak now";
+        ? t("controls.mic.interruptAria")
+        : t("controls.mic.speakAria");
   return (
     <div
       className="flex items-center justify-center gap-[clamp(14px,3vw,26px)] pb-1 pt-1.5"
       role="group"
-      aria-label="Call controls"
+      aria-label={t("controls.callControls")}
     >
       <button
         className={cx(
@@ -112,7 +114,7 @@ export function CallControls({
       <button
         className={cx(callButtonBase, callMode ? callButtonEnd : callButtonStart)}
         type="button"
-        aria-label={callMode ? "End voice call" : "Start voice call"}
+        aria-label={callMode ? t("controls.call.endAria") : t("controls.call.startAria")}
         aria-pressed={callMode}
         onClick={onCallToggle}
         disabled={!micSupported || micBlocked}

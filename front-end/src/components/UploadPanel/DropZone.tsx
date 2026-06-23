@@ -1,5 +1,6 @@
 import { UploadCloud } from "lucide-react";
 import { useRef, useState } from "react";
+import { Trans } from "react-i18next";
 import { ACCEPTED_UPLOAD_TYPES } from "@/lib/constants";
 import { cx, ui } from "@/lib/uiClasses";
 
@@ -46,7 +47,10 @@ export function DropZone({ onFile }: DropZoneProps) {
     >
       <UploadCloud size={36} aria-hidden />
       <p className="m-0 text-[0.92rem] text-muted">
-        Drop a file here, or <span className="font-[650] text-ink underline">choose file</span>
+        <Trans
+          i18nKey="upload.dropHint"
+          components={{ choose: <span className="font-[650] text-ink underline" /> }}
+        />
       </p>
       <input
         ref={fileInputRef}

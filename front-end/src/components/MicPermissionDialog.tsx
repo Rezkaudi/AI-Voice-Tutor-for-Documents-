@@ -1,14 +1,15 @@
 import { MicOff } from "lucide-react";
 import { useEffect } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { cx, ui } from "@/lib/uiClasses";
 
-/** Universal steps for re-enabling a blocked microphone in any browser. */
-const ENABLE_STEPS = [
-  "Click the icon on the left of the address bar (a lock, tune/sliders, or microphone icon).",
-  'Find "Microphone" and set it to Allow — or click "Reset permission".',
-  "Reload the page.",
-  "Press Call again, then choose Allow if asked."
-];
+/** Translation keys for the universal mic re-enable steps, in order. */
+const ENABLE_STEP_KEYS = [
+  "dialogs.mic.step1",
+  "dialogs.mic.step2",
+  "dialogs.mic.step3",
+  "dialogs.mic.step4"
+] as const;
 
 interface MicPermissionDialogProps {
   open: boolean;
@@ -22,6 +23,7 @@ interface MicPermissionDialogProps {
  * caller detects the permission has flipped back to granted.
  */
 export function MicPermissionDialog({ open, onClose }: MicPermissionDialogProps) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
@@ -51,30 +53,27 @@ export function MicPermissionDialog({ open, onClose }: MicPermissionDialogProps)
           </div>
           <div>
             <h3 id="mic-perm-title" className={ui.modalTitle}>
-              Turn on your microphone
+              {t("dialogs.mic.title")}
             </h3>
             <p id="mic-perm-body" className={ui.modalBody}>
-              Your browser is blocking microphone access, so the voice lesson can&apos;t hear you.
-              The browser won&apos;t ask again automatically — please re-enable it in your browser
-              settings:
+              {t("dialogs.mic.body")}
             </p>
           </div>
         </div>
 
         <ol className={ui.micSteps}>
-          {ENABLE_STEPS.map((step, index) => (
-            <li key={index}>{step}</li>
+          {ENABLE_STEP_KEYS.map((key) => (
+            <li key={key}>{t(key)}</li>
           ))}
         </ol>
 
         <p className={ui.micNote}>
-          Once you set it to <strong>Allow</strong>, the lesson resumes automatically — or just
-          press <strong>Call</strong> again.
+          <Trans i18nKey="dialogs.mic.note" components={{ strong: <strong /> }} />
         </p>
 
         <div className={ui.modalActions}>
           <button className={cx(ui.button, ui.buttonPrimary)} type="button" onClick={onClose} autoFocus>
-            Got it
+            {t("dialogs.mic.gotIt")}
           </button>
         </div>
       </div>

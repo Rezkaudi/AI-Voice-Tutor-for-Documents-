@@ -1,5 +1,6 @@
 import { BookOpen, Check, Phone, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MAX_LESSON_PAGES } from "@/lib/constants";
 import { cx, ui } from "@/lib/uiClasses";
 
@@ -35,6 +36,7 @@ export function PageSelectionDialog({
   onConfirm,
   onCancel
 }: PageSelectionDialogProps) {
+  const { t } = useTranslation();
   const [chosen, setChosen] = useState<number[]>(() =>
     normalize(selectedPages, pageCount)
   );
@@ -82,12 +84,10 @@ export function PageSelectionDialog({
           </div>
           <div>
             <h3 id="pages-title" className={cx(ui.modalTitle, "text-[0.98rem]!")}>
-              Pick your lesson pages
+              {t("dialogs.pages.title")}
             </h3>
             <p id="pages-body" className={cx(ui.modalBody, "text-[0.8rem]! leading-snug!")}>
-              Choose up to {MAX_LESSON_PAGES} pages. Your teacher will explain them
-              one by one, from the first page, checking you understood each idea
-              before moving on.
+              {t("dialogs.pages.body", { max: MAX_LESSON_PAGES })}
             </p>
           </div>
         </div>
@@ -97,11 +97,11 @@ export function PageSelectionDialog({
           aria-live="polite"
         >
           <span>
-            {chosen.length} / {MAX_LESSON_PAGES} selected
+            {t("dialogs.pages.selected", { count: chosen.length, max: MAX_LESSON_PAGES })}
           </span>
           {chosen.length > 0 ? (
             <span className="font-medium text-muted">
-              Teaching pages {chosen.join(", ")}
+              {t("dialogs.pages.teaching", { pages: chosen.join(", ") })}
             </span>
           ) : null}
         </div>
@@ -116,8 +116,12 @@ export function PageSelectionDialog({
                   key={page}
                   type="button"
                   aria-pressed={active}
-                  aria-label={`Page ${page}`}
-                  title={disabled ? `You can pick at most ${MAX_LESSON_PAGES} pages` : `Page ${page}`}
+                  aria-label={t("dialogs.pages.pageLabel", { page })}
+                  title={
+                    disabled
+                      ? t("dialogs.pages.pageAtMost", { max: MAX_LESSON_PAGES })
+                      : t("dialogs.pages.pageLabel", { page })
+                  }
                   disabled={disabled}
                   onClick={() => toggle(page)}
                   className={cx(
@@ -149,7 +153,7 @@ export function PageSelectionDialog({
         <div className={ui.modalActions}>
           <button className={ui.button} type="button" onClick={onCancel}>
             <X size={16} aria-hidden />
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             className={cx(ui.button, ui.buttonPrimary)}
@@ -159,7 +163,7 @@ export function PageSelectionDialog({
             autoFocus
           >
             {callMode ? <Check size={16} aria-hidden /> : <Phone size={16} aria-hidden />}
-            {callMode ? "Update pages" : "Start lesson"}
+            {callMode ? t("dialogs.pages.updatePages") : t("dialogs.pages.startLesson")}
           </button>
         </div>
       </div>

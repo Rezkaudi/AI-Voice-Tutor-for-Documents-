@@ -1,4 +1,5 @@
 import { AlertTriangle, Info, Library } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentSummary, UploadState } from "@/lib/types";
 import { DocumentLibrary } from "../DocumentLibrary";
@@ -36,6 +37,7 @@ export function UploadPanel({
   onSelect,
   onDelete
 }: UploadPanelProps) {
+  const { t } = useTranslation();
   if (uploadState === "processing") {
     return <ProcessingState surfaceClass={surface} />;
   }
@@ -56,7 +58,7 @@ export function UploadPanel({
         <section className="flex min-h-0 flex-1 flex-col gap-3">
           <header className="flex flex-none items-center justify-between gap-2">
             <h2 className="m-0 inline-flex items-center gap-2 text-[1.05rem] font-bold text-ink">
-              <Library size={18} aria-hidden /> Your documents
+              <Library size={18} aria-hidden /> {t("upload.yourDocuments")}
             </h2>
           </header>
           <DocumentLibrary
@@ -73,18 +75,18 @@ export function UploadPanel({
       <section className={cx("flex-none", hasLibrary && "mt-5 border-t border-line pt-5")}>
         {!hasLibrary ? (
           <div className="mb-3 text-center">
-            <h2 className={ui.introTitle}>Upload a Lesson Source</h2>
-            <p className={ui.introCopy}>PDF files up to 25MB.</p>
+            <h2 className={ui.introTitle}>{t("upload.uploadTitle")}</h2>
+            <p className={ui.introCopy}>{t("upload.pdfLimit")}</p>
           </div>
         ) : (
           <h3 className="m-0 mb-3 text-[0.92rem] font-[650] text-muted">
-            Or upload a new file
+            {t("upload.orUploadNew")}
           </h3>
         )}
         <DropZone onFile={onFile} />
         <p className="mt-3 inline-flex items-center gap-1.5 text-[0.8rem] text-muted">
           <Info size={14} aria-hidden className="flex-none" />
-          Use a text-based PDF. Image-only or scanned documents can't be read and won't work.
+          {t("upload.pdfHint")}
         </p>
       </section>
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { renderMessageBody } from "@/lib/messageFormat";
 import { cx } from "@/lib/uiClasses";
 import type { ChatMessage } from "@/lib/types";
@@ -10,6 +11,7 @@ interface TranscriptLogProps {
 
 /** Scrollable lesson transcript. Auto-scrolls to the latest message. */
 export function TranscriptLog({ messages }: TranscriptLogProps) {
+  const { t } = useTranslation();
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,9 +27,7 @@ export function TranscriptLog({ messages }: TranscriptLogProps) {
       aria-live="polite"
     >
       {visible.length === 0 ? (
-        <p className={callHint}>
-          No conversation yet — your lesson transcript will appear here.
-        </p>
+        <p className={callHint}>{t("teacher.transcriptEmpty")}</p>
       ) : (
         visible.map((message) => <TranscriptBubble key={message.id} message={message} />)
       )}
@@ -58,8 +58,9 @@ function TranscriptBubble({ message }: { message: ChatMessage }) {
 }
 
 function TypingDots() {
+  const { t } = useTranslation();
   return (
-    <span className="inline-flex gap-1 py-1" aria-label="Thinking">
+    <span className="inline-flex gap-1 py-1" aria-label={t("teacher.thinking")}>
       <i className="h-1.5 w-1.5 animate-dot-bounce rounded-full bg-current opacity-55" />
       <i className="h-1.5 w-1.5 animate-dot-bounce rounded-full bg-current opacity-55 [animation-delay:0.15s]" />
       <i className="h-1.5 w-1.5 animate-dot-bounce rounded-full bg-current opacity-55 [animation-delay:0.3s]" />

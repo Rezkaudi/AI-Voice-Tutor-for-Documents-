@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { paths } from "@/routes/paths";
 import { useChatStore } from "@/store/chatStore";
@@ -28,6 +29,7 @@ const DESKTOP_QUERY = "(min-width: 920px)";
  *    and a bottom control dock.
  */
 export function TeachingWorkspace() {
+  const { t } = useTranslation();
   const callMode = useSessionStore((s) => s.callMode);
   const speechLanguage = useSessionStore((s) => s.speechLanguage);
   const error = useSessionStore((s) => s.error);
@@ -102,15 +104,15 @@ export function TeachingWorkspace() {
     <button
       type="button"
       className={cx(
-        "absolute left-4 top-4 z-30 inline-flex h-10 items-center rounded-full text-[0.85rem] font-semibold tracking-[0.01em]",
+        "absolute start-4 top-4 z-30 inline-flex h-10 items-center rounded-full text-[0.85rem] font-semibold tracking-[0.01em]",
         "border border-line bg-paper-strong/90 text-ink shadow-app backdrop-blur-[10px] [-webkit-backdrop-filter:blur(10px)]",
         "transition-[transform,background,border-color] duration-200 ease-out",
         "[&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:border-accent/60",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         isDesktop ? "gap-2 px-4" : "w-10 justify-center"
       )}
-      aria-label="Back to documents"
-      title="Back to documents"
+      aria-label={t("workspace.backToDocuments")}
+      title={t("workspace.backToDocuments")}
       onClick={handleBack}
     >
       <ArrowLeft size={isDesktop ? 16 : 18} aria-hidden />
@@ -134,7 +136,7 @@ export function TeachingWorkspace() {
   // ----- Desktop: split pane (document + teacher panel) -----
   if (isDesktop) {
     const documentPaneClass = cx(
-      "relative h-full min-w-0 overflow-hidden pr-2",
+      "relative h-full min-w-0 overflow-hidden pe-2",
       "[background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0/36px_36px,var(--color-panel)]"
     );
     const teacherPaneClass =
@@ -142,15 +144,16 @@ export function TeachingWorkspace() {
 
     return (
       <main
+        dir="ltr"
         className="relative grid min-h-0 flex-1 grid-cols-[minmax(0,var(--split))_8px_minmax(400px,1fr)] overflow-hidden [--split:81.3%]"
         data-workspace
       >
-        <section className={documentPaneClass} aria-label="Document board">
+        <section className={documentPaneClass} aria-label={t("workspace.documentBoard")}>
           {backButton}
           {documentBoard}
         </section>
         <Splitter />
-        <section className={teacherPaneClass} aria-label="Teacher voice call">
+        <section className={teacherPaneClass} aria-label={t("workspace.teacherCall")}>
           {workspaceMenu}
           <TeacherPanel
             messages={messages}
@@ -184,12 +187,13 @@ export function TeachingWorkspace() {
   // ----- Mobile: document-first surface with floating teacher overlay -----
   return (
     <main
+      dir="ltr"
       className="relative min-h-0 flex-1 overflow-hidden [background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0/36px_36px,var(--color-panel)]"
       data-workspace
     >
       <section
         className="h-full overflow-hidden"
-        aria-label="Document board"
+        aria-label={t("workspace.documentBoard")}
       >
         {backButton}
         {documentBoard}

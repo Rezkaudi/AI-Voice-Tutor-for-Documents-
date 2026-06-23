@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 import type { ChatMessage } from "@/lib/types";
 import { TranscriptLog } from "./TeacherPanel/TranscriptLog";
@@ -11,6 +12,7 @@ interface TranscriptDrawerProps {
 }
 
 export function TranscriptDrawer({ open, messages, onClose }: TranscriptDrawerProps) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
@@ -43,15 +45,15 @@ export function TranscriptDrawer({ open, messages, onClose }: TranscriptDrawerPr
         )}
         role="dialog"
         aria-modal="false"
-        aria-label="Lesson transcript"
+        aria-label={t("transcriptDrawer.aria")}
         aria-hidden={!open}
       >
         <header className="flex items-center justify-between gap-3 border-b border-[oklch(1_0_0/0.1)] px-4 pb-3 pt-[calc(env(safe-area-inset-top)+14px)] text-[oklch(0.96_0.008_100)]">
-          <h2 className="m-0 text-[1.02rem] font-bold tracking-[0.01em]">Transcript</h2>
+          <h2 className="m-0 text-[1.02rem] font-bold tracking-[0.01em]">{t("transcriptDrawer.title")}</h2>
           <button
             type="button"
             className="grid h-9 w-9 place-items-center rounded-full border border-[oklch(1_0_0/0.16)] bg-[oklch(0.24_0.03_240/0.7)] text-[oklch(0.95_0.01_215)] transition-colors duration-150 ease-out [&:hover:not(:disabled)]:bg-[oklch(0.32_0.035_238/0.85)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.82_0.13_165)]"
-            aria-label="Close transcript"
+            aria-label={t("transcriptDrawer.close")}
             onClick={onClose}
           >
             <X size={18} aria-hidden />

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { BookOpen, GraduationCap, Mic, ShieldCheck, Sprout } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/authStore";
 import { cx, ui } from "@/lib/uiClasses";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 /** Place the supplied teacher artwork at front-end/public/teacher-avatar.png */
 const AVATAR_SRC = "/teacher-avatar.png";
@@ -30,13 +32,14 @@ function GoogleMark() {
 }
 
 const benefits = [
-  { icon: GraduationCap, label: "Learn" },
-  { icon: Mic, label: "Practice" },
-  { icon: Sprout, label: "Grow" }
+  { icon: GraduationCap, key: "login.benefitLearn" },
+  { icon: Mic, key: "login.benefitPractice" },
+  { icon: Sprout, key: "login.benefitGrow" }
 ] as const;
 
 export function LoginView() {
   const login = useAuthStore((s) => s.login);
+  const { t } = useTranslation();
   const [avatarFailed, setAvatarFailed] = useState(false);
 
   const failed = new URLSearchParams(window.location.search).get("auth") === "error";
@@ -53,28 +56,29 @@ export function LoginView() {
       <BackdropDecor />
 
       {/* Brand lockup — no nav, on-brand minimal */}
-      <header className="absolute left-0 top-0 z-20 flex items-center p-5 sm:p-7">
-        <span className="text-[0.95rem] font-[760] tracking-tight">AI Voice Tutor</span>
+      <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between p-5 sm:p-7">
+        <span className="text-[0.95rem] font-[760] tracking-tight">{t("login.brand")}</span>
+        <LanguageSwitcher tone="dark" />
       </header>
 
       <section className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-8 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
         {/* Copy + the single CTA */}
         <div className="order-2 mx-auto max-w-xl text-center lg:order-1 lg:mx-0 lg:text-left">
           <h1 className="text-[clamp(2rem,5vw,3.5rem)] font-[820] leading-[1.03] tracking-[-0.022em]">
-            Your documents,
+            {t("login.headlineLead")}
             <br className="hidden sm:block" />{" "}
-            <span className="text-accent">taught out loud.</span>
+            <span className="text-accent">{t("login.headlineAccent")}</span>
           </h1>
 
           <p className="mx-auto mt-4 max-w-[46ch] text-[1.02rem] leading-[1.55] text-muted lg:mx-0">
-            A human-like AI teacher that teaches you any concept from a text-based PDF document
+            {t("login.subtitle")}
           </p>
 
           <ul className="mt-6 flex flex-wrap justify-center gap-2 lg:justify-start">
-            {benefits.map(({ icon: Icon, label }) => (
-              <li key={label} className={ui.pill}>
+            {benefits.map(({ icon: Icon, key }) => (
+              <li key={key} className={ui.pill}>
                 <Icon size={15} className="text-accent" aria-hidden />
-                {label}
+                {t(key)}
               </li>
             ))}
           </ul>
@@ -89,19 +93,17 @@ export function LoginView() {
               )}
             >
               <GoogleMark />
-              Continue with Google
+              {t("login.cta")}
             </button>
 
             {failed ? (
-              <p className={ui.errorText}>Sign-in didn’t complete. Please try again.</p>
+              <p className={ui.errorText}>{t("login.signinError")}</p>
             ) : (
               <div className="grid justify-items-center gap-1.5 lg:justify-items-start">
-                <p className="text-[0.82rem] text-muted">
-                  Free to start · No credit card needed
-                </p>
+                <p className="text-[0.82rem] text-muted">{t("login.freeStart")}</p>
                 <p className="inline-flex items-center gap-1.5 text-[0.82rem] font-[560] text-muted">
                   <ShieldCheck size={14} className="flex-none text-accent" aria-hidden />
-                  Your data is private and secure — we never train on your documents.
+                  {t("login.privacy")}
                 </p>
               </div>
             )}
@@ -115,13 +117,14 @@ export function LoginView() {
       </section>
 
       <footer className="absolute inset-x-0 bottom-0 z-20 hidden justify-center p-4 text-[0.75rem] text-muted sm:flex">
-        © 2026 AI Voice Tutor for Documents · Learn smarter, by voice.
+        {t("login.footer")}
       </footer>
     </main>
   );
 }
 
 function AvatarStage({ failed, onFail }: { failed: boolean; onFail: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="relative grid place-items-center">
       {/* Halo echoing the in-app teacher avatar */}
@@ -144,7 +147,7 @@ function AvatarStage({ failed, onFail }: { failed: boolean; onFail: () => void }
         <img
           src={AVATAR_SRC}
           onError={onFail}
-          alt="Friendly AI teacher holding a notebook of lessons, ready to begin"
+          alt={t("login.avatarAlt")}
           className="relative z-1 max-h-[62vh] w-[min(78vw,440px)] select-none object-contain drop-shadow-[0_24px_45px_oklch(0.22_0.02_245/0.18)]"
           draggable={false}
         />

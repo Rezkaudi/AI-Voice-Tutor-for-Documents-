@@ -1,4 +1,5 @@
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { ui } from "@/lib/uiClasses";
 
 interface DocumentLoadingOverlayProps {
@@ -6,10 +7,10 @@ interface DocumentLoadingOverlayProps {
   hint?: string;
 }
 
-export function DocumentLoadingOverlay({
-  label = "Loading document",
-  hint = "Fetching pages and preparing the board…"
-}: DocumentLoadingOverlayProps) {
+export function DocumentLoadingOverlay({ label, hint }: DocumentLoadingOverlayProps) {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t("workspace.loadingDocument");
+  const resolvedHint = hint ?? t("workspace.loadingHint");
   return (
     <div
       role="status"
@@ -30,10 +31,10 @@ export function DocumentLoadingOverlay({
           <Loader2 className={ui.spin} size={22} aria-hidden />
         </div>
         <div className="flex flex-col items-center gap-1 text-center">
-          <p className="m-0 text-[0.95rem] font-[680] text-ink">{label}</p>
-          <p className="m-0 text-[0.82rem] text-muted">{hint}</p>
+          <p className="m-0 text-[0.95rem] font-[680] text-ink">{resolvedLabel}</p>
+          <p className="m-0 text-[0.82rem] text-muted">{resolvedHint}</p>
         </div>
-        <span className="sr-only">{label}</span>
+        <span className="sr-only">{resolvedLabel}</span>
       </div>
     </div>
   );
