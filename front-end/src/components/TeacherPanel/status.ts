@@ -27,14 +27,27 @@ export function deriveDockStatus(status: CallStatus): {
   return { tone: "idle", label: "", interruptible: false };
 }
 
-export function deriveStatusLabel(
+type StatusLabelKey =
+  | "teacher.status.listeningNow"
+  | "teacher.status.transcribing"
+  | "teacher.status.thinkingDoc"
+  | "teacher.status.speaking"
+  | "teacher.status.onCall"
+  | "teacher.status.tapStart"
+  | "teacher.status.tapContinue";
+
+/**
+ * Returns the i18n key for the panel's status line. The caller translates it,
+ * so this stays a pure function with no React/i18n dependency.
+ */
+export function deriveStatusLabelKey(
   { isSpeaking, isListening, isStreaming, isTranscribing, callMode }: CallStatus,
   messageCount: number
-): string {
-  if (isListening) return "Listening — speak now";
-  if (isTranscribing) return "Transcribing…";
-  if (isStreaming) return "Thinking from the document…";
-  if (isSpeaking) return "Speaking";
-  if (callMode) return "On call";
-  return messageCount === 0 ? "Tap Call to start your lesson" : "Tap Call to keep going";
+): StatusLabelKey {
+  if (isListening) return "teacher.status.listeningNow";
+  if (isTranscribing) return "teacher.status.transcribing";
+  if (isStreaming) return "teacher.status.thinkingDoc";
+  if (isSpeaking) return "teacher.status.speaking";
+  if (callMode) return "teacher.status.onCall";
+  return messageCount === 0 ? "teacher.status.tapStart" : "teacher.status.tapContinue";
 }

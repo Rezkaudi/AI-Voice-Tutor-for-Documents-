@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 import { ConfirmDialog } from "../ConfirmDialog";
 import type { DocumentSummary } from "@/lib/types";
@@ -28,6 +29,7 @@ export function DocumentLibrary({
   emptyHint,
   fillHeight
 }: DocumentLibraryProps) {
+  const { t } = useTranslation();
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   if (loading && documents.length === 0) return <LoadingState />;
@@ -35,7 +37,7 @@ export function DocumentLibrary({
 
   const confirmingDoc = confirmId ? documents.find((d) => d.id === confirmId) ?? null : null;
   const confirmingName =
-    confirmingDoc?.title || confirmingDoc?.fileName || "this document";
+    confirmingDoc?.title || confirmingDoc?.fileName || t("library.thisDocument");
 
   return (
     <>
@@ -45,7 +47,7 @@ export function DocumentLibrary({
           fillHeight ? "min-h-0 flex-1" : "max-h-[min(56vh,420px)]"
         )}
         role="listbox"
-        aria-label="Your documents"
+        aria-label={t("library.listAria")}
       >
         {documents.map((doc) => (
           <DocumentRow
@@ -61,10 +63,10 @@ export function DocumentLibrary({
 
       <ConfirmDialog
         open={confirmingDoc !== null}
-        title="Delete document?"
-        body={`This permanently removes “${confirmingName}” from your library. This action cannot be undone.`}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title={t("dialogs.delete.title")}
+        body={t("dialogs.delete.body", { name: confirmingName })}
+        confirmLabel={t("dialogs.delete.confirm")}
+        cancelLabel={t("common.cancel")}
         tone="delete"
         onCancel={() => setConfirmId(null)}
         onConfirm={() => {

@@ -1,4 +1,5 @@
 import { Check, FileText, Loader2, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentSummary } from "@/lib/types";
 import { formatMeta } from "./formatMeta";
@@ -19,7 +20,8 @@ export function DocumentRow({
   onSelect,
   onRequestDelete
 }: DocumentRowProps) {
-  const label = doc.title || doc.fileName || "Untitled document";
+  const { t } = useTranslation();
+  const label = doc.title || doc.fileName || t("library.untitled");
 
   return (
     <li>
@@ -38,7 +40,7 @@ export function DocumentRow({
           disabled={isDeleting}
           onClick={() => onSelect(doc.id)}
           className={cx(
-            "flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-l-lg px-3 py-2.5 text-left",
+            "flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-s-lg px-3 py-2.5 text-start",
             ui.focusAccent,
             "disabled:cursor-not-allowed"
           )}
@@ -57,23 +59,23 @@ export function DocumentRow({
               {label}
             </span>
             <span className="mt-0.5 truncate text-[0.78rem] text-muted">
-              {formatMeta(doc)}
+              {formatMeta(doc, t)}
             </span>
           </span>
           {isActive ? (
-            <Check size={18} className="flex-none text-accent" aria-label="Currently open" />
+            <Check size={18} className="flex-none text-accent" aria-label={t("library.currentlyOpen")} />
           ) : null}
         </button>
 
         {onRequestDelete ? (
           <button
             type="button"
-            title="Delete document"
-            aria-label={`Delete ${label}`}
+            title={t("library.deleteDocument")}
+            aria-label={t("library.deleteAria", { name: label })}
             disabled={isDeleting}
             onClick={() => onRequestDelete(doc.id)}
             className={cx(
-              "my-1.5 mr-1.5 grid h-8 w-8 flex-none place-items-center self-center rounded-md text-muted transition-colors hover:bg-[oklch(0.96_0.04_28)] hover:text-danger",
+              "my-1.5 me-1.5 grid h-8 w-8 flex-none place-items-center self-center rounded-md text-muted transition-colors hover:bg-[oklch(0.96_0.04_28)] hover:text-danger",
               ui.focusAccent,
               "disabled:cursor-not-allowed"
             )}

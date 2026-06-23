@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ChatMessage, SpeechCaption } from "@/lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ControlDock } from "./ControlDock";
@@ -63,6 +64,7 @@ export function CallOverlay({
   onClosePageDialog,
   onSubmitPageSelection
 }: CallOverlayProps) {
+  const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const micDialog = useMicDialog(micBlocked);
 
@@ -159,10 +161,10 @@ export function CallOverlay({
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Restart the lesson?"
-        body="This clears the current chat and starts a fresh session from the beginning. This action cannot be undone."
-        confirmLabel="Clear & restart"
-        cancelLabel="Cancel"
+        title={t("dialogs.restart.title")}
+        body={t("dialogs.restart.body")}
+        confirmLabel={t("dialogs.restart.confirm")}
+        cancelLabel={t("common.cancel")}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => {
           setConfirmOpen(false);

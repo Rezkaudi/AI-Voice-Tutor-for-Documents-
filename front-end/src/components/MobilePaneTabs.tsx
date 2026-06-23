@@ -1,4 +1,5 @@
 import { FileText, Phone, type LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { MobilePane } from "@/lib/types";
 import { useSessionStore } from "@/store/sessionStore";
 
@@ -32,6 +33,7 @@ function PaneTab({ pane, label, icon: Icon, selected, onSelect }: PaneTabProps) 
 
 /** Mobile-only tablist (≤920px) that toggles between the document and teacher panes. */
 export function MobilePaneTabs() {
+  const { t } = useTranslation();
   const mobilePane = useSessionStore((s) => s.mobilePane);
   const setMobilePane = useSessionStore((s) => s.setMobilePane);
 
@@ -39,18 +41,18 @@ export function MobilePaneTabs() {
     <nav
       className="hidden gap-1.5 border-b border-line bg-paper-strong px-[clamp(12px,3vw,20px)] py-2 max-[920px]:flex"
       role="tablist"
-      aria-label="Switch view"
+      aria-label={t("workspace.switchView")}
     >
       <PaneTab
         pane="document"
-        label="Document"
+        label={t("workspace.tabDocument")}
         icon={FileText}
         selected={mobilePane === "document"}
         onSelect={setMobilePane}
       />
       <PaneTab
         pane="teacher"
-        label="Teacher"
+        label={t("workspace.tabTeacher")}
         icon={Phone}
         selected={mobilePane === "teacher"}
         onSelect={setMobilePane}

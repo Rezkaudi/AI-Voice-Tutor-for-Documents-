@@ -1,0 +1,164 @@
+{
+  "common": {
+    "cancel": "キャンセル",
+    "on": "オン",
+    "off": "オフ",
+    "fullscreen": "全画面表示",
+    "exitFullscreen": "全画面表示を終了",
+    "transcript": "文字起こし",
+    "teachingPages": "学習ページ",
+    "restartLesson": "レッスンを再開",
+    "loading": "読み込み中"
+  },
+  "language": {
+    "switch": "言語を変更",
+    "label": "言語"
+  },
+  "login": {
+    "brand": "AI音声チューター",
+    "headlineLead": "あなたの資料を、",
+    "headlineAccent": "声で教えます。",
+    "subtitle": "テキストベースのPDF資料から、どんな概念でも人のように教えてくれるAI講師",
+    "benefitLearn": "学ぶ",
+    "benefitPractice": "練習する",
+    "benefitGrow": "成長する",
+    "cta": "Googleで続行",
+    "signinError": "サインインが完了しませんでした。もう一度お試しください。",
+    "freeStart": "無料で開始 · クレジットカード不要",
+    "privacy": "あなたのデータは安全に保護されます。資料を学習に使うことは一切ありません。",
+    "avatarAlt": "レッスンのノートを持った親しみやすいAI講師、開始の準備完了",
+    "footer": "© 2026 AI音声チューター（資料学習） · 声でかしこく学ぼう。"
+  },
+  "header": {
+    "title": "AI音声チューター（資料学習）",
+    "subtitle": "資料学習ボード"
+  },
+  "upload": {
+    "yourDocuments": "あなたの資料",
+    "orUploadNew": "または新しいファイルをアップロード",
+    "uploadTitle": "レッスン素材をアップロード",
+    "pdfLimit": "PDFファイル（最大25MB）。",
+    "dropHint": "ここにファイルをドロップ、または<choose>ファイルを選択</choose>",
+    "pdfHint": "テキストベースのPDFをご利用ください。画像のみ・スキャンされた資料は読み取れず、動作しません。",
+    "processingTitle": "資料を準備しています",
+    "processingBody": "ページを抽出し、レッスンの本文を構築し、講師を準備しています。",
+    "loadingLibrary": "ライブラリを読み込んでいます…"
+  },
+  "library": {
+    "listAria": "あなたの資料",
+    "emptyHint": "まだ資料がありません。最初の1件をアップロードして始めましょう。",
+    "untitled": "無題の資料",
+    "thisDocument": "この資料",
+    "currentlyOpen": "現在開いています",
+    "deleteDocument": "資料を削除",
+    "deleteAria": "{{name}} を削除",
+    "page_other": "{{count}} ページ",
+    "justNow": "たった今",
+    "minutesAgo": "{{count}}分前",
+    "hoursAgo": "{{count}}時間前",
+    "daysAgo": "{{count}}日前"
+  },
+  "dialogs": {
+    "delete": {
+      "title": "資料を削除しますか？",
+      "body": "「{{name}}」をライブラリから完全に削除します。この操作は元に戻せません。",
+      "confirm": "削除"
+    },
+    "restart": {
+      "title": "レッスンを再開しますか？",
+      "body": "現在のチャットを消去し、最初から新しいセッションを開始します。この操作は元に戻せません。",
+      "confirm": "消去して再開"
+    },
+    "mic": {
+      "title": "マイクをオンにしてください",
+      "body": "ブラウザがマイクへのアクセスをブロックしているため、音声レッスンであなたの声を聞き取れません。ブラウザは自動的に再度許可を求めません。ブラウザの設定から再度有効にしてください：",
+      "step1": "アドレスバー左側のアイコン（鍵、調整スライダー、またはマイクのアイコン）をクリックします。",
+      "step2": "「マイク」を見つけて「許可」に設定します。または「権限をリセット」をクリックします。",
+      "step3": "ページを再読み込みします。",
+      "step4": "もう一度「通話」を押し、求められたら「許可」を選びます。",
+      "note": "<strong>許可</strong>に設定すると、レッスンは自動的に再開します。または<strong>通話</strong>をもう一度押してください。",
+      "gotIt": "OK"
+    },
+    "pages": {
+      "title": "レッスンのページを選択",
+      "body": "最大 {{max}} ページまで選べます。講師は最初のページから1つずつ説明し、各アイデアを理解したか確認してから次に進みます。",
+      "selected": "{{count}} / {{max}} 選択中",
+      "teaching": "学習ページ {{pages}}",
+      "pageLabel": "{{page}} ページ",
+      "pageAtMost": "選択できるのは最大 {{max}} ページです",
+      "updatePages": "ページを更新",
+      "startLesson": "レッスンを開始"
+    }
+  },
+  "controls": {
+    "callControls": "通話コントロール",
+    "mic": {
+      "sending": "送信中…",
+      "mute": "ミュート",
+      "thinking": "考え中…",
+      "interrupt": "割り込む",
+      "speak": "話す",
+      "muteAria": "マイクをミュート",
+      "thinkingAria": "講師が考えています。お待ちください",
+      "interruptAria": "割り込んで話す",
+      "speakAria": "今すぐ話す"
+    },
+    "call": {
+      "start": "通話",
+      "end": "終了",
+      "startAria": "音声通話を開始",
+      "endAria": "音声通話を終了"
+    },
+    "more": {
+      "show": "その他のコントロールを表示",
+      "hide": "その他のコントロールを非表示",
+      "title": "その他のコントロール",
+      "hideTitle": "コントロールを非表示",
+      "menuAria": "その他のコントロール"
+    },
+    "liveCaptions": "ライブ字幕"
+  },
+  "workspaceMenu": {
+    "menu": "メニュー",
+    "lessonControls": "レッスンコントロール",
+    "lessonControlsMenu": "レッスンコントロールメニュー",
+    "captions": "字幕",
+    "menuAria": "レッスンコントロール"
+  },
+  "teacher": {
+    "title": "AI講師",
+    "transcriptEmpty": "まだ会話がありません。レッスンの文字起こしはここに表示されます。",
+    "thinking": "考え中",
+    "micUnsupported": "このブラウザではマイクがサポートされていません。",
+    "micBlocked": "マイクが<strong>ブロック</strong>されています。再びオンにする手順はこちらをタップ。",
+    "avatarLabel": "AI講師 — ドラッグして移動",
+    "dragTitle": "ドラッグして講師を移動",
+    "status": {
+      "listeningNow": "聞いています — 今すぐ話してください",
+      "transcribing": "文字起こし中…",
+      "thinkingDoc": "資料をもとに考えています…",
+      "speaking": "話しています",
+      "onCall": "通話中",
+      "tapStart": "「通話」をタップしてレッスンを開始",
+      "tapContinue": "「通話」をタップして続ける"
+    }
+  },
+  "transcriptDrawer": {
+    "title": "文字起こし",
+    "close": "文字起こしを閉じる",
+    "aria": "レッスンの文字起こし"
+  },
+  "workspace": {
+    "backToDocuments": "資料に戻る",
+    "documentBoard": "資料ボード",
+    "teacherCall": "講師との音声通話",
+    "switchView": "表示を切り替え",
+    "tabDocument": "資料",
+    "tabTeacher": "講師",
+    "loadingDocument": "資料を読み込み中",
+    "loadingHint": "ページを取得してボードを準備しています…",
+    "openingDocument": "資料を開いています",
+    "loadingPdf": "PDFを読み込み中…",
+    "page": "{{page}} ページ"
+  }
+}

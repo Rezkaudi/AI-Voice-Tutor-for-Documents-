@@ -1,4 +1,5 @@
 import { GripVertical } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 import { useDraggable } from "@/lib/useDraggable";
 import type { AvatarState } from "@/lib/types";
@@ -19,6 +20,7 @@ interface FloatingTutorProps {
 }
 
 export function FloatingTutor({ state }: FloatingTutorProps) {
+  const { t } = useTranslation();
   const { ref, pos, dragging, handlers } = useDraggable(STORAGE_KEY, () => ({
     x: Number.MAX_SAFE_INTEGER,
     y: 10
@@ -40,8 +42,8 @@ export function FloatingTutor({ state }: FloatingTutorProps) {
         dragging ? "cursor-grabbing" : "cursor-grab"
       )}
       role="img"
-      aria-label="AI teacher — drag to reposition"
-      title="Drag to move the teacher"
+      aria-label={t("teacher.avatarLabel")}
+      title={t("teacher.dragTitle")}
     >
       {/* Outer wrapper carries the shadow/ring but is NOT clipped. On iOS Safari,
           a box-shadow on an element that also has overflow-hidden + border-radius +

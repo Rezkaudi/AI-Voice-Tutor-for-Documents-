@@ -1,0 +1,165 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "on": "ON",
+    "off": "OFF",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "transcript": "Transcript",
+    "teachingPages": "Teaching pages",
+    "restartLesson": "Restart lesson",
+    "loading": "Loading"
+  },
+  "language": {
+    "switch": "Change language",
+    "label": "Language"
+  },
+  "login": {
+    "brand": "AI Voice Tutor",
+    "headlineLead": "Your documents,",
+    "headlineAccent": "taught out loud.",
+    "subtitle": "A human-like AI teacher that teaches you any concept from a text-based PDF document",
+    "benefitLearn": "Learn",
+    "benefitPractice": "Practice",
+    "benefitGrow": "Grow",
+    "cta": "Continue with Google",
+    "signinError": "Sign-in didn’t complete. Please try again.",
+    "freeStart": "Free to start · No credit card needed",
+    "privacy": "Your data is private and secure — we never train on your documents.",
+    "avatarAlt": "Friendly AI teacher holding a notebook of lessons, ready to begin",
+    "footer": "© 2026 AI Voice Tutor for Documents · Learn smarter, by voice."
+  },
+  "header": {
+    "title": "AI Voice Tutor for Documents",
+    "subtitle": "Document learning board"
+  },
+  "upload": {
+    "yourDocuments": "Your documents",
+    "orUploadNew": "Or upload a new file",
+    "uploadTitle": "Upload a Lesson Source",
+    "pdfLimit": "PDF files up to 25MB.",
+    "dropHint": "Drop a file here, or <choose>choose file</choose>",
+    "pdfHint": "Use a text-based PDF. Image-only or scanned documents can't be read and won't work.",
+    "processingTitle": "Preparing your document",
+    "processingBody": "Extracting pages, building lesson passages, and warming up the teacher.",
+    "loadingLibrary": "Loading your library…"
+  },
+  "library": {
+    "listAria": "Your documents",
+    "emptyHint": "No documents yet — upload your first to get started.",
+    "untitled": "Untitled document",
+    "thisDocument": "this document",
+    "currentlyOpen": "Currently open",
+    "deleteDocument": "Delete document",
+    "deleteAria": "Delete {{name}}",
+    "page_one": "{{count}} page",
+    "page_other": "{{count}} pages",
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  },
+  "dialogs": {
+    "delete": {
+      "title": "Delete document?",
+      "body": "This permanently removes “{{name}}” from your library. This action cannot be undone.",
+      "confirm": "Delete"
+    },
+    "restart": {
+      "title": "Restart the lesson?",
+      "body": "This clears the current chat and starts a fresh session from the beginning. This action cannot be undone.",
+      "confirm": "Clear & restart"
+    },
+    "mic": {
+      "title": "Turn on your microphone",
+      "body": "Your browser is blocking microphone access, so the voice lesson can't hear you. The browser won't ask again automatically — please re-enable it in your browser settings:",
+      "step1": "Click the icon on the left of the address bar (a lock, tune/sliders, or microphone icon).",
+      "step2": "Find \"Microphone\" and set it to Allow — or click \"Reset permission\".",
+      "step3": "Reload the page.",
+      "step4": "Press Call again, then choose Allow if asked.",
+      "note": "Once you set it to <strong>Allow</strong>, the lesson resumes automatically — or just press <strong>Call</strong> again.",
+      "gotIt": "Got it"
+    },
+    "pages": {
+      "title": "Pick your lesson pages",
+      "body": "Choose up to {{max}} pages. Your teacher will explain them one by one, from the first page, checking you understood each idea before moving on.",
+      "selected": "{{count}} / {{max}} selected",
+      "teaching": "Teaching pages {{pages}}",
+      "pageLabel": "Page {{page}}",
+      "pageAtMost": "You can pick at most {{max}} pages",
+      "updatePages": "Update pages",
+      "startLesson": "Start lesson"
+    }
+  },
+  "controls": {
+    "callControls": "Call controls",
+    "mic": {
+      "sending": "Sending…",
+      "mute": "Mute",
+      "thinking": "Thinking…",
+      "interrupt": "Interrupt",
+      "speak": "Speak",
+      "muteAria": "Mute microphone",
+      "thinkingAria": "Tutor is thinking, please wait",
+      "interruptAria": "Interrupt and speak",
+      "speakAria": "Speak now"
+    },
+    "call": {
+      "start": "Call",
+      "end": "End",
+      "startAria": "Start voice call",
+      "endAria": "End voice call"
+    },
+    "more": {
+      "show": "Show more controls",
+      "hide": "Hide more controls",
+      "title": "More controls",
+      "hideTitle": "Hide controls",
+      "menuAria": "More controls"
+    },
+    "liveCaptions": "Live captions"
+  },
+  "workspaceMenu": {
+    "menu": "Menu",
+    "lessonControls": "Lesson controls",
+    "lessonControlsMenu": "Lesson controls menu",
+    "captions": "Captions",
+    "menuAria": "Lesson controls"
+  },
+  "teacher": {
+    "title": "AI Teacher",
+    "transcriptEmpty": "No conversation yet — your lesson transcript will appear here.",
+    "thinking": "Thinking",
+    "micUnsupported": "Microphone is not supported in this browser.",
+    "micBlocked": "Microphone is <strong>blocked</strong>. Tap here for steps to turn it back on.",
+    "avatarLabel": "AI teacher — drag to reposition",
+    "dragTitle": "Drag to move the teacher",
+    "status": {
+      "listeningNow": "Listening — speak now",
+      "transcribing": "Transcribing…",
+      "thinkingDoc": "Thinking from the document…",
+      "speaking": "Speaking",
+      "onCall": "On call",
+      "tapStart": "Tap Call to start your lesson",
+      "tapContinue": "Tap Call to keep going"
+    }
+  },
+  "transcriptDrawer": {
+    "title": "Transcript",
+    "close": "Close transcript",
+    "aria": "Lesson transcript"
+  },
+  "workspace": {
+    "backToDocuments": "Back to documents",
+    "documentBoard": "Document board",
+    "teacherCall": "Teacher voice call",
+    "switchView": "Switch view",
+    "tabDocument": "Document",
+    "tabTeacher": "Teacher",
+    "loadingDocument": "Loading document",
+    "loadingHint": "Fetching pages and preparing the board…",
+    "openingDocument": "Opening document",
+    "loadingPdf": "Loading PDF…",
+    "page": "Page {{page}}"
+  }
+}

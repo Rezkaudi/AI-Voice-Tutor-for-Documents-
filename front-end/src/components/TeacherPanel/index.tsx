@@ -12,8 +12,9 @@ import { LanguagePicker } from "./LanguagePicker";
 import { MicStatusBanner } from "./MicStatusBanner";
 import { TranscriptLog } from "./TranscriptLog";
 import { bubbleBase } from "./styles";
-import { deriveOrbState, deriveStatusLabel } from "./status";
+import { deriveOrbState, deriveStatusLabelKey } from "./status";
 import { useMicDialog } from "./useMicDialog";
+import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 
 interface TeacherPanelProps {
@@ -64,11 +65,12 @@ export function TeacherPanel({
   onClosePageDialog,
   onSubmitPageSelection
 }: TeacherPanelProps) {
+  const { t } = useTranslation();
   const micDialog = useMicDialog(micBlocked);
 
   const status = { isStreaming, isSpeaking, isListening, isTranscribing, callMode };
   const orbState = deriveOrbState(status);
-  const statusLabel = deriveStatusLabel(status, messages.length);
+  const statusLabel = t(deriveStatusLabelKey(status, messages.length));
   const langDisabled = isListening || isTranscribing || micBlocked;
 
   // While blocked, the mic button explains the fix instead of failing silently.
@@ -85,7 +87,7 @@ export function TeacherPanel({
       <TeacherAvatar state={orbState} />
 
       <div className="text-center">
-        <h2 className="m-0 text-[1.15rem] font-bold tracking-[0.01em]">AI Teacher</h2>
+        <h2 className="m-0 text-[1.15rem] font-bold tracking-[0.01em]">{t("teacher.title")}</h2>
         <p
           className="mb-0 mt-1 text-[0.9rem] text-[oklch(0.82_0.02_215)]"
           role="status"
