@@ -3,6 +3,7 @@ import type { Reference } from "@/domain/entities/chat";
 import type { CitationCandidate } from "@/domain/logic/citation-resolver";
 import type { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import type { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
+import type { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
 import type {
   TutorReplyRequest,
   TutorService,
@@ -52,6 +53,7 @@ export class OpenAiTutorService implements TutorService {
     private readonly tools: TutorToolExecutor,
     private readonly referenceSelector: ReferenceSelector,
     private readonly markerReconciler: CitationMarkerReconciler,
+    private readonly questionExtractor: LearnerQuestionExtractor,
     private readonly logger: Logger
   ) {
     this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
@@ -206,7 +208,13 @@ export class OpenAiTutorService implements TutorService {
       log.info(`citation → page ${aligned.reference.pageNumber}`);
       yield { type: "reference", reference: aligned.reference };
     }
-    yield { type: "delta", text: aligned.text };
+
+    const { text, question } = this.questionExtractor.extract(aligned.text);
+    if (question) {
+      log.info(`learner question → "${truncate(question)}"`);
+      yield { type: "question", text: question };
+    }
+    yield { type: "delta", text };
   }
 
   /** Runs each tool call and returns the function outputs for the next turn. */

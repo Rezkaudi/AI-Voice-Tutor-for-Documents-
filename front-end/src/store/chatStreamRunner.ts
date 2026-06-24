@@ -8,6 +8,7 @@ interface RunChatStreamDeps {
   onText: (text: string) => void;
   onReference: (reference: DocumentReference | null) => void;
   onFocusCitation: (citation: DocumentCitation) => void;
+  onQuestion: (question: string | null) => void;
 }
 
 /**
@@ -19,10 +20,12 @@ export async function runChatStream({
   speechSession,
   onText,
   onReference,
-  onFocusCitation
+  onFocusCitation,
+  onQuestion
 }: RunChatStreamDeps): Promise<string> {
   let assistantText = "";
   let spokenChars = 0;
+  let pendingQuestion: string | null = null;
   // Box around the reference so TS keeps the union type across the await
   // boundary even though the callback may reassign it.
   const refBox: { current: DocumentReference | null } = { current: null };
@@ -78,6 +81,11 @@ export async function runChatStream({
       return;
     }
 
+    if (event.event === "question") {
+      pendingQuestion = event.data.text.trim() || null;
+      return;
+    }
+
     if (event.event === "error") {
       throw new Error(event.data.error);
     }
@@ -87,6 +95,7 @@ export async function runChatStream({
   if (tail) pushSentence(tail);
   await speechSession.finished();
   pendingTimers.current.forEach((id) => window.clearTimeout(id));
+  onQuestion(pendingQuestion);
 
   // After streaming ends, drop any citation the final text never referenced
   // with a [[N]] marker, and renumber the surviving markers so the side panel

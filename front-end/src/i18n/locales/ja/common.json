@@ -143,6 +143,15 @@
       "tapContinue": "「通話」をタップして続ける"
     }
   },
+  "question": {
+    "title": "あなたの番です",
+    "badge": "質問",
+    "listening": "聞いています — 声に出して答えてください",
+    "getReady": "少し考えてから声に出して答えましょう",
+    "transcribing": "受け取りました — 少々お待ちを…",
+    "hint": "声に出して答えてください。自動で閉じます。",
+    "dismiss": "閉じる"
+  },
   "transcriptDrawer": {
     "title": "文字起こし",
     "close": "文字起こしを閉じる",

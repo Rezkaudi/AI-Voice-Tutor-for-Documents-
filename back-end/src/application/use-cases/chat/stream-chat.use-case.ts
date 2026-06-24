@@ -36,7 +36,7 @@ export class StreamChatUseCase {
     private readonly historySanitizer: ChatHistorySanitizer,
     private readonly costTracker: CostTracker,
     private readonly logger: Logger
-  ) {}
+  ) { }
 
   async execute(
     input: StreamChatInput,
@@ -52,7 +52,7 @@ export class StreamChatUseCase {
 
     log.info(
       `question on document ${documentId} · lang=${input.language} · ` +
-        `saveCost=${input.saveCost} · history=${input.messages.length} msg(s)`
+      `saveCost=${input.saveCost} · history=${input.messages.length} msg(s)`
     );
     log.detail("student message", message);
 
@@ -86,8 +86,8 @@ export class StreamChatUseCase {
 
     log.info(
       `loaded document "${document.title}" · ${pages.length} page(s) · ` +
-        `chunks disabled · ${history.length} history turn(s) · ` +
-        `lesson pages=[${selectedPages.join(", ")}] → streaming answer`
+      `chunks disabled · ${history.length} history turn(s) · ` +
+      `lesson pages=[${selectedPages.join(", ")}] → streaming answer`
     );
 
     // Log the verbatim text of the pages the student chose to study, so the
@@ -126,6 +126,8 @@ export class StreamChatUseCase {
             log.info(`emitting citation → page ${event.reference.pageNumber}`);
             console.log(`[reference] ${JSON.stringify(event.reference)}`);
             yield { event: "meta", data: { reference: event.reference } };
+          } else if (event.type === "question") {
+            yield { event: "question", data: { text: event.text } };
           } else if (event.type === "usage") {
             // Bill the turn against the user — best-effort, never streamed out.
             await costTracker.track(userId, event.usage, { countAsQuestion: true });

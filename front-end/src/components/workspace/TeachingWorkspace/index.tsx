@@ -1,6 +1,7 @@
 import { DocumentBoard } from "../DocumentBoard";
 import { DocumentLoadingOverlay } from "../DocumentLoadingOverlay";
 import { WorkspaceMenu } from "../WorkspaceMenu";
+import { QuestionPopup } from "../teacher/QuestionPopup";
 import { DesktopLayout } from "./DesktopLayout";
 import { MobileLayout } from "./MobileLayout";
 import { useWorkspaceState } from "@/hooks/workspace/useWorkspaceState";
@@ -43,14 +44,29 @@ export function TeachingWorkspace() {
     />
   );
 
+  const questionPopup = (
+    <QuestionPopup
+      question={vm.pendingQuestion}
+      isListening={vm.isListening}
+      isTranscribing={vm.isTranscribing}
+      onDismiss={session.dismissQuestion}
+    />
+  );
+
   return vm.isDesktop ? (
     <DesktopLayout
       vm={vm}
       documentBoard={documentBoard}
       workspaceMenu={workspaceMenu}
       loadingCover={loadingCover}
+      questionPopup={questionPopup}
     />
   ) : (
-    <MobileLayout vm={vm} documentBoard={documentBoard} loadingCover={loadingCover} />
+    <MobileLayout
+      vm={vm}
+      documentBoard={documentBoard}
+      loadingCover={loadingCover}
+      questionPopup={questionPopup}
+    />
   );
 }

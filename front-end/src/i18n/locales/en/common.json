@@ -144,6 +144,15 @@
       "tapContinue": "Tap Call to keep going"
     }
   },
+  "question": {
+    "title": "Your turn",
+    "badge": "Question",
+    "listening": "Listening — answer out loud",
+    "getReady": "Take a moment, then answer aloud",
+    "transcribing": "Got that — one sec…",
+    "hint": "Speak your answer. This closes on its own.",
+    "dismiss": "Dismiss"
+  },
   "transcriptDrawer": {
     "title": "Transcript",
     "close": "Close transcript",

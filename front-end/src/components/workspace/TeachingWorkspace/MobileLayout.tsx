@@ -8,9 +8,10 @@ interface MobileLayoutProps {
   vm: WorkspaceState;
   documentBoard: ReactNode;
   loadingCover: ReactNode;
+  questionPopup: ReactNode;
 }
 
-export function MobileLayout({ vm, documentBoard, loadingCover }: MobileLayoutProps) {
+export function MobileLayout({ vm, documentBoard, loadingCover, questionPopup }: MobileLayoutProps) {
   const { t } = useTranslation();
   const { session } = vm;
   return (
@@ -19,9 +20,10 @@ export function MobileLayout({ vm, documentBoard, loadingCover }: MobileLayoutPr
       className="relative min-h-0 flex-1 overflow-hidden [background:linear-gradient(90deg,oklch(0.91_0.017_84)_1px,transparent_1px)_0_0/36px_36px,var(--color-panel)]"
       data-workspace
     >
-      <section className="h-full overflow-hidden" aria-label={t("workspace.documentBoard")}>
+      <section className="relative h-full overflow-hidden" aria-label={t("workspace.documentBoard")}>
         <BackButton isDesktop={false} onBack={vm.handleBack} />
         {documentBoard}
+        {questionPopup}
       </section>
 
       <CallOverlay
