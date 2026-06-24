@@ -8,15 +8,8 @@ import { useSpeechStore } from "@/store/speechStore";
 import { useVoiceStore } from "@/store/voiceStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-/** Viewport at/above which the desktop split-pane layout is used. */
 export const DESKTOP_QUERY = "(min-width: 920px)";
 
-/**
- * Reads every store the teaching view depends on and derives the cross-cutting
- * flags (desktop vs mobile, loading cover, restart availability) plus the
- * navigation teardown. Returning a single view-model keeps the layout
- * components purely presentational.
- */
 export function useWorkspaceState() {
   const callMode = useSessionStore((s) => s.callMode);
   const speechLanguage = useSessionStore((s) => s.speechLanguage);
@@ -56,14 +49,12 @@ export function useWorkspaceState() {
   const session = useSessionStore.getState();
   const documentStore = useDocumentStore.getState();
 
-  // Leaving the workspace: tear the lesson down, then route to the library.
   const handleBack = useCallback(() => {
     session.closeDocument();
     navigate(paths.library);
   }, [session, navigate]);
 
   return {
-    // reactive session/document/chat/speech/voice state
     callMode,
     speechLanguage,
     error,
@@ -82,13 +73,11 @@ export function useWorkspaceState() {
     isListening,
     isTranscribing,
     micSupported,
-    // derived flags
     isDesktop,
     micBlocked: micPermission === "denied",
     restartDisabled: messages.length === 0 && !callMode,
     showLoadingCover: !boardReady || uploadState === "processing",
     pageCount: loadedDocument?.document.pageCount ?? 0,
-    // handlers
     handleBack,
     handleBoardReady,
     session,

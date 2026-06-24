@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { pdfjs } from "@/lib/pdfWorker";
 import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
-import type {
-  TextItem,
-  TextMarkedContent
-} from "pdfjs-dist/types/src/display/api";
-import { buildTextMap, type PlacedTextItem } from "./buildTextMap";
+import type { TextItem, TextMarkedContent } from "pdfjs-dist/types/src/display/api";
+import { buildTextMap, type PlacedTextItem } from "@/components/workspace/pdf/PdfViewer/buildTextMap";
 
 export interface RenderedPage {
   placed: PlacedTextItem[];
@@ -13,14 +10,6 @@ export interface RenderedPage {
   cssHeight: number;
 }
 
-/**
- * pdfjs's bare TextLayer paints absolutely-positioned spans but does NOT wire up
- * the selection-bounds behavior that lives in TextLayerBuilder. Without these
- * handlers + the .endOfContent element (which pdfjs already appends), dragging
- * across two spans selects every span in between in DOM order — so a 2-line drag
- * visually grabs the whole page. Toggling the `selecting` class activates the
- * pdf_viewer.css rules that clamp selection to the cursor's actual region.
- */
 function attachSelectionBounds(container: HTMLElement): () => void {
   const onMouseDown = () => container.classList.add("selecting");
   const onMouseUp = () => container.classList.remove("selecting");
@@ -32,11 +21,6 @@ function attachSelectionBounds(container: HTMLElement): () => void {
   };
 }
 
-/**
- * Renders one PDF page into a canvas + text layer and returns the placed text
- * runs needed for citation highlighting. Re-renders when the page or fit width
- * changes, cancelling any in-flight render on cleanup.
- */
 export function usePdfPageRender(
   pdf: PDFDocumentProxy,
   pageNumber: number,

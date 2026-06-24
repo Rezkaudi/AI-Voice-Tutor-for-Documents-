@@ -3,14 +3,8 @@ import { DocumentLoadingOverlay } from "../DocumentLoadingOverlay";
 import { WorkspaceMenu } from "../WorkspaceMenu";
 import { DesktopLayout } from "./DesktopLayout";
 import { MobileLayout } from "./MobileLayout";
-import { useWorkspaceState } from "./useWorkspaceState";
+import { useWorkspaceState } from "@/hooks/workspace/useWorkspaceState";
 
-/**
- * The teaching view shown once a document is loaded. Reads the shared workspace
- * state, then renders one of two layouts that drive the same stores:
- *  - Desktop (≥920px): the classic split pane — document board + teacher panel.
- *  - Mobile (<920px): a document-first surface with a floating draggable avatar.
- */
 export function TeachingWorkspace() {
   const vm = useWorkspaceState();
   const { loadedDocument, session, documentStore } = vm;
@@ -31,7 +25,6 @@ export function TeachingWorkspace() {
     />
   );
 
-  // Covers the whole workspace (controls included) so nothing flashes in early.
   const loadingCover = vm.showLoadingCover ? (
     <div className="absolute inset-0 z-60 bg-paper">
       <DocumentLoadingOverlay />

@@ -4,7 +4,7 @@ import { cx } from "@/lib/uiClasses";
 import { Splitter } from "@/components/common/Splitter";
 import { TeacherPanel } from "@/components/workspace/teacher/TeacherPanel";
 import { BackButton } from "./BackButton";
-import type { WorkspaceState } from "./useWorkspaceState";
+import type { WorkspaceState } from "@/hooks/workspace/useWorkspaceState";
 
 interface DesktopLayoutProps {
   vm: WorkspaceState;

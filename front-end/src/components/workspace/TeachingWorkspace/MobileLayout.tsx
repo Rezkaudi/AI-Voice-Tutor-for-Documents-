@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { CallOverlay } from "@/components/workspace/teacher/CallOverlay";
 import { BackButton } from "./BackButton";
-import type { WorkspaceState } from "./useWorkspaceState";
+import type { WorkspaceState } from "@/hooks/workspace/useWorkspaceState";
 
 interface MobileLayoutProps {
   vm: WorkspaceState;
@@ -10,7 +10,6 @@ interface MobileLayoutProps {
   loadingCover: ReactNode;
 }
 
-/** Document-first surface with a floating draggable avatar and a bottom control dock. */
 export function MobileLayout({ vm, documentBoard, loadingCover }: MobileLayoutProps) {
   const { t } = useTranslation();
   const { session } = vm;

@@ -11,7 +11,7 @@ import { TranscriptDrawer } from "./TranscriptDrawer";
 import { CaptionStrip } from "./TeacherPanel/CaptionStrip";
 import { MicStatusBanner } from "./TeacherPanel/MicStatusBanner";
 import { deriveOrbState } from "./TeacherPanel/status";
-import { useMicDialog } from "./TeacherPanel/useMicDialog";
+import { useMicDialog } from "@/hooks/teacher/useMicDialog";
 
 interface CallOverlayProps {
   messages: ChatMessage[];

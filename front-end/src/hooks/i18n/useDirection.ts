@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { directionOf } from "./config";
+import { directionOf } from "@/i18n/config";
 
 export function useDirection(): void {
   const { i18n } = useTranslation();
