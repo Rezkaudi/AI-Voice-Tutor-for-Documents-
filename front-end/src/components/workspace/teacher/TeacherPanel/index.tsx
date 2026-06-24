@@ -1,8 +1,4 @@
-import type {
-  ChatMessage,
-  SpeechCaption,
-  SpeechLanguage
-} from "@/types";
+import type { ChatMessage, SpeechCaption, SpeechLanguage } from "@/types";
 import { MicPermissionDialog } from "../MicPermissionDialog";
 import { PageSelectionDialog } from "../PageSelectionDialog";
 import { TeacherAvatar } from "../TeacherAvatar";
@@ -13,7 +9,7 @@ import { MicStatusBanner } from "./MicStatusBanner";
 import { TranscriptLog } from "./TranscriptLog";
 import { bubbleBase } from "./styles";
 import { deriveOrbState, deriveStatusLabelKey } from "./status";
-import { useMicDialog } from "./useMicDialog";
+import { useMicDialog } from "@/hooks/teacher/useMicDialog";
 import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 
@@ -41,7 +37,6 @@ interface TeacherPanelProps {
   onSubmitPageSelection: (pages: number[]) => void;
 }
 
-/** Avatar-led voice-call panel: transcript, language picker, and call controls. */
 export function TeacherPanel({
   messages,
   caption,
@@ -73,7 +68,6 @@ export function TeacherPanel({
   const statusLabel = t(deriveStatusLabelKey(status, messages.length));
   const langDisabled = isListening || isTranscribing || micBlocked;
 
-  // While blocked, the mic button explains the fix instead of failing silently.
   const handleMicClick = () => {
     if (micBlocked) {
       micDialog.setOpen(true);

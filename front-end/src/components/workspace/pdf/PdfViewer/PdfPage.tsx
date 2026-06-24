@@ -4,7 +4,7 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { DocumentCitation } from "@/types";
 import { HighlightLayer } from "./HighlightLayer";
 import { scrollIntoContainerCenter } from "./scrollIntoContainer";
-import { usePdfPageRender } from "./usePdfPageRender";
+import { usePdfPageRender } from "@/hooks/pdf-viewer/usePdfPageRender";
 
 interface PdfPageProps {
   pdf: PDFDocumentProxy;
