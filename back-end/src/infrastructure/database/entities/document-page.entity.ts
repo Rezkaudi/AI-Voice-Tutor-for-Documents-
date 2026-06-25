@@ -1,16 +1,9 @@
-import {
-  Column,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  PrimaryColumn
-} from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 import { DocumentOrmEntity } from "./document.entity";
 
-/** TypeORM persistence model for a single extracted page. */
 @Entity({ name: "document_pages" })
 @Index(["documentId", "pageNumber"], { unique: true })
+
 export class DocumentPageOrmEntity {
   @PrimaryColumn("uuid")
   id!: string;

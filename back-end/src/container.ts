@@ -74,11 +74,7 @@ export interface Container {
 }
 
 export async function buildContainer(): Promise<Container> {
-  // ─── Cross-cutting ───────────────────────────────────────────────────────
-  // One logger, injected as the `Logger` port wherever a flow needs tracing.
-  // Verbosity is decided here, once, from the environment.
   const logger = new ConsoleLogger(ENV_CONFIG.TUTOR_LOG_VERBOSE);
-  // Single id/token source, injected wherever a UUID or random token is needed.
   const idGenerator = new CryptoIdGenerator();
 
   // ─── Persistence ─────────────────────────────────────────────────────────

@@ -1,29 +1,13 @@
 import type { CitationCandidate } from "@/domain/logic/citation-resolver";
 
-/** The spoken reply with its trailer removed, plus the citations it declared. */
 export interface ParsedReply {
   spokenText: string;
   candidates: CitationCandidate[];
 }
 
-/**
- * Parses the CITATIONS trailer the tutor is instructed to append to each reply:
- *
- *     CITATIONS:
- *     [[1]] page=15 "exact quote from that page"
- *     [[2]] page=16 "another exact quote"
- *
- * This replaces the `cite_passages` tool call — same `{ page, quote }` payload,
- * but carried in the answer itself so the turn costs a single model round-trip.
- * The block is stripped from the spoken text; its lines become citation
- * candidates ordered by their `[[N]]` label, so candidate `K-1` grounds marker
- * `[[K]]` exactly as the tool's array order used to. Malformed lines are
- * dropped; a reply without a trailer yields no candidates.
- */
 export class CitationTrailerParser {
   private static readonly HEADER = /^[ \t]*CITATIONS:?[ \t]*$/gim;
   private static readonly LINE = /^\s*\[\[(\d+)\]\]\s*page\s*[=:]?\s*(\d+)\s*(.+?)\s*$/;
-  /** Straight/curly double quotes the model may wrap the quote in. */
   private static readonly WRAPPING_QUOTES = /^["“”]+|["“”]+$/g;
 
   parse(text: string): ParsedReply {
@@ -57,7 +41,6 @@ export class CitationTrailerParser {
     };
   }
 
-  /** The last `CITATIONS:` line, so a spoken mention earlier can't truncate the reply. */
   private lastHeaderMatch(text: string): { start: number; end: number } | null {
     CitationTrailerParser.HEADER.lastIndex = 0;
     let last: { start: number; end: number } | null = null;

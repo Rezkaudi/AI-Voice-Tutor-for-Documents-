@@ -1,7 +1,4 @@
-import type {
-  DocumentChunk,
-  DocumentRecord
-} from "@/domain/entities/document";
+import type { DocumentChunk, DocumentRecord } from "@/domain/entities/document";
 import { UnprocessableEntityError } from "@/domain/errors/app-error";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
@@ -13,9 +10,7 @@ import type { UploadValidator } from "@/domain/logic/upload-validator";
 import type { FileNaming } from "@/domain/logic/file-naming";
 import type { Logger } from "@/domain/services/logger";
 
-/** The uploaded file as received by the application layer. */
 export interface UploadDocumentInput {
-  /** The owner this document belongs to. */
   readonly userId: string;
   readonly buffer: Buffer;
   readonly filename: string;
@@ -28,18 +23,6 @@ export interface UploadDocumentResult {
   status: DocumentRecord["status"];
 }
 
-/**
- * Processes an uploaded lesson file:
- *   1. validates type and size,
- *   2. extracts ordered pages of text,
- *   3. stores the original file in object storage,
- *   4. persists the document and its pages.
- *
- * NOTE: chunking and embedding are currently DISABLED (see the inline notes in
- * `execute` and the unused `embedInBackground` below). The tutor teaches only
- * the learner's selected pages, so chunks/embeddings are never read. Re-enable
- * those two blocks to restore whole-document retrieval.
- */
 export class UploadDocumentUseCase {
   constructor(
     private readonly repository: DocumentRepository,
@@ -51,13 +34,13 @@ export class UploadDocumentUseCase {
     private readonly naming: FileNaming,
     private readonly idGenerator: IdGenerator,
     private readonly logger: Logger
-  ) {}
+  ) { }
 
   async execute(input: UploadDocumentInput): Promise<UploadDocumentResult> {
     const log = this.logger.scope("upload");
     log.info(
       `received "${input.filename}" · ${(input.size / 1024).toFixed(1)} KiB · ` +
-        `${input.mimeType || "(no mime)"}`
+      `${input.mimeType || "(no mime)"}`
     );
 
     const validation = this.validator.validate({
@@ -77,21 +60,12 @@ export class UploadDocumentUseCase {
     );
     log.info(`extracted ${pages.length} page(s)`);
 
-    // ─── CHUNKING + EMBEDDING DISABLED ───────────────────────────────────────
-    // The tutor now teaches only the learner's selected pages (their full text
-    // is injected straight into the prompt), so chunks and their embeddings are
-    // never read at answer time. We skip creating and storing them to save the
-    // embedding API cost, the DB rows, and the upload latency. Re-enable BOTH
-    // this block and `embedInBackground` below to restore whole-document
-    // retrieval (`search_document`).
     // const chunks: DocumentChunk[] = this.chunker.chunk(pages).map((chunk) => ({
     //   ...chunk,
     //   documentId: id
     // }));
     const chunks: DocumentChunk[] = [];
 
-    // Reject files with no extractable text. This used to check the chunk count;
-    // with chunking off we check the page text directly instead.
     const hasText = pages.some((page) => page.text.trim().length > 0);
     if (!hasText) {
       log.warn("no searchable text found in any page — rejecting");
@@ -126,40 +100,34 @@ export class UploadDocumentUseCase {
       error: null
     };
 
-    // `chunks` is intentionally empty (see note above), so no chunk rows are
-    // written — only the document record and its pages are persisted.
     await this.repository.save({ record, pages, chunks });
     log.info(`persisted document and pages · status=${record.status}`);
 
-    // ─── EMBEDDING DISABLED (see note above) ─────────────────────────────────
-    // No chunks were created, so there is nothing to embed. Re-enable alongside
-    // the chunking block above to restore background embeddings.
     // log.info(`embedding ${chunks.length} chunk(s) in background → returning now`);
     // void this.embedInBackground(id, chunks, log);
 
     return { documentId: id, status: record.status };
   }
 
-  /** Computes and stores chunk embeddings after the response is sent. */
-  private async embedInBackground(
-    documentId: string,
-    chunks: DocumentChunk[],
-    log: Logger
-  ): Promise<void> {
-    try {
-      const vectors = await this.embeddings.embedTexts(
-        chunks.map((chunk) => chunk.text)
-      );
-      await this.repository.updateChunkEmbeddings(
-        documentId,
-        chunks.map((chunk, index) => ({
-          id: chunk.id,
-          embedding: vectors[index] ?? null
-        }))
-      );
-      log.info(`embeddings stored for document ${documentId}`);
-    } catch (error) {
-      log.error(`background embedding failed for document ${documentId}`, error);
-    }
-  }
+  // private async embedInBackground(
+  //   documentId: string,
+  //   chunks: DocumentChunk[],
+  //   log: Logger
+  // ): Promise<void> {
+  //   try {
+  //     const vectors = await this.embeddings.embedTexts(
+  //       chunks.map((chunk) => chunk.text)
+  //     );
+  //     await this.repository.updateChunkEmbeddings(
+  //       documentId,
+  //       chunks.map((chunk, index) => ({
+  //         id: chunk.id,
+  //         embedding: vectors[index] ?? null
+  //       }))
+  //     );
+  //     log.info(`embeddings stored for document ${documentId}`);
+  //   } catch (error) {
+  //     log.error(`background embedding failed for document ${documentId}`, error);
+  //   }
+  // }
 }

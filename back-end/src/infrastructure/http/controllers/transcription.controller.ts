@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 import type { TranscribeAudioUseCase } from "@/application/use-cases/transcription/transcribe-audio.use-case";
 
-/** HTTP adapter for speech-to-text (`/api/transcribe`). */
 export class TranscriptionController {
   constructor(private readonly transcribeAudio: TranscribeAudioUseCase) { }
 

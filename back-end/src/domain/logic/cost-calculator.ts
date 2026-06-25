@@ -11,7 +11,6 @@ export class CostCalculator {
     private readonly logger?: Logger
   ) { }
 
-  /** USD cost of one call. */
   usd(usage: AiUsage): number {
     const rate = this.pricing[usage.model] ?? this.fallback(usage.model);
     const cached = Math.min(usage.cachedInputTokens ?? 0, usage.inputTokens);

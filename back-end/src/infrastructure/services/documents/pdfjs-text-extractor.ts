@@ -4,10 +4,6 @@ import { UnprocessableEntityError } from "@/domain/errors/app-error";
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
 import { canonicalizeGlyphs } from "@/shared/text";
 
-/**
- * `DocumentTextExtractor` backed by pdf.js. PDFs are the only supported upload
- * format. Mirrors the original `extract-text` module.
- */
 export class PdfJsTextExtractor implements DocumentTextExtractor {
   async extract(buffer: Buffer, _kind: UploadKind): Promise<DocumentPage[]> {
     return this.extractPdfPages(buffer);
@@ -43,7 +39,6 @@ export class PdfJsTextExtractor implements DocumentTextExtractor {
   }
 }
 
-/** A positioned text run from pdf.js (`transform` is `[a, b, c, d, x, y]`). */
 interface PositionedItem {
   str: string;
   x: number;
@@ -51,22 +46,6 @@ interface PositionedItem {
   height: number;
 }
 
-/**
- * Builds the page text from pdf.js text items in true VISUAL reading order.
- *
- * pdf.js returns items in CONTENT-STREAM order, which is how the PDF was
- * authored, not how it reads on the page. Generator tools frequently emit a
- * boxed "Meaning / How To Use" table LAST in the stream even though it is drawn
- * near the top — so naively concatenating items dumps that box at the BOTTOM of
- * the extracted text. We instead reconstruct order from each item's position:
- * group runs into lines by their baseline `y` (top→bottom), then sort each line
- * left→right by `x`. This keeps tables, conjugation grids, and side-by-side
- * boxes in the order a reader actually sees them.
- *
- * Newlines are safe downstream: the citation matchers collapse all whitespace
- * (newlines included) to single spaces with an offset map, so highlighting is
- * unaffected, while the LLM now SEES the layout in the injected lesson material.
- */
 function itemsToLayoutText(items: readonly unknown[]): string {
   const positioned: PositionedItem[] = [];
   for (const item of items) {
@@ -86,14 +65,6 @@ function itemsToLayoutText(items: readonly unknown[]): string {
   return normalizeLayoutText(positionedItemsToText(positioned));
 }
 
-/**
- * Orders positioned runs into top-to-bottom, left-to-right reading order.
- *
- * Runs whose baselines sit within a small vertical tolerance are treated as the
- * same visual line; the tolerance scales with glyph height so large headings and
- * small body text both group correctly. Lines are emitted top→bottom (PDF `y`
- * grows upward, so we sort descending) and each line's runs left→right.
- */
 function positionedItemsToText(items: PositionedItem[]): string {
   if (items.length === 0) return "";
 
@@ -127,17 +98,12 @@ const RTL_CHARS = /[\u0590-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\
 /** Strong LTR letters: Latin, Greek, Cyrillic, and CJK (all read left→right). */
 const LTR_CHARS = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u3040-\u30FF\u3400-\u9FFF]/g;
 
-/** A line reads right-to-left when its strong RTL chars outnumber its LTR ones. */
 function isRightToLeft(text: string): boolean {
   const rtl = text.match(RTL_CHARS)?.length ?? 0;
   const ltr = text.match(LTR_CHARS)?.length ?? 0;
   return rtl > ltr;
 }
 
-/**
- * Collapses runs of intra-line spaces while keeping newlines, so layout (rows,
- * list items, headings on their own line) is retained but stray spacing is not.
- */
 function normalizeLayoutText(text: string): string {
   return text
     .replace(/[^\S\n]+/g, " ") // collapse spaces/tabs but NOT newlines
@@ -146,19 +112,6 @@ function normalizeLayoutText(text: string): string {
     .trim();
 }
 
-/**
- * Removes running footers/headers (e.g. "JLPTsensei.com 10") that repeat across
- * pages and would otherwise pollute citations — the worst case being a footer
- * that pdf.js glued onto a real content line, so a "How To Use" block citation
- * dragged "JLPTsensei.com 10" into the highlight.
- *
- * Detection works at the TRAILING/LEADING token level rather than whole lines,
- * because the footer is often fused onto the last content line ("…い-adjective
- * JLPTsensei.com 10") and so never appears standalone. We count the trailing
- * phrase of each page's last line (page number dropped) and the leading phrase
- * of its first line; a phrase recurring on a large share of pages is boilerplate
- * and is then stripped from page edges everywhere — even when glued to content.
- */
 function stripRunningBoilerplate(pages: DocumentPage[]): DocumentPage[] {
   if (pages.length < 4) return pages; // too few pages to tell repetition apart
 
@@ -175,7 +128,6 @@ function stripRunningBoilerplate(pages: DocumentPage[]): DocumentPage[] {
     if (lines.length === 0) continue;
     const lastTokens = withoutEdgeNumbers(lines[lines.length - 1]!.split(/\s+/));
     const firstTokens = withoutEdgeNumbers(lines[0]!.split(/\s+/));
-    // candidate phrases: the last 1-3 tokens of the footer, first 1-3 of header
     for (let n = 1; n <= 3 && n <= lastTokens.length; n += 1) {
       bump(trailing, lastTokens.slice(lastTokens.length - n).join(" "));
     }
@@ -189,7 +141,7 @@ function stripRunningBoilerplate(pages: DocumentPage[]): DocumentPage[] {
     [...map]
       .filter(([, count]) => count >= threshold)
       .map(([phrase]) => phrase)
-      .sort((a, b) => b.length - a.length); // longest first → fullest match
+      .sort((a, b) => b.length - a.length);
 
   const trailingPhrases = pick(trailing);
   const leadingPhrases = pick(leading);
@@ -216,7 +168,6 @@ function stripRunningBoilerplate(pages: DocumentPage[]): DocumentPage[] {
   });
 }
 
-/** Drops pure-number tokens from both ends (page numbers vary per page). */
 function withoutEdgeNumbers(tokens: string[]): string[] {
   const copy = [...tokens];
   while (copy.length && /^\d+$/.test(copy[copy.length - 1]!)) copy.pop();
@@ -224,15 +175,10 @@ function withoutEdgeNumbers(tokens: string[]): string[] {
   return copy;
 }
 
-/** Escapes a string for safe use inside a RegExp. */
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/**
- * pdf.js expects a handful of browser canvas globals. Install lightweight
- * native implementations once, before the library is loaded.
- */
 function installPdfJsNodePolyfills(): void {
   const globals = globalThis as unknown as {
     DOMMatrix?: typeof DOMMatrix;

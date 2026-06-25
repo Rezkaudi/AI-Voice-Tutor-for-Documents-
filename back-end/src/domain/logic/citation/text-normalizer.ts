@@ -1,21 +1,10 @@
 import type { Span } from "@/domain/logic/citation/citation-types";
 
-/**
- * Produces normalised views of page text alongside an `offsets` array that maps
- * every normalised-string index back to its original-string index.
- *
- * Quote matching happens against the normalised text (whitespace-collapsed, or
- * lowercased + punctuation-stripped); {@link mapToSpan} then translates a match
- * found there into a {@link Span} over the *original* text, so the renderer
- * always highlights the real glyphs.
- */
 export class TextNormalizer {
-  /** Collapses every whitespace run in a standalone string to one space. */
   collapseWhitespace(value: string): string {
     return value.replace(/\s+/g, " ").trim();
   }
 
-  /** Original text with whitespace runs collapsed to a single space, + offsets. */
   collapseWithOffsets(text: string): { normalized: string; offsets: number[] } {
     let normalized = "";
     const offsets: number[] = [];
@@ -37,7 +26,6 @@ export class TextNormalizer {
     return this.trimTrailingSpace(normalized, offsets);
   }
 
-  /** Lowercased, punctuation-stripped view (gaps become single spaces), + offsets. */
   looseWithOffsets(text: string): { normalized: string; offsets: number[] } {
     let normalized = "";
     const offsets: number[] = [];
@@ -57,7 +45,6 @@ export class TextNormalizer {
     return this.trimTrailingSpace(normalized, offsets);
   }
 
-  /** Maps a `[start, length)` range in normalised space to a {@link Span}. */
   mapToSpan(
     offsets: number[],
     normalizedStart: number,

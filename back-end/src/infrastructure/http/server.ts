@@ -26,7 +26,6 @@ export interface ServerDependencies {
   speech: SpeechController;
   transcription: TranscriptionController;
   auth: AuthController;
-  /** The gate applied to every non-auth API route. */
   requireAuth: RequestHandler;
 }
 
@@ -44,24 +43,18 @@ export class Server {
   }
 
   private configureMiddleware(): void {
-    // Trust the proxy so `Secure` cookies and client IPs work behind one.
     this.app.set("trust proxy", 1);
     this.app.disable("x-powered-by");
 
     this.app.use(cors(corsOptions));
-    // JSON for normal endpoints; multipart bodies are handled per-route by multer.
     this.app.use(express.json({ limit: "5mb" }));
-    // Parse the HTTP-only session cookies the auth flow reads.
     this.app.use(cookieParser());
   }
 
   private configureRoutes(): void {
     const apiRoutes = Router();
 
-    // Auth routes are public (sign-in must work without a session); mount them
-    // before the gate. Everything after `requireAuth` needs a valid session.
     apiRoutes.use(buildAuthRoutes(this.deps.auth, this.deps.requireAuth));
-
     apiRoutes.use(this.deps.requireAuth);
     apiRoutes.use(buildDocumentRoutes(this.deps.documents));
     apiRoutes.use(buildChatRoutes(this.deps.chat));
@@ -86,7 +79,6 @@ export class Server {
     });
   }
 
-  /** Exposes the configured app without binding a port — the seam for supertest integration tests. */
   public getApp(): Application {
     return this.app;
   }

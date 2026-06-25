@@ -1,12 +1,4 @@
-/**
- * Unicode-aware word-set similarity used by the fuzzy quote matcher.
- *
- * Quotes the model paraphrases or lightly edits won't match as substrings, but
- * they still share most of their words; {@link jaccard} over {@link tokenize}
- * sets gives a cheap overlap score for the sliding-window search.
- */
 export class TokenSimilarity {
-  /** Lowercased, script-folded word set, dropping tokens of 2 chars or fewer. */
   tokenize(value: string): Set<string> {
     return new Set(
       foldArabic(value.toLowerCase())

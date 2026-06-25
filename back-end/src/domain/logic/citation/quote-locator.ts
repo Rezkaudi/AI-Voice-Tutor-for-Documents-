@@ -2,24 +2,13 @@ import type { Span } from "@/domain/logic/citation/citation-types";
 import type { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
 import type { TokenSimilarity } from "@/domain/logic/citation/token-similarity";
 
-/**
- * Locates a verbatim quote inside its source page and returns its character
- * {@link Span}, trying progressively looser strategies:
- *
- *   1. exact substring — the fast path when the model quotes cleanly;
- *   2. whitespace-collapsed match, mapped back to original offsets;
- *   3. lowercased + punctuation-stripped match, then a token-set sliding window
- *      that rescues lightly paraphrased quotes above {@link FUZZY_MIN_SIMILARITY}.
- *
- * Returns `null` when nothing clears the floor, so the caller can drop the quote.
- */
 export class QuoteLocator {
   private static readonly FUZZY_MIN_SIMILARITY = 0.82;
 
   constructor(
     private readonly normalizer: TextNormalizer,
     private readonly similarity: TokenSimilarity
-  ) {}
+  ) { }
 
   locate(pageText: string, quote: string): Span | null {
     const direct = pageText.indexOf(quote);
@@ -32,7 +21,6 @@ export class QuoteLocator {
     );
   }
 
-  /** Strategy 2 — match after collapsing every whitespace run to one space. */
   private matchCollapsed(pageText: string, target: string): Span | null {
     if (!target) {
       return null;
@@ -48,7 +36,6 @@ export class QuoteLocator {
     return this.normalizer.mapToSpan(offsets, index, target.length, pageText.length);
   }
 
-  /** Strategy 3 — loose substring, then a token-set similarity sliding window. */
   private matchLoose(pageText: string, quote: string): Span | null {
     const { normalized: looseQuote } = this.normalizer.looseWithOffsets(quote);
     if (!looseQuote) {

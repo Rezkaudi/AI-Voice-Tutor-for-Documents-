@@ -4,44 +4,26 @@ import type { CitationCandidate } from "@/domain/logic/citation-resolver";
 import type { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import type { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
 import type { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
-import type {
-  TutorReplyRequest,
-  TutorService,
-  TutorStreamEvent
-} from "@/domain/services/tutor-service";
+import type { TutorReplyRequest, TutorService, TutorStreamEvent } from "@/domain/services/tutor-service";
 import type { EnvConfig } from "@/config/env.config";
 import type { Logger } from "@/domain/services/logger";
 import { TutorRequestFactory } from "./tutor-request-factory";
 import { TutorToolExecutor } from "./tutor-tool-executor";
 import { CitationTrailerParser } from "./citation-trailer-parser";
-import {
-  OpenAiResponseStreamReader,
-  type PendingToolCall
-} from "./openai-response-stream-reader";
+import { OpenAiResponseStreamReader, type PendingToolCall } from "./openai-response-stream-reader";
 import { truncate } from "@/shared/logger";
 
-/** OpenAI's streaming create call, narrowed to what this adapter uses. */
 type CreateResponse = (
   body: Record<string, unknown>,
   options: { signal: AbortSignal }
 ) => Promise<AsyncIterable<Record<string, unknown>>>;
 
-/** Mutable per-turn state threaded through the agentic loop. */
 interface TurnState {
   referencesByPage: Map<number, Reference>;
   fallbackReference: Reference | null;
   citedCandidates: CitationCandidate[];
 }
 
-/**
- * `TutorService` backed by OpenAI.
- *
- * The model reads the document agentically: it calls `search_document` /
- * `get_page` (run by {@link TutorToolExecutor}) and grounds its reply with a
- * CITATIONS trailer parsed by {@link CitationTrailerParser}. This class only
- * drives that loop — request assembly, stream decoding, reference selection,
- * and marker reconciliation are each delegated to a collaborator.
- */
 export class OpenAiTutorService implements TutorService {
   private readonly client: OpenAI;
   private readonly requests: TutorRequestFactory;
@@ -60,10 +42,8 @@ export class OpenAiTutorService implements TutorService {
     this.requests = new TutorRequestFactory(config);
   }
 
-  async *streamReply(
-    request: TutorReplyRequest,
-    signal: AbortSignal
-  ): AsyncGenerator<TutorStreamEvent> {
+  async *streamReply(request: TutorReplyRequest, signal: AbortSignal): AsyncGenerator<TutorStreamEvent> {
+
     const createResponse = this.bindCreateResponse();
     const settings = this.requests.settingsFor(request);
     const log = this.logger.scope("tutor");
@@ -80,8 +60,6 @@ export class OpenAiTutorService implements TutorService {
       `· pages=${request.pages.length} · chunks=${request.chunks.length}`
     );
 
-    // First turn carries history + the student's message; later turns chain off
-    // `previous_response_id` and carry only tool outputs.
     let pendingInput = this.requests.initialInput(request, settings);
     let previousResponseId: string | undefined;
 
@@ -89,7 +67,6 @@ export class OpenAiTutorService implements TutorService {
     let outputTokens = 0;
     let cachedInputTokens = 0;
 
-    // Confirm the chosen lesson pages were injected as developer-role material.
     if (request.selectedPages.length > 0) {
       const lesson = pendingInput.find((item) => item.role === "developer");
       const chars = typeof lesson?.content === "string" ? lesson.content.length : 0;
@@ -124,8 +101,6 @@ export class OpenAiTutorService implements TutorService {
         (stepText ? ` · ${stepText.length} chars of text` : "")
       );
 
-      // No tool calls → the model has produced its final spoken answer. Pull
-      // the CITATIONS trailer out of it before anything downstream sees it.
       if (toolCalls.length === 0) {
         if (stepText) {
           const { spokenText, candidates } = this.trailer.parse(stepText);
@@ -152,8 +127,6 @@ export class OpenAiTutorService implements TutorService {
         return;
       }
 
-      // Any text the model emitted alongside its tool calls — useful for tracing
-      // its reasoning between steps.
       if (stepText) {
         log.detail("model interim text", stepText);
       }
@@ -170,7 +143,6 @@ export class OpenAiTutorService implements TutorService {
     );
   }
 
-  /** Builds the terminal usage event for the turn (and traces it). */
   private usageEvent(
     model: string,
     inputTokens: number,
@@ -188,7 +160,6 @@ export class OpenAiTutorService implements TutorService {
     };
   }
 
-  /** Resolves the reference, reconciles `[[N]]` markers, and emits the answer. */
   private *emitAnswer(
     stepText: string,
     request: TutorReplyRequest,
@@ -217,7 +188,6 @@ export class OpenAiTutorService implements TutorService {
     yield { type: "delta", text };
   }
 
-  /** Runs each tool call and returns the function outputs for the next turn. */
   private async runToolCalls(
     toolCalls: ReadonlyArray<PendingToolCall>,
     request: TutorReplyRequest,
@@ -250,7 +220,6 @@ export class OpenAiTutorService implements TutorService {
     return { type: "function_call_output", call_id: callId, output };
   }
 
-  /** Binds `create` to keep `this` — a detached call loses its client. */
   private bindCreateResponse(): CreateResponse {
     return this.client.responses.create.bind(
       this.client.responses
@@ -258,7 +227,6 @@ export class OpenAiTutorService implements TutorService {
   }
 }
 
-/** Renders recorded citation candidates as `[page N] "quote"` lines. */
 function formatCitations(candidates: ReadonlyArray<CitationCandidate>): string {
   if (candidates.length === 0) {
     return "(none — quotes must be exact substrings of the page text)";

@@ -78,9 +78,6 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   OPENAI_SPEECH_MODEL: getEnv("OPENAI_SPEECH_MODEL") || "gpt-4o-mini-tts",
   OPENAI_SPEECH_VOICE: getEnv("OPENAI_SPEECH_VOICE") || "alloy",
 
-  // Verbose tutor tracing: dump the full result of each agentic step (tool
-  // output, recorded citations, answer text). On by default outside production;
-  // set TUTOR_LOG_VERBOSE=false to keep only the concise step summaries.
   TUTOR_LOG_VERBOSE: bool(
     getEnv("TUTOR_LOG_VERBOSE"),
     (getEnv("NODE_ENV") || "development") !== "production"
@@ -92,9 +89,7 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   GOOGLE_CALLBACK_URL: requireEnv("GOOGLE_CALLBACK_URL"),
   JWT_ACCESS_SECRET: requireEnv("JWT_ACCESS_SECRET"),
   JWT_REFRESH_SECRET: requireEnv("JWT_REFRESH_SECRET"),
-  // Short-lived access token; long-lived refresh token ("1 week").
   ACCESS_TOKEN_TTL: getEnv("ACCESS_TOKEN_TTL") || "1d",
   REFRESH_TOKEN_TTL: getEnv("REFRESH_TOKEN_TTL") || "7d",
-  // Where the OAuth callback sends the browser once cookies are set.
   FRONTEND_URL: getEnv("FRONTEND_URL") || "http://localhost:5173",
 });

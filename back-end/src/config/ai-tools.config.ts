@@ -1,7 +1,3 @@
-/**
- * Tools the tutor calls to read the document on demand. Shape matches the
- * OpenAI Responses API (flat function tools).
- */
 export const TUTOR_TOOLS = [
   {
     type: "function",

@@ -1,10 +1,3 @@
-/**
- * Turns free text into lowercased, de-duplicated, de-noised content terms.
- *
- * A single shared tokenizer keeps keyword ranking ({@link ChunkRanker}) and the
- * answer-based citation fallback ({@link CitationResolver}) scoring against the
- * same notion of a "word", so their relevance judgements stay consistent.
- */
 export class TextTokenizer {
   private static readonly STOP_WORDS = new Set([
     "a", "an", "and", "are", "as", "at", "be", "by", "do", "does", "for", "from",
@@ -12,7 +5,6 @@ export class TextTokenizer {
     "what", "when", "where", "which", "who", "why"
   ]);
 
-  /** Lowercased, de-duplicated, de-noised content terms of a string. */
   tokenize(value: string): string[] {
     return Array.from(
       new Set(

@@ -5,10 +5,6 @@ import { ENV_CONFIG } from "@/config/env.config";
 import { Server } from "@/infrastructure/http/server";
 import { logger } from "@/shared/logger";
 
-/**
- * Process entry point: builds the dependency graph, starts the HTTP server,
- * and shuts both down cleanly on SIGINT / SIGTERM.
- */
 async function bootstrap(): Promise<void> {
   const { dataSource, deps } = await buildContainer();
   const appServer = new Server(ENV_CONFIG.PORT, deps);
@@ -27,7 +23,6 @@ async function bootstrap(): Promise<void> {
         process.exit(0);
       }
     });
-    // Force-exit if connections do not drain in time.
     setTimeout(() => process.exit(1), 10_000).unref();
   };
 

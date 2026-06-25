@@ -35,7 +35,6 @@ export class TypeOrmUserRepository implements UserRepository {
       row.id = this.idGenerator.uuid();
       row.googleId = profile.googleId;
     }
-    // Refresh the mutable profile fields on every sign-in.
     row.email = profile.email;
     row.name = profile.name;
     row.picture = profile.picture;
@@ -45,7 +44,6 @@ export class TypeOrmUserRepository implements UserRepository {
   }
 }
 
-/** Maps a persistence row into the framework-free domain user. */
 function toUser(row: UserOrmEntity): User {
   return {
     id: row.id,

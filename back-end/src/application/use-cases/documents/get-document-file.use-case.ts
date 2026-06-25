@@ -2,22 +2,17 @@ import { NotFoundError, ValidationError } from "@/domain/errors/app-error";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 import type { FileStorage } from "@/domain/services/file-storage";
 
-/** The original file's bytes, ready to stream back to the browser. */
 export interface DocumentFileResult {
   body: Buffer;
   contentType: string;
   fileName: string;
 }
 
-/**
- * Streams the original uploaded file back through the authenticated proxy
- * route (`GET /api/documents/:id/file`).
- */
 export class GetDocumentFileUseCase {
   constructor(
     private readonly repository: DocumentRepository,
     private readonly storage: FileStorage
-  ) {}
+  ) { }
 
   async execute(documentId: unknown, userId: string): Promise<DocumentFileResult> {
     if (typeof documentId !== "string" || documentId.trim().length === 0) {

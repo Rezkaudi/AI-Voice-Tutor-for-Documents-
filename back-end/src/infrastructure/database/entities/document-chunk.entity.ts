@@ -1,22 +1,9 @@
-import {
-  Column,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  PrimaryColumn
-} from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 import { DocumentOrmEntity } from "./document.entity";
 
-/**
- * TypeORM persistence model for a retrieval chunk.
- *
- * The embedding is stored as JSONB (a `number[]`). Ranking runs in application
- * memory (`ChunkRanker`), so no `pgvector` extension is required — keeping the
- * schema portable across any PostgreSQL instance.
- */
 @Entity({ name: "document_chunks" })
 @Index(["documentId", "chunkIndex"])
+
 export class DocumentChunkOrmEntity {
   @PrimaryColumn("uuid")
   id!: string;

@@ -1,22 +1,14 @@
 import OpenAI, { toFile } from "openai";
 import { UpstreamError } from "@/domain/errors/app-error";
-import type {
-  SpeechSynthesisService,
-  SynthesizedSpeech,
-  TranscriptionInput,
-  TranscriptionResult,
-  TranscriptionService
-} from "@/domain/services/speech-services";
+import type { SpeechSynthesisService, SynthesizedSpeech, TranscriptionInput, TranscriptionResult, TranscriptionService } from "@/domain/services/speech-services";
 import type { EnvConfig } from "@/config/env.config";
 
 const CHARS_PER_TOKEN = 4;
 
 const AUDIO_TOKENS_PER_TEXT_TOKEN = 6;
 
-const estimateTokens = (text: string): number =>
-  Math.ceil(text.length / CHARS_PER_TOKEN);
+const estimateTokens = (text: string): number => Math.ceil(text.length / CHARS_PER_TOKEN);
 
-/** Text-to-speech via OpenAI (`/api/speak`). */
 export class OpenAiSpeechSynthesisService implements SpeechSynthesisService {
   private readonly client: OpenAI;
 
@@ -51,7 +43,6 @@ export class OpenAiSpeechSynthesisService implements SpeechSynthesisService {
   }
 }
 
-/** Speech-to-text via OpenAI (`/api/transcribe`). */
 export class OpenAiTranscriptionService implements TranscriptionService {
   private readonly client: OpenAI;
 

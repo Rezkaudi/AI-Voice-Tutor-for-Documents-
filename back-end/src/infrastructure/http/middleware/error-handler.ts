@@ -3,21 +3,9 @@ import { MulterError } from "multer";
 import { AppError } from "@/domain/errors/app-error";
 import { logger } from "@/shared/logger";
 
-/**
- * Terminal error middleware. Maps domain `AppError`s onto their HTTP status
- * and a `{ error }` body — the exact shape the front-end reads — and treats
- * every other thrown value as an opaque 500.
- */
 export function errorHandler() {
-  return (
-    error: unknown,
-    req: Request,
-    res: Response,
-    // `next` is required for Express to recognise this as error middleware.
-    _next: NextFunction
-  ): void => {
+  return (error: unknown, req: Request, res: Response, _next: NextFunction): void => {
     if (res.headersSent) {
-      // The response (e.g. an SSE stream) already started — just drop it.
       res.end();
       return;
     }
@@ -47,7 +35,6 @@ export function errorHandler() {
   };
 }
 
-/** 404 handler for unmatched routes. */
 export function notFoundHandler() {
   return (_req: Request, res: Response): void => {
     res.status(404).json({ error: "Not found." });
