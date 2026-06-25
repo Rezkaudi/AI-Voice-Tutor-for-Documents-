@@ -74,11 +74,7 @@ export interface Container {
 }
 
 export async function buildContainer(): Promise<Container> {
-  // ─── Cross-cutting ───────────────────────────────────────────────────────
-  // One logger, injected as the `Logger` port wherever a flow needs tracing.
-  // Verbosity is decided here, once, from the environment.
   const logger = new ConsoleLogger(ENV_CONFIG.TUTOR_LOG_VERBOSE);
-  // Single id/token source, injected wherever a UUID or random token is needed.
   const idGenerator = new CryptoIdGenerator();
 
   // ─── Persistence ─────────────────────────────────────────────────────────
@@ -107,7 +103,7 @@ export async function buildContainer(): Promise<Container> {
   const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
   const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
-  const textExtractor = new PdfJsTextExtractor();
+  const textExtractor = PdfJsTextExtractor.createDefault();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
   const tutorToolExecutor = new TutorToolExecutor(
     embeddingService,

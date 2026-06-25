@@ -4,7 +4,6 @@ import type { Logger } from "@/domain/services/logger";
 import type { CostTracker } from "@/application/services/cost-tracker";
 import { truncate } from "@/shared/logger";
 
-/** A recorded clip submitted for transcription. */
 export interface TranscribeAudioInput {
   readonly audio: Buffer;
   readonly filename: string;
@@ -12,19 +11,15 @@ export interface TranscribeAudioInput {
   readonly language?: string;
 }
 
-/** Transcribes a learner's recorded speech into text. */
 export class TranscribeAudioUseCase {
   constructor(
     private readonly transcription: TranscriptionService,
     private readonly costTracker: CostTracker,
     private readonly logger: Logger
-  ) {}
+  ) { }
 
-  async execute(
-    userId: string,
-    input: TranscribeAudioInput,
-    signal?: AbortSignal
-  ): Promise<{ text: string }> {
+  async execute(userId: string, input: TranscribeAudioInput, signal?: AbortSignal): Promise<{ text: string }> {
+
     const log = this.logger.scope("transcribe");
     if (input.audio.length === 0) {
       log.warn("rejected — no audio received");
@@ -33,7 +28,7 @@ export class TranscribeAudioUseCase {
 
     log.info(
       `learner audio received · ${(input.audio.length / 1024).toFixed(1)} KiB · ` +
-        `${input.contentType} · lang=${input.language ?? "auto"} → transcribing`
+      `${input.contentType} · lang=${input.language ?? "auto"} → transcribing`
     );
     const result = await this.transcription.transcribe(input, signal);
     const text = result.text.trim();

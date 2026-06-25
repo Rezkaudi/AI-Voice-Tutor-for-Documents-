@@ -7,23 +7,16 @@ export interface ChunkOptions {
   overlapChars?: number;
 }
 
-/**
- * Splits extracted pages into overlapping, embeddable chunks.
- *
- * Pure: text is handed in, chunks come out — no I/O. The overlap keeps a
- * sentence that straddles a chunk boundary retrievable from either side.
- */
 export class DocumentChunker {
   private static readonly DEFAULT_MAX_CHARS = 1600;
   private static readonly DEFAULT_OVERLAP_CHARS = 220;
 
-  constructor(private readonly idGenerator: IdGenerator) {}
+  constructor(private readonly idGenerator: IdGenerator) { }
 
-  /** Splits pages into overlapping chunks, in reading order. */
   chunk(
     pages: Array<
       Pick<DocumentPage, "pageNumber" | "text"> &
-        Partial<Pick<DocumentPage, "documentId">>
+      Partial<Pick<DocumentPage, "documentId">>
     >,
     options: ChunkOptions = {}
   ): DocumentChunk[] {

@@ -5,7 +5,6 @@ import type { GetDocumentFileUseCase } from "@/application/use-cases/documents/g
 import type { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
 import type { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
 
-/** HTTP adapter for document upload, retrieval, and file proxy. */
 export class DocumentsController {
   constructor(
     private readonly uploadDocument: UploadDocumentUseCase,
@@ -13,9 +12,8 @@ export class DocumentsController {
     private readonly getDocumentFile: GetDocumentFileUseCase,
     private readonly listDocuments: ListDocumentsUseCase,
     private readonly deleteDocument: DeleteDocumentUseCase
-  ) {}
+  ) { }
 
-  /** GET /api/documents — returns the signed-in user's processed documents. */
   list = async (req: Request, res: Response): Promise<void> => {
     res.json({ documents: await this.listDocuments.execute(req.auth!.userId) });
   };
@@ -57,7 +55,6 @@ export class DocumentsController {
   };
 }
 
-/** Drops control chars, quotes, and backslashes so a filename cannot break the header. */
 function sanitizeHeaderFileName(fileName: string): string {
   const stripped = Array.from(fileName)
     .filter((char) => {

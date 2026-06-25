@@ -1,15 +1,10 @@
 import { ValidationError } from "@/domain/errors/app-error";
-import type {
-  SpeechSynthesisService,
-  SynthesizedSpeech
-} from "@/domain/services/speech-services";
+import type { SpeechSynthesisService, SynthesizedSpeech } from "@/domain/services/speech-services";
 import type { Logger } from "@/domain/services/logger";
 import type { CostTracker } from "@/application/services/cost-tracker";
 import { truncate } from "@/shared/logger";
 
-/** Synthesizes one sentence of tutor speech. */
 export class SynthesizeSpeechUseCase {
-  /** Hard cap so a runaway request cannot bill an unbounded TTS call. */
   private static readonly MAX_CHARS = 4000;
 
   constructor(

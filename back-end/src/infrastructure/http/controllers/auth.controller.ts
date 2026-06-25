@@ -5,14 +5,7 @@ import type { AuthenticateWithGoogleUseCase } from "@/application/use-cases/auth
 import type { GetCurrentUserUseCase } from "@/application/use-cases/auth/get-current-user.use-case";
 import type { GetGoogleAuthUrlUseCase } from "@/application/use-cases/auth/get-google-auth-url.use-case";
 import type { RefreshSessionUseCase } from "@/application/use-cases/auth/refresh-session.use-case";
-import {
-  OAUTH_STATE_COOKIE,
-  REFRESH_TOKEN_COOKIE,
-  clearAuthCookies,
-  clearStateCookie,
-  setAuthCookies,
-  setStateCookie
-} from "@/config/cookies.config";
+import { OAUTH_STATE_COOKIE, REFRESH_TOKEN_COOKIE, clearAuthCookies, clearStateCookie, setAuthCookies, setStateCookie } from "@/config/cookies.config";
 import { logger } from "@/shared/logger";
 
 export class AuthController {

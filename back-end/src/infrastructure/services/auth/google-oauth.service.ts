@@ -20,7 +20,6 @@ export class GoogleOAuthService implements OAuthProvider {
     return this.client.generateAuthUrl({
       scope: SCOPES,
       state,
-      // Force account choice so switching accounts is possible.
       prompt: "select_account"
     });
   }

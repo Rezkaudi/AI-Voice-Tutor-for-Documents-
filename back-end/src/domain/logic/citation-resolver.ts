@@ -7,26 +7,9 @@ import { canonicalizeGlyphs } from "@/shared/text";
 
 export type { CitationCandidate } from "@/domain/logic/citation/citation-types";
 
-/**
- * Turns the tutor's recorded citations (its CITATIONS trailer) into renderable
- * citations.
- *
- * The trailer gives us `{ page, quote }`; the PDF.js text layer needs
- * `{ start, end }` to wrap the matching glyphs. {@link resolve} delegates the
- * per-quote location to {@link QuoteLocator} and de-duplicates the results;
- * {@link autoCiteFromAnswer} falls back to {@link AnswerAutoCiter} when the
- * model recorded no citations at all.
- */
 export class CitationResolver {
-  /** Floor for Latin-script quotes — guards against trivially short matches. */
   private static readonly MIN_QUOTE_LENGTH = 3;
-  /**
-   * Floor for quotes containing CJK characters. CJK is far denser than Latin —
-   * a page TITLE like "だけ" (2 chars) or "だろう" (3) is a real, locatable
-   * citation, so the 3-char Latin floor would wrongly drop it.
-   */
   private static readonly MIN_QUOTE_LENGTH_CJK = 2;
-  /** Hiragana, katakana, CJK ideographs, and half-width kana. */
   private static readonly CJK = /[぀-ヿ㐀-鿿豈-﫿ｦ-ﾟ]/;
 
   constructor(
@@ -34,11 +17,8 @@ export class CitationResolver {
     private readonly autoCiter: AnswerAutoCiter
   ) { }
 
-  /** Maps verbatim quotes to `{ pageNumber, start, end }` spans on their page. */
-  resolve(
-    candidates: ReadonlyArray<CitationCandidate>,
-    pages: ReadonlyArray<DocumentPage>
-  ): Citation[] {
+  resolve(candidates: ReadonlyArray<CitationCandidate>, pages: ReadonlyArray<DocumentPage>): Citation[] {
+
     const pageByNumber = new Map<number, DocumentPage>();
     for (const page of pages) {
       pageByNumber.set(page.pageNumber, page);
@@ -73,10 +53,6 @@ export class CitationResolver {
     return resolved;
   }
 
-  /**
-   * A quote clears the floor when it is long enough for its script: CJK quotes
-   * pass at 2+ chars (so short page titles survive), Latin quotes at 6+.
-   */
   private static longEnough(quote: string): boolean {
     const min = CitationResolver.CJK.test(quote)
       ? CitationResolver.MIN_QUOTE_LENGTH_CJK
@@ -84,12 +60,7 @@ export class CitationResolver {
     return quote.length >= min;
   }
 
-  /** Synthesises citations from the answer when the model skipped `cite_passages`. */
-  autoCiteFromAnswer(
-    answer: string,
-    page: DocumentPage,
-    maxCitations: number = 2
-  ): Citation[] {
+  autoCiteFromAnswer(answer: string, page: DocumentPage, maxCitations: number = 2): Citation[] {
     return this.autoCiter.cite(canonicalizeGlyphs(answer), page, maxCitations);
   }
 }

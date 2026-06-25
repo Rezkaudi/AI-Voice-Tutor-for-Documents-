@@ -1,22 +1,8 @@
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client
-} from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { UpstreamError } from "@/domain/errors/app-error";
-import type {
-  FileStorage,
-  RetrievedFile,
-  StoredFileInput
-} from "@/domain/services/file-storage";
+import type { FileStorage, RetrievedFile, StoredFileInput } from "@/domain/services/file-storage";
 import type { EnvConfig } from "@/config/env.config";
 
-/**
- * `FileStorage` backed by AWS S3. Document files are private in the bucket and
- * only ever reach the browser through the authenticated
- * `/api/documents/:id/file` proxy route.
- */
 export class S3FileStorage implements FileStorage {
   private readonly client: S3Client;
 
@@ -88,7 +74,6 @@ export class S3FileStorage implements FileStorage {
   }
 }
 
-/** True for S3 "object does not exist" errors. */
 function isNotFound(error: unknown): boolean {
   if (typeof error !== "object" || error === null) {
     return false;

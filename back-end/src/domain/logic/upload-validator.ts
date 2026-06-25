@@ -10,12 +10,6 @@ export type ValidationResult =
   | { ok: true; kind: UploadKind }
   | { ok: false; error: string };
 
-/**
- * Decides whether an uploaded file is acceptable and what kind it is.
- *
- * Encapsulates the acceptance policy: PDF only, under the size ceiling. Pure —
- * it inspects metadata only, never the bytes.
- */
 export class UploadValidator {
   static readonly MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
@@ -40,7 +34,6 @@ export class UploadValidator {
     return { ok: true, kind };
   }
 
-  /** Classifies an upload by extension and MIME type. PDF only. */
   detectKind(file: UploadDescriptor): UploadKind | null {
     const extension = this.extensionOf(file.name);
     const mimeType = (file.type ?? "").toLowerCase();
@@ -51,7 +44,6 @@ export class UploadValidator {
     return null;
   }
 
-  /** The default MIME type for a kind, used when the client sent none. */
   defaultContentType(_kind: UploadKind): string {
     return "application/pdf";
   }

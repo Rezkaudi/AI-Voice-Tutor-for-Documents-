@@ -1,4 +1,3 @@
-/** A pending tool call surfaced by one response step. */
 export interface PendingToolCall {
   callId: string;
   name: string;
@@ -11,7 +10,6 @@ export interface StepUsage {
   cachedInputTokens: number;
 }
 
-/** What one streamed response step yields once fully consumed. */
 export interface StreamStep {
   toolCalls: PendingToolCall[];
   stepText: string;
@@ -19,14 +17,7 @@ export interface StreamStep {
   usage?: StepUsage;
 }
 
-/**
- * Drains one OpenAI Responses streaming step into a {@link StreamStep}.
- *
- * Text is buffered per output item because the model can emit several message
- * items in one response (e.g. an interim restatement plus the final answer);
- * concatenating every delta blindly would double the reply. We keep only the
- * last message item — earlier ones are restatements the final item subsumes.
- */
+
 export class OpenAiResponseStreamReader {
   async read(stream: AsyncIterable<Record<string, unknown>>): Promise<StreamStep> {
     const toolCalls: PendingToolCall[] = [];
@@ -67,7 +58,6 @@ export class OpenAiResponseStreamReader {
   }
 }
 
-/** Extracts token counts from a Responses API `usage` object, if present. */
 function readUsage(raw: unknown): StepUsage | undefined {
   if (!raw || typeof raw !== "object") {
     return undefined;

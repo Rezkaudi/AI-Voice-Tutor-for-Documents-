@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 import type { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
 
-/** HTTP adapter for text-to-speech (`/api/speak`). */
 export class SpeechController {
   constructor(private readonly synthesizeSpeech: SynthesizeSpeechUseCase) { }
 

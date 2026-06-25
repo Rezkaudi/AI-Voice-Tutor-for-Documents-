@@ -8,7 +8,6 @@ export interface AuthenticatedUserDto {
   picture: string | null;
 }
 
-
 export interface AuthResultDto {
   user: AuthenticatedUserDto;
   tokens: AuthTokens;
