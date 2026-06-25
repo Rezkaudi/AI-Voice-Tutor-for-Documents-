@@ -15,15 +15,14 @@ interface SessionStore {
   mobilePane: MobilePane;
   speechLanguage: SpeechLanguage;
   saveCost: boolean;
-  /** Pages the student chose for this lesson (1-based, max MAX_LESSON_PAGES). */
   selectedPages: number[];
-  /** Whether the page-picker modal is open. */
   pageDialogOpen: boolean;
-  /** Whether the full lesson transcript is shown. */
   showTranscript: boolean;
-  /** Whether live spoken captions are shown. */
   showCaption: boolean;
+  pendingQuestion: string | null;
   setError: (error: string | null) => void;
+  setPendingQuestion: (question: string | null) => void;
+  dismissQuestion: () => void;
   toggleTranscript: () => void;
   setTranscript: (open: boolean) => void;
   toggleCaption: () => void;
@@ -44,31 +43,26 @@ interface SessionStore {
   closeDocument: () => void;
 }
 
-/**
- * Session store — the orchestrator. Owns cross-cutting workspace state
- * (call mode, language, save-cost, errors, the mobile pane) and wires the
- * interactions that span the document, chat, speech, and voice stores.
- *
- * `mobilePane` values: "document" | "teacher".
- */
 export const useSessionStore = create<SessionStore>((set, get) => ({
   error: null,
   callMode: false,
   hasIntroduced: false,
   mobilePane: "teacher",
   speechLanguage: "",
-  // "Save-cost mode": cheaper tutor model + shorter history. Off by default;
-  // the learner's choice is restored from localStorage via initSaveCost().
   saveCost: false,
-  // The focused lesson defaults to page 1; the picker lets the learner change it.
   selectedPages: [1],
   pageDialogOpen: false,
-  // Transcript starts hidden (the call leads with the avatar + caption);
-  // captions are on by default.
   showTranscript: false,
   showCaption: true,
+  pendingQuestion: null,
 
   setError: (error) => set({ error }),
+
+  setPendingQuestion: (question) => {
+    set({ pendingQuestion: get().callMode ? question : null });
+  },
+
+  dismissQuestion: () => set({ pendingQuestion: null }),
   toggleTranscript: () => set((s) => ({ showTranscript: !s.showTranscript })),
   setTranscript: (showTranscript) => set({ showTranscript }),
   toggleCaption: () => set((s) => ({ showCaption: !s.showCaption })),
@@ -89,6 +83,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   /** A final voice transcript: caption it, then send it as a chat message. */
   handleVoiceTranscript: (transcript) => {
     const trimmed = transcript.trim();
+    // The learner is answering — close the question popup immediately.
+    if (get().pendingQuestion) set({ pendingQuestion: null });
     if (trimmed) {
       // Play the learner's words back as a caption before the teacher replies.
       useSpeechStore.getState().showUserCaption(trimmed);
@@ -110,7 +106,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   clearChat: () => {
     useChatStore.getState().resetMessages();
     useDocumentStore.getState().applyReference(null);
-    set({ hasIntroduced: false, error: null });
+    set({ hasIntroduced: false, error: null, pendingQuestion: null });
     if (get().callMode) {
       set({ callMode: false });
       useVoiceStore.getState().cancel();
@@ -128,6 +124,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     if (voice.isListening) {
       voice.stop();
     } else {
+      if (get().pendingQuestion) set({ pendingQuestion: null });
       useChatStore.getState().abort();
       useSpeechStore.getState().stopSpeaking();
       useSpeechStore.getState().unlockAudio();
@@ -142,9 +139,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
    */
   handleCallToggle: async () => {
     if (get().callMode) {
-      set({ callMode: false });
-      // End the call: abort every in-flight request — chat stream,
-      // transcription, and TTS — alongside stopping the mic and playback.
+      set({ callMode: false, pendingQuestion: null });
       useChatStore.getState().abort();
       useVoiceStore.getState().cancel();
       useSpeechStore.getState().stopSpeaking();
@@ -156,8 +151,6 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       return;
     }
 
-    // Always confirm the lesson pages before a call starts — this is the
-    // learner's chance to edit them every time they call.
     set({ pageDialogOpen: true });
   },
 
@@ -171,11 +164,6 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   /** Close the page-picker without changing anything. */
   closePageDialog: () => set({ pageDialogOpen: false }),
 
-  /**
-   * Confirm the chosen lesson pages. Mid-call this just updates the selection
-   * (the next message picks it up). Before a call it also starts the call:
-   * grab the mic, then either greet-and-teach or resume listening.
-   */
   submitPageSelection: async (pages) => {
     useSpeechStore.getState().unlockAudio();
 
@@ -186,8 +174,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     if (get().callMode) return;
 
     const voice = useVoiceStore.getState();
-    // Ask for the mic up front, on this click — the one chance for a clean
-    // one-click grant before the user can block it.
+
     const granted = await voice.requestPermission();
     if (!granted) return;
 
@@ -222,7 +209,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       useVoiceStore.getState().cancel();
     }
     // A different document is a fresh lesson — reset the page selection.
-    set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false });
+    set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false, pendingQuestion: null });
     await docs.selectDocument(documentId);
   },
 
@@ -234,7 +221,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       set({ callMode: false });
       useVoiceStore.getState().cancel();
     }
-    set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false, error: null });
+    set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false, error: null, pendingQuestion: null });
     useDocumentStore.getState().closeDocument();
   }
 }));

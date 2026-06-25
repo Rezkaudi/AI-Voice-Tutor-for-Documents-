@@ -6,14 +6,10 @@ import type {
 import type { ChatMessage, Reference } from "@/domain/entities/chat";
 import type { AiUsage } from "@/domain/services/ai-usage";
 
-/**
- * One streamed tutor turn: a slice of spoken text, a page reference for the UI
- * to highlight, or — once at the end — the token usage the turn consumed (for
- * per-user cost accounting). Mirrors the original `TutorStreamEvent`.
- */
 export type TutorStreamEvent =
   | { type: "delta"; text: string }
   | { type: "reference"; reference: Reference }
+  | { type: "question"; text: string }
   | { type: "usage"; usage: AiUsage };
 
 /** Everything the tutor needs to compose a streamed reply. */

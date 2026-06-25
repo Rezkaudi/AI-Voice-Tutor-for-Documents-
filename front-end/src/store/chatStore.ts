@@ -73,6 +73,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
 
       const session = useSessionStore.getState();
       session.setError(null);
+      session.setPendingQuestion(null);
       set({ isStreaming: true });
 
       const userMessage: ChatMessage = {
@@ -112,8 +113,8 @@ export const useChatStore = create<ChatStore>((set, get) => {
           speechSession: useSpeechStore.getState().createSpeechSession(),
           onText: (text) => patchAssistant(assistantId, { content: text }),
           onReference: (reference) => applyReference(assistantId, reference),
-          onFocusCitation: (citation) =>
-            useDocumentStore.getState().focusCitation(citation)
+          onFocusCitation: (citation) => useDocumentStore.getState().focusCitation(citation),
+          onQuestion: (question) => useSessionStore.getState().setPendingQuestion(question)
         });
 
         useSessionStore.getState().maybeContinueCall();

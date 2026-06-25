@@ -25,6 +25,7 @@ import { AnswerAutoCiter } from "@/domain/logic/citation/answer-auto-citer";
 import { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
 import { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
+import { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
 import { DocumentChunker } from "@/domain/logic/document-chunker";
 import { UploadValidator } from "@/domain/logic/upload-validator";
 import { FileNaming } from "@/domain/logic/file-naming";
@@ -92,6 +93,7 @@ export async function buildContainer(): Promise<Container> {
   const referenceFactory = new DocumentReferenceFactory();
   const referenceSelector = new ReferenceSelector(citationResolver, referenceFactory);
   const citationMarkerReconciler = new CitationMarkerReconciler();
+  const learnerQuestionExtractor = new LearnerQuestionExtractor();
   const documentChunker = new DocumentChunker(idGenerator);
   const uploadValidator = new UploadValidator();
   const fileNaming = new FileNaming();
@@ -117,6 +119,7 @@ export async function buildContainer(): Promise<Container> {
     tutorToolExecutor,
     referenceSelector,
     citationMarkerReconciler,
+    learnerQuestionExtractor,
     logger
   );
   const speechService = new OpenAiSpeechSynthesisService(ENV_CONFIG);

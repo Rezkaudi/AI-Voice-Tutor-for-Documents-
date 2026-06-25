@@ -75,6 +75,7 @@ export interface ChatPayload {
 export type StreamEvent =
   | { event: "meta"; data: { reference: DocumentReference | null } }
   | { event: "delta"; data: { text: string } }
+  | { event: "question"; data: { text: string } }
   | { event: "done"; data: Record<string, unknown> }
   | { event: "error"; data: { error: string } };
 

@@ -18,6 +18,7 @@ export function useWorkspaceState() {
   const pageDialogOpen = useSessionStore((s) => s.pageDialogOpen);
   const showTranscript = useSessionStore((s) => s.showTranscript);
   const showCaption = useSessionStore((s) => s.showCaption);
+  const pendingQuestion = useSessionStore((s) => s.pendingQuestion);
 
   const loadedDocument = useDocumentStore((s) => s.loadedDocument);
   const uploadState = useDocumentStore((s) => s.uploadState);
@@ -62,6 +63,7 @@ export function useWorkspaceState() {
     pageDialogOpen,
     showTranscript,
     showCaption,
+    pendingQuestion,
     loadedDocument,
     activePage,
     highlight,
