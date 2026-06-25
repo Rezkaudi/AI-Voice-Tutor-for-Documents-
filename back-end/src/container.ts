@@ -103,7 +103,7 @@ export async function buildContainer(): Promise<Container> {
   const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
   const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
-  const textExtractor = new PdfJsTextExtractor();
+  const textExtractor = PdfJsTextExtractor.createDefault();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
   const tutorToolExecutor = new TutorToolExecutor(
     embeddingService,
