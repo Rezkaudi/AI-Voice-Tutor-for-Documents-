@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import { asyncHandler } from "@/infrastructure/http/middleware/async-handler";
 import { documentUpload } from "@/infrastructure/http/middleware/document-upload";
 import type { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
