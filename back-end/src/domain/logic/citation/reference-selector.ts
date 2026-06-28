@@ -1,7 +1,7 @@
 import type { Reference } from "@/domain/entities/chat";
 import type { DocumentChunk, DocumentPage } from "@/domain/entities/document";
 import type { CitationCandidate } from "@/domain/logic/citation/citation-types";
-import type { CitationResolver } from "@/domain/logic/citation-resolver";
+import type { CitationResolver } from "@/domain/logic/citation/citation-resolver";
 import type { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
 
 export interface ReferenceSelection {

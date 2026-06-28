@@ -1,4 +1,4 @@
-import type { CitationCandidate } from "@/domain/logic/citation-resolver";
+import type { CitationCandidate } from "@/domain/logic/citation/citation-resolver";
 
 export interface ParsedReply {
   spokenText: string;

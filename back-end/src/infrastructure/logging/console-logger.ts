@@ -25,7 +25,6 @@ export class ConsoleLogger implements Logger {
     this.emit("info", this.format(`↳ ${label}:`), `\n${this.block(body)}`);
   }
 
-  // One-line preview for log messages: collapse whitespace, then cut to `max`.
   preview(text: string, max = 120): string {
     const collapsed = text.replace(/\s+/g, " ").trim();
     return collapsed.length > max ? `${collapsed.slice(0, max)}…` : collapsed;
@@ -40,7 +39,6 @@ export class ConsoleLogger implements Logger {
     return this.tag ? `${this.tag} ${message}` : message;
   }
 
-  // Indented multi-line body, capped so huge payloads don't flood the console.
   private block(body: string, max = 16000): string {
     const text =
       body.length > max

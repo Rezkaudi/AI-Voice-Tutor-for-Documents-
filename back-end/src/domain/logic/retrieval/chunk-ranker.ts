@@ -1,5 +1,5 @@
 import type { DocumentChunk } from "@/domain/entities/document";
-import type { TextTokenizer } from "@/domain/logic/text-tokenizer";
+import type { TextTokenizer } from "@/domain/logic/retrieval/text-tokenizer";
 
 export interface RankedChunk {
   chunk: DocumentChunk;

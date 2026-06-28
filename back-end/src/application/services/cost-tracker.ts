@@ -1,5 +1,5 @@
 import type { AiUsage } from "@/domain/services/ai-usage";
-import type { CostCalculator } from "@/domain/logic/cost-calculator";
+import type { CostCalculator } from "@/domain/logic/cost/cost-calculator";
 import type { UserCostRepository } from "@/domain/repositories/user-cost-repository";
 import type { Logger } from "@/domain/services/logger";
 

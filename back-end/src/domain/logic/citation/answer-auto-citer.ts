@@ -1,6 +1,6 @@
 import type { Citation } from "@/domain/entities/chat";
 import type { DocumentPage } from "@/domain/entities/document";
-import type { TextTokenizer } from "@/domain/logic/text-tokenizer";
+import type { TextTokenizer } from "@/domain/logic/retrieval/text-tokenizer";
 import type { SentenceSplitter } from "@/domain/logic/citation/sentence-splitter";
 
 export class AnswerAutoCiter {

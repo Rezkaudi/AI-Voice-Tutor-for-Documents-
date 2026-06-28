@@ -14,9 +14,9 @@ import { AuthenticateWithGoogleUseCase } from "@/application/use-cases/auth/auth
 import { RefreshSessionUseCase } from "@/application/use-cases/auth/refresh-session.use-case";
 import { GetCurrentUserUseCase } from "@/application/use-cases/auth/get-current-user.use-case";
 
-import { TextTokenizer } from "@/domain/logic/text-tokenizer";
-import { ChunkRanker } from "@/domain/logic/chunk-ranker";
-import { CitationResolver } from "@/domain/logic/citation-resolver";
+import { TextTokenizer } from "@/domain/logic/retrieval/text-tokenizer";
+import { ChunkRanker } from "@/domain/logic/retrieval/chunk-ranker";
+import { CitationResolver } from "@/domain/logic/citation/citation-resolver";
 import { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
 import { TokenSimilarity } from "@/domain/logic/citation/token-similarity";
 import { QuoteLocator } from "@/domain/logic/citation/quote-locator";
@@ -26,11 +26,11 @@ import { DocumentReferenceFactory } from "@/domain/logic/citation/document-refer
 import { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
 import { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
-import { DocumentChunker } from "@/domain/logic/document-chunker";
+import { DocumentChunker } from "@/domain/logic/retrieval/document-chunker";
 import { UploadValidator } from "@/domain/logic/upload-validator";
 import { FileNaming } from "@/domain/logic/file-naming";
 import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
-import { CostCalculator } from "@/domain/logic/cost-calculator";
+import { CostCalculator } from "@/domain/logic/cost/cost-calculator";
 
 import { initializeDatabase } from "@/infrastructure/database/data-source";
 import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositories/typeorm-document.repository";

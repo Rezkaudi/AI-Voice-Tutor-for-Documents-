@@ -1,9 +1,4 @@
-export interface ModelRate {
-  readonly inputPer1M: number;
-  readonly outputPer1M: number;
-
-  readonly cachedInputPer1M?: number;
-}
+import type { ModelRate } from "@/domain/logic/cost/model-rate";
 
 export const MODEL_PRICING: Readonly<Record<string, ModelRate>> = Object.freeze({
   // ─── Tutor chat (Responses API) ──────────────────────────────────────────
@@ -34,5 +29,3 @@ export const MODEL_PRICING: Readonly<Record<string, ModelRate>> = Object.freeze(
   "text-embedding-3-large": { inputPer1M: 0.13, outputPer1M: 0 },
   "text-embedding-ada-002": { inputPer1M: 0.1, outputPer1M: 0 }
 });
-
-export const DEFAULT_RATE: ModelRate = Object.freeze({ inputPer1M: 0, outputPer1M: 0 });

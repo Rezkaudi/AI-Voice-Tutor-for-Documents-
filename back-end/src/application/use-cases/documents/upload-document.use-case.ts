@@ -5,7 +5,7 @@ import type { DocumentTextExtractor } from "@/domain/services/document-text-extr
 import type { EmbeddingService } from "@/domain/services/embedding-service";
 import type { FileStorage } from "@/domain/services/file-storage";
 import type { IdGenerator } from "@/domain/services/id-generator";
-import type { DocumentChunker } from "@/domain/logic/document-chunker";
+import type { DocumentChunker } from "@/domain/logic/retrieval/document-chunker";
 import type { UploadValidator } from "@/domain/logic/upload-validator";
 import type { FileNaming } from "@/domain/logic/file-naming";
 import type { Logger } from "@/domain/services/logger";

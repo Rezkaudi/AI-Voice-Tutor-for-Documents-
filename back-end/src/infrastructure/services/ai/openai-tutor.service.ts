@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import type { Reference } from "@/domain/entities/chat";
-import type { CitationCandidate } from "@/domain/logic/citation-resolver";
+import type { CitationCandidate } from "@/domain/logic/citation/citation-resolver";
 import type { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import type { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
 import type { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
@@ -9,7 +9,7 @@ import type { EnvConfig } from "@/config/env.config";
 import type { Logger } from "@/domain/services/logger";
 import { TutorRequestFactory } from "./tutor-request-factory";
 import { TutorToolExecutor } from "./tutor-tool-executor";
-import { CitationTrailerParser } from "./citation-trailer-parser";
+import { CitationTrailerParser } from "@/domain/logic/citation/citation-trailer-parser";
 import { OpenAiResponseStreamReader, type PendingToolCall } from "./openai-response-stream-reader";
 
 type CreateResponse = (

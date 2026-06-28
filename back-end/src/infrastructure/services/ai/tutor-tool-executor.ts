@@ -1,6 +1,6 @@
 import type { Reference } from "@/domain/entities/chat";
 import type { EmbeddingService } from "@/domain/services/embedding-service";
-import type { ChunkRanker } from "@/domain/logic/chunk-ranker";
+import type { ChunkRanker } from "@/domain/logic/retrieval/chunk-ranker";
 import type { TutorReplyRequest } from "@/domain/services/tutor-service";
 import type { Logger } from "@/domain/services/logger";
 import type { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
