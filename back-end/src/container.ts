@@ -37,8 +37,6 @@ import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositorie
 import { TypeOrmUserRepository } from "@/infrastructure/database/repositories/typeorm-user.repository";
 import { TypeOrmUserCostRepository } from "@/infrastructure/database/repositories/typeorm-user-cost.repository";
 
-import { MODEL_PRICING } from "@/config/pricing.config";
-
 import { GoogleOAuthService } from "@/infrastructure/services/auth/google-oauth.service";
 import { JwtTokenService } from "@/infrastructure/services/auth/jwt-token.service";
 import { CryptoIdGenerator } from "@/infrastructure/services/crypto-id-generator";
@@ -60,6 +58,7 @@ import { buildRequireAuth } from "@/infrastructure/http/middleware/require-auth"
 import type { ServerDependencies } from "@/infrastructure/http/server";
 
 import { ENV_CONFIG } from "@/config/env.config";
+import { MODEL_PRICING } from "@/config/pricing.config";
 
 export interface Container {
   dataSource: DataSource;
