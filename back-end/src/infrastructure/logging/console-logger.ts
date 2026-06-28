@@ -1,5 +1,6 @@
 import type { Logger } from "@/domain/services/logger";
-import { logger as sink, block } from "@/shared/logger";
+
+type Level = "info" | "warn" | "error";
 
 export class ConsoleLogger implements Logger {
   constructor(
@@ -8,20 +9,26 @@ export class ConsoleLogger implements Logger {
   ) { }
 
   info(message: string): void {
-    sink.info(this.format(message));
+    this.emit("info", this.format(message));
   }
 
-  warn(message: string): void {
-    sink.warn(this.format(message));
+  warn(message: string, error?: unknown): void {
+    this.emit("warn", this.format(message), error);
   }
 
   error(message: string, error?: unknown): void {
-    sink.error(this.format(message), error);
+    this.emit("error", this.format(message), error);
   }
 
   detail(label: string, body: string): void {
     if (!this.verbose) return;
-    sink.info(this.format(`↳ ${label}:`), `\n${block(body)}`);
+    this.emit("info", this.format(`↳ ${label}:`), `\n${this.block(body)}`);
+  }
+
+  // One-line preview for log messages: collapse whitespace, then cut to `max`.
+  preview(text: string, max = 120): string {
+    const collapsed = text.replace(/\s+/g, " ").trim();
+    return collapsed.length > max ? `${collapsed.slice(0, max)}…` : collapsed;
   }
 
   scope(name: string): Logger {
@@ -31,5 +38,30 @@ export class ConsoleLogger implements Logger {
 
   private format(message: string): string {
     return this.tag ? `${this.tag} ${message}` : message;
+  }
+
+  // Indented multi-line body, capped so huge payloads don't flood the console.
+  private block(body: string, max = 16000): string {
+    const text =
+      body.length > max
+        ? `${body.slice(0, max)}\n… (${body.length - max} more characters truncated)`
+        : body;
+    return text
+      .split("\n")
+      .map((line) => `    ${line}`)
+      .join("\n");
+  }
+
+  private emit(level: Level, message: string, meta?: unknown): void {
+    const line = `${new Date().toISOString()} [${level.toUpperCase()}] ${message}`;
+    const sink = level === "error" ? console.error : console.log;
+    if (meta instanceof Error) {
+      sink(line, "\n", meta.stack ?? meta.message);
+    } else if (meta !== undefined) {
+      sink(line, meta);
+    } else {
+      sink(line);
+    }
+    sink("");
   }
 }

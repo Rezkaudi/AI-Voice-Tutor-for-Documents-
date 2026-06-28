@@ -18,7 +18,7 @@ import { buildSpeechRoutes } from "@/infrastructure/http/routes/speech.routes";
 import { buildTranscriptionRoutes } from "@/infrastructure/http/routes/transcription.routes";
 import { buildAuthRoutes } from "@/infrastructure/http/routes/auth.routes";
 
-import { logger } from "@/shared/logger";
+import type { Logger } from "@/domain/services/logger";
 
 export interface ServerDependencies {
   documents: DocumentsController;
@@ -27,6 +27,7 @@ export interface ServerDependencies {
   transcription: TranscriptionController;
   auth: AuthController;
   requireAuth: RequestHandler;
+  logger: Logger;
 }
 
 export class Server {
@@ -70,12 +71,12 @@ export class Server {
 
   private configureErrorHandling(): void {
     this.app.use(notFoundHandler());
-    this.app.use(errorHandler());
+    this.app.use(errorHandler(this.deps.logger));
   }
 
   public start(): HttpServer {
     return this.app.listen(this.port, () => {
-      logger.info(`API listening on http://localhost:${this.port}`);
+      this.deps.logger.info(`API listening on http://localhost:${this.port}`);
     });
   }
 

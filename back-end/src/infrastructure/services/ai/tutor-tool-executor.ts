@@ -4,7 +4,6 @@ import type { ChunkRanker } from "@/domain/logic/chunk-ranker";
 import type { TutorReplyRequest } from "@/domain/services/tutor-service";
 import type { Logger } from "@/domain/services/logger";
 import type { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
-import { truncate } from "@/shared/logger";
 
 /** Text returned to the model plus the page candidates surfaced this call. */
 export interface ToolResult {
@@ -83,7 +82,7 @@ export class TutorToolExecutor {
     const usedFallback = !(typeof rawQuery === "string" && rawQuery.trim());
     const query = usedFallback ? request.message : (rawQuery as string);
     log.info(
-      `search_document query="${truncate(query, 80)}"` +
+      `search_document query="${log.preview(query, 80)}"` +
         (usedFallback ? " (fell back to student message)" : "")
     );
 

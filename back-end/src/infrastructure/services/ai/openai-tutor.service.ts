@@ -11,7 +11,6 @@ import { TutorRequestFactory } from "./tutor-request-factory";
 import { TutorToolExecutor } from "./tutor-tool-executor";
 import { CitationTrailerParser } from "./citation-trailer-parser";
 import { OpenAiResponseStreamReader, type PendingToolCall } from "./openai-response-stream-reader";
-import { truncate } from "@/shared/logger";
 
 type CreateResponse = (
   body: Record<string, unknown>,
@@ -54,7 +53,7 @@ export class OpenAiTutorService implements TutorService {
     };
 
     log.info(
-      `turn start — "${truncate(request.message)}" · model=${settings.model} ` +
+      `turn start — "${this.logger.preview(request.message)}" · model=${settings.model} ` +
       `· saveCost=${request.saveCost} · effort=${settings.reasoningEffort} ` +
       `· maxSteps=${settings.maxToolSteps} · history=${request.history.length} ` +
       `· pages=${request.pages.length} · chunks=${request.chunks.length}`
@@ -110,7 +109,7 @@ export class OpenAiTutorService implements TutorService {
             log.detail("citations trailer", formatCitations(candidates));
           }
           log.info(
-            `final answer (${spokenText.length} chars): "${truncate(spokenText)}"`
+            `final answer (${spokenText.length} chars): "${this.logger.preview(spokenText)}"`
           );
           log.detail("final answer (full)", spokenText);
           yield* this.emitAnswer(spokenText, request, state, log);
@@ -182,7 +181,7 @@ export class OpenAiTutorService implements TutorService {
 
     const { text, question } = this.questionExtractor.extract(aligned.text);
     if (question) {
-      log.info(`learner question → "${truncate(question)}"`);
+      log.info(`learner question → "${this.logger.preview(question)}"`);
       yield { type: "question", text: question };
     }
     yield { type: "delta", text };
@@ -196,7 +195,7 @@ export class OpenAiTutorService implements TutorService {
   ): Promise<Record<string, unknown>[]> {
     const outputs: Record<string, unknown>[] = [];
     for (const call of toolCalls) {
-      log.info(`tool ${call.name}(${truncate(call.args, 160)})`);
+      log.info(`tool ${call.name}(${this.logger.preview(call.args, 160)})`);
       const result = await this.tools.execute(call.name, call.args, request, log);
       log.info(
         `tool ${call.name} ← ${result.output.length} chars · ` +

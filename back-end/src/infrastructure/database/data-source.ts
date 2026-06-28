@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { ENV_CONFIG } from "../../config/env.config";
-import { logger } from "../../shared/logger";
+import type { Logger } from "../../domain/services/logger";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -12,7 +12,7 @@ export const AppDataSource = new DataSource({
   logging: ENV_CONFIG.DB_LOGGING
 });
 
-export const initializeDatabase = async (): Promise<DataSource> => {
+export const initializeDatabase = async (logger: Logger): Promise<DataSource> => {
   try {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();

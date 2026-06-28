@@ -2,7 +2,6 @@ import { ValidationError } from "@/domain/errors/app-error";
 import type { SpeechSynthesisService, SynthesizedSpeech } from "@/domain/services/speech-services";
 import type { Logger } from "@/domain/services/logger";
 import type { CostTracker } from "@/application/services/cost-tracker";
-import { truncate } from "@/shared/logger";
 
 export class SynthesizeSpeechUseCase {
   private static readonly MAX_CHARS = 4000;
@@ -21,7 +20,7 @@ export class SynthesizeSpeechUseCase {
     }
 
     const clipped = text.trim().slice(0, SynthesizeSpeechUseCase.MAX_CHARS);
-    log.info(`synthesizing ${clipped.length} char(s): "${truncate(clipped)}"`);
+    log.info(`synthesizing ${clipped.length} char(s): "${log.preview(clipped)}"`);
     const clip = await this.speech.synthesize(clipped, signal);
     log.info(
       `speech ready · ${(clip.audio.length / 1024).toFixed(1)} KiB ${clip.contentType}`

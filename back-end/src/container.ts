@@ -61,13 +61,6 @@ import type { ServerDependencies } from "@/infrastructure/http/server";
 
 import { ENV_CONFIG } from "@/config/env.config";
 
-/**
- * Composition root — the single place that knows every concrete class.
- *
- * It wires the dependency graph inward: infrastructure adapters → application
- * use cases → HTTP controllers. Swapping an adapter (S3 → GCS, OpenAI → another
- * provider) changes this file alone.
- */
 export interface Container {
   dataSource: DataSource;
   deps: ServerDependencies;
@@ -78,19 +71,20 @@ export async function buildContainer(): Promise<Container> {
   const idGenerator = new CryptoIdGenerator();
 
   // ─── Persistence ─────────────────────────────────────────────────────────
-  const dataSource = await initializeDatabase();
+  const dataSource = await initializeDatabase(logger);
 
   // ─── Domain services (pure business logic) ───────────────────────────────
   const tokenizer = new TextTokenizer();
+  const textNormalizer = new TextNormalizer();
   const chunkRanker = new ChunkRanker(tokenizer);
-  const quoteLocator = new QuoteLocator(new TextNormalizer(), new TokenSimilarity());
+  const quoteLocator = new QuoteLocator(textNormalizer, new TokenSimilarity());
   const answerAutoCiter = new AnswerAutoCiter(tokenizer, new SentenceSplitter());
-  const citationResolver = new CitationResolver(quoteLocator, answerAutoCiter);
+  const citationResolver = new CitationResolver(quoteLocator, answerAutoCiter, textNormalizer);
   const referenceFactory = new DocumentReferenceFactory();
   const referenceSelector = new ReferenceSelector(citationResolver, referenceFactory);
   const citationMarkerReconciler = new CitationMarkerReconciler();
   const learnerQuestionExtractor = new LearnerQuestionExtractor();
-  const documentChunker = new DocumentChunker(idGenerator);
+  const documentChunker = new DocumentChunker(idGenerator, textNormalizer);
   const uploadValidator = new UploadValidator();
   const fileNaming = new FileNaming();
   const historySanitizer = new ChatHistorySanitizer();
@@ -105,11 +99,7 @@ export async function buildContainer(): Promise<Container> {
   const fileStorage = new S3FileStorage(ENV_CONFIG);
   const textExtractor = PdfJsTextExtractor.createDefault();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
-  const tutorToolExecutor = new TutorToolExecutor(
-    embeddingService,
-    chunkRanker,
-    referenceFactory
-  );
+  const tutorToolExecutor = new TutorToolExecutor(embeddingService, chunkRanker, referenceFactory);
   const tutorService = new OpenAiTutorService(
     ENV_CONFIG,
     tutorToolExecutor,
@@ -189,9 +179,11 @@ export async function buildContainer(): Promise<Container> {
       getGoogleAuthUrl,
       authenticateWithGoogle,
       refreshSession,
-      getCurrentUser
+      getCurrentUser,
+      logger
     ),
-    requireAuth
+    requireAuth,
+    logger
   };
 
   return { dataSource, deps };

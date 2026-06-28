@@ -6,18 +6,20 @@ import { LayoutTextBuilder } from "@/domain/logic/pdf/layout-text-builder";
 import type { PositionedTextItem } from "@/domain/logic/pdf/positioned-text-item";
 import { HeaderFooterRemover } from "@/domain/logic/pdf/header-footer-remover";
 import { ScriptDirection } from "@/domain/logic/pdf/script-direction";
-import { canonicalizeGlyphs } from "@/shared/text";
+import { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
 
 export class PdfJsTextExtractor implements DocumentTextExtractor {
   constructor(
     private readonly layoutTextBuilder: LayoutTextBuilder,
-    private readonly headerFooterRemover: HeaderFooterRemover
+    private readonly headerFooterRemover: HeaderFooterRemover,
+    private readonly textNormalizer: TextNormalizer
   ) { }
 
   static createDefault(): PdfJsTextExtractor {
     return new PdfJsTextExtractor(
       new LayoutTextBuilder(new ScriptDirection()),
-      new HeaderFooterRemover()
+      new HeaderFooterRemover(),
+      new TextNormalizer()
     );
   }
 
@@ -60,7 +62,7 @@ export class PdfJsTextExtractor implements DocumentTextExtractor {
       const transform = run.transform;
       if (!Array.isArray(transform) || transform.length < 6) continue;
       positioned.push({
-        str: canonicalizeGlyphs(run.str),
+        str: this.textNormalizer.canonicalize(run.str),
         x: transform[4]!,
         y: transform[5]!,
         height: run.height ?? Math.abs(transform[3] ?? 0)

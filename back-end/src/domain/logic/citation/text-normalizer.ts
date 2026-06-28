@@ -5,6 +5,10 @@ export class TextNormalizer {
     return value.replace(/\s+/g, " ").trim();
   }
 
+  canonicalize(value: string): string {
+    return value.normalize("NFKC");
+  }
+
   collapseWithOffsets(text: string): { normalized: string; offsets: number[] } {
     let normalized = "";
     const offsets: number[] = [];
