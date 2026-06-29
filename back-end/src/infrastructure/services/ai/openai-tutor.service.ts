@@ -19,7 +19,6 @@ type CreateResponse = (
 
 interface TurnState {
   referencesByPage: Map<number, Reference>;
-  fallbackReference: Reference | null;
   citedCandidates: CitationCandidate[];
 }
 
@@ -48,7 +47,6 @@ export class OpenAiTutorService implements TutorService {
     const log = this.logger.scope("tutor");
     const state: TurnState = {
       referencesByPage: new Map(),
-      fallbackReference: null,
       citedCandidates: []
     };
 
@@ -166,9 +164,7 @@ export class OpenAiTutorService implements TutorService {
     log: Logger
   ): Generator<TutorStreamEvent> {
     const reference = this.referenceSelector.select({
-      answer: stepText,
       referencesByPage: state.referencesByPage,
-      fallback: state.fallbackReference,
       pages: request.pages,
       chunks: request.chunks,
       citedCandidates: state.citedCandidates
@@ -206,9 +202,6 @@ export class OpenAiTutorService implements TutorService {
         if (!state.referencesByPage.has(reference.pageNumber)) {
           state.referencesByPage.set(reference.pageNumber, reference);
         }
-      }
-      if (result.references[0]) {
-        state.fallbackReference = result.references[0];
       }
       outputs.push(this.functionOutput(call.callId, result.output));
     }

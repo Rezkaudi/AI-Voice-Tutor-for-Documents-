@@ -14,14 +14,11 @@ import { AuthenticateWithGoogleUseCase } from "@/application/use-cases/auth/auth
 import { RefreshSessionUseCase } from "@/application/use-cases/auth/refresh-session.use-case";
 import { GetCurrentUserUseCase } from "@/application/use-cases/auth/get-current-user.use-case";
 
-import { TextTokenizer } from "@/domain/logic/retrieval/text-tokenizer";
 import { ChunkRanker } from "@/domain/logic/retrieval/chunk-ranker";
 import { CitationResolver } from "@/domain/logic/citation/citation-resolver";
 import { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
 import { TokenSimilarity } from "@/domain/logic/citation/token-similarity";
 import { QuoteLocator } from "@/domain/logic/citation/quote-locator";
-import { SentenceSplitter } from "@/domain/logic/citation/sentence-splitter";
-import { AnswerAutoCiter } from "@/domain/logic/citation/answer-auto-citer";
 import { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
 import { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
@@ -73,12 +70,11 @@ export async function buildContainer(): Promise<Container> {
   const dataSource = await initializeDatabase(logger);
 
   // ─── Domain services (pure business logic) ───────────────────────────────
-  const tokenizer = new TextTokenizer();
+  const tokenizer = new TokenSimilarity();
   const textNormalizer = new TextNormalizer();
   const chunkRanker = new ChunkRanker(tokenizer);
-  const quoteLocator = new QuoteLocator(textNormalizer, new TokenSimilarity());
-  const answerAutoCiter = new AnswerAutoCiter(tokenizer, new SentenceSplitter());
-  const citationResolver = new CitationResolver(quoteLocator, answerAutoCiter, textNormalizer);
+  const quoteLocator = new QuoteLocator(textNormalizer, tokenizer);
+  const citationResolver = new CitationResolver(quoteLocator, textNormalizer);
   const referenceFactory = new DocumentReferenceFactory();
   const referenceSelector = new ReferenceSelector(citationResolver, referenceFactory);
   const citationMarkerReconciler = new CitationMarkerReconciler();
