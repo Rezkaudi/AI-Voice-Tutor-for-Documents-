@@ -1,12 +1,8 @@
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { ChatMessage, SpeechCaption } from "@/types";
-import { ConfirmDialog } from "@/components/common/ConfirmDialog";
-import { ControlDock } from "@/components/workspace/controls/ControlDock";
+import { SessionControlBar } from "@/components/workspace/controls/SessionControlBar";
 import { FloatingTutor } from "./FloatingTutor";
 import { MicPermissionDialog } from "./MicPermissionDialog";
 import { PageSelectionDialog } from "./PageSelectionDialog";
-import { SecondaryControls } from "@/components/workspace/controls/SecondaryControls";
 import { TranscriptDrawer } from "./TranscriptDrawer";
 import { CaptionStrip } from "./TeacherPanel/CaptionStrip";
 import { MicStatusBanner } from "./TeacherPanel/MicStatusBanner";
@@ -55,38 +51,13 @@ export function CallOverlay({
   pageDialogOpen,
   showTranscript,
   showCaption,
-  onMicToggle,
-  onCallToggle,
-  onClearChat,
-  onEditPages,
   onToggleTranscript,
-  onToggleCaption,
   onClosePageDialog,
   onSubmitPageSelection
 }: CallOverlayProps) {
-  const { t } = useTranslation();
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const micDialog = useMicDialog(micBlocked);
 
-  const status = { isStreaming, isSpeaking, isListening, isTranscribing, callMode };
-  const orbState = deriveOrbState(status);
-  const hasMessages = messages.length > 0;
-
-  const handleMicClick = () => {
-    if (micBlocked) {
-      micDialog.setOpen(true);
-      return;
-    }
-    onMicToggle();
-  };
-
-  const handleClearClick = () => {
-    if (!hasMessages && !callMode) {
-      onClearChat();
-    } else {
-      setConfirmOpen(true);
-    }
-  };
+  const orbState = deriveOrbState({ isStreaming, isSpeaking, isListening, isTranscribing, callMode });
 
   return (
     <>
@@ -118,28 +89,8 @@ export function CallOverlay({
           </div>
         ) : null}
 
-        <ControlDock
-          callMode={callMode}
-          isListening={isListening}
-          isSpeaking={isSpeaking}
-          isStreaming={isStreaming}
-          isTranscribing={isTranscribing}
-          micSupported={micSupported}
-          micBlocked={micBlocked}
-          onCallToggle={onCallToggle}
-          onMicClick={handleMicClick}
-        />
+        <SessionControlBar />
       </div>
-
-      <SecondaryControls
-        showCaption={showCaption}
-        showTranscript={showTranscript}
-        clearDisabled={!hasMessages && !callMode}
-        onEditPages={onEditPages}
-        onToggleCaption={onToggleCaption}
-        onToggleTranscript={onToggleTranscript}
-        onClear={handleClearClick}
-      />
 
       <TranscriptDrawer
         open={showTranscript}
@@ -158,19 +109,6 @@ export function CallOverlay({
           onCancel={onClosePageDialog}
         />
       ) : null}
-
-      <ConfirmDialog
-        open={confirmOpen}
-        title={t("dialogs.restart.title")}
-        body={t("dialogs.restart.body")}
-        confirmLabel={t("dialogs.restart.confirm")}
-        cancelLabel={t("common.cancel")}
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          setConfirmOpen(false);
-          onClearChat();
-        }}
-      />
     </>
   );
 }

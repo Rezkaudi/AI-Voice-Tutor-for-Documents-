@@ -34,6 +34,7 @@ interface SessionStore {
   maybeContinueCall: () => void;
   clearChat: () => void;
   handleMicToggle: () => void;
+  handleBargeIn: () => void;
   handleCallToggle: () => Promise<void>;
   openPageDialog: () => void;
   closePageDialog: () => void;
@@ -133,6 +134,23 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   },
 
   /**
+   * Hands-free barge-in: the Silero VAD confirmed the learner started speaking
+   * for real (noise is filtered out as a misfire, never reaching here). If the
+   * tutor is mid-answer, cut it off — the continuous mic is already capturing
+   * this utterance, so its end-of-turn will transcribe and send it. If the tutor
+   * is idle, this is just the start of a normal turn: do nothing.
+   */
+  handleBargeIn: () => {
+    if (!get().callMode) return;
+    const speaking = useSpeechStore.getState().isSpeaking;
+    const streaming = useChatStore.getState().isStreaming;
+    if (!speaking && !streaming) return;
+    if (get().pendingQuestion) set({ pendingQuestion: null });
+    useChatStore.getState().abort();
+    useSpeechStore.getState().stopSpeaking();
+  },
+
+  /**
    * Call button. Ending a call tears everything down immediately; starting one
    * opens the page-picker first so the learner confirms which pages to study —
    * the actual call begins from {@link submitPageSelection}.
@@ -182,6 +200,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
     if (!get().hasIntroduced) {
       set({ hasIntroduced: true });
+      // Open the mic now so the learner can even talk over the opening greeting.
+      void voice.startSession();
       useChatStore.getState().sendMessage(GREETING_PROMPT, { hidden: true });
     } else {
       voice.start();

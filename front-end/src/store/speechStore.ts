@@ -4,12 +4,14 @@ import type { SpeechCaption, SpeechSession } from "@/types";
 
 interface SpeechStore {
   isSpeaking: boolean;
+  agentMuted: boolean;
   caption: SpeechCaption | null;
   unlockAudio: () => void;
   stopSpeaking: () => void;
   clearCaption: () => void;
   createSpeechSession: () => SpeechSession;
   showUserCaption: (text: string) => void;
+  toggleAgentMuted: () => void;
 }
 
 // One engine instance for the app lifetime; the store mirrors its state.
@@ -18,12 +20,13 @@ const engine = new SpeechEngine();
 /**
  * Speech store: voicing tutor answers and showing live captions.
  */
-export const useSpeechStore = create<SpeechStore>((set) => {
+export const useSpeechStore = create<SpeechStore>((set, get) => {
   engine.onSpeakingChange = (isSpeaking) => set({ isSpeaking });
   engine.onCaption = (caption) => set({ caption });
 
   return {
     isSpeaking: false,
+    agentMuted: false,
     caption: null,
 
     /** Unlocks iOS audio playback — call from a user-gesture handler. */
@@ -35,6 +38,12 @@ export const useSpeechStore = create<SpeechStore>((set) => {
     /** Opens an ordered TTS session — see SpeechEngine.createSession. */
     createSpeechSession: () => engine.createSession(),
     /** Plays the learner's transcribed sentence back as a caption. */
-    showUserCaption: (text) => engine.showUserCaption(text)
+    showUserCaption: (text) => engine.showUserCaption(text),
+    /** Mute/unmute the tutor's voice (captions keep showing). */
+    toggleAgentMuted: () => {
+      const next = !get().agentMuted;
+      engine.setMuted(next);
+      set({ agentMuted: next });
+    }
   };
 });

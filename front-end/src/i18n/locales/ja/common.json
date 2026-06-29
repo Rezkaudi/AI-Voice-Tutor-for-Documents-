@@ -116,6 +116,26 @@
       "hideTitle": "コントロールを非表示",
       "menuAria": "その他のコントロール"
     },
+    "session": {
+      "start": "セッションを開始",
+      "end": "セッションを終了",
+      "startAria": "音声セッションを開始",
+      "endAria": "音声セッションを終了"
+    },
+    "micMute": {
+      "on": "マイクをミュート",
+      "off": "マイクのミュートを解除",
+      "muteAria": "マイクをミュート",
+      "unmuteAria": "マイクのミュートを解除"
+    },
+    "voice": {
+      "muteAria": "講師の音声をミュート",
+      "unmuteAria": "講師の音声のミュートを解除"
+    },
+    "settings": {
+      "open": "セッション設定",
+      "close": "設定を閉じる"
+    },
     "liveCaptions": "ライブ字幕"
   },
   "workspaceMenu": {

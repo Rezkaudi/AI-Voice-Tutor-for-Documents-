@@ -1,57 +1,73 @@
+import { MicVAD, utils } from "@ricky0123/vad-web";
 import { transcribeRecording } from "../transcribeApi";
-import { SILENCE_TIMEOUT_MS } from "@/lib/constants";
-import type { SpeechLanguage, VoiceRecorderState } from "@/types";
-import { pickAudioMimeType } from "./audioMime";
 import {
-  describeRecorderError,
-  isMediaRecorderSupported,
-  isPermissionDenied
-} from "./recorderErrors";
+  ORT_WASM_BASE,
+  VAD_ASSET_BASE,
+  VAD_MIN_SPEECH_MS,
+  VAD_NEGATIVE_SPEECH_THRESHOLD,
+  VAD_POSITIVE_SPEECH_THRESHOLD,
+  VAD_PRE_SPEECH_PAD_MS,
+  VAD_REDEMPTION_MS,
+  VOICE_AUDIO_CONSTRAINTS
+} from "@/lib/constants";
+import type { SpeechLanguage, VoiceRecorderState } from "@/types";
+import { isPermissionDenied } from "./recorderErrors";
 
 const NOT_SUPPORTED_MESSAGE = "Microphone recording is not supported in this browser.";
 
-// VAD = Voice Activity Detection: deciding whether the mic input is actual
-// speech rather than silence/background noise, so we can auto-cancel silent clips.
-
-/** RMS (Root Mean Square — the audio signal's loudness/energy) mic level (0–1) above which a window counts as speech rather than noise. */
-const VAD_SPEECH_THRESHOLD = 0.015;
-/** How often the analyser samples the live mic level. */
-const VAD_CHECK_INTERVAL_MS = 250;
-
 /**
- * Records a single microphone clip, uploads it for transcription, and reports
- * the resulting text. State changes are pushed through the `onState` callback,
- * which the voice store binds to React state.
+ * Continuous, hands-free microphone capture built on Silero VAD
+ * (`@ricky0123/vad-web`) — the same neural voice-activity model LiveKit/ElevenLabs
+ * stacks use. There is no push-to-talk and no silence-timer guesswork:
+ *
+ * - The VAD runs for the whole call. `onSpeechRealStart` fires only after the
+ *   model confirms *real speech* (≥ `minSpeechMs`); a cough/clap/keyboard is too
+ *   short and surfaces as `onVADMisfire`, which we ignore — so noise never
+ *   interrupts the tutor and never gets sent.
+ * - `onSpeechRealStart` → {@link onSpeechStart}: the learner began talking. The
+ *   store uses this to barge-in (cut off the tutor) when the tutor is speaking.
+ * - `onSpeechEnd` → the learner's turn is complete: the captured audio is encoded
+ *   to WAV, transcribed, and reported via {@link onTranscript} (auto-send).
+ *
+ * Public surface mirrors the old recorder so the stores didn't need reworking
+ * (`requestPermission`/`watchPermission`/`isSupportedNow`/`start`/`stop`/`cancel`
+ * + the callbacks), plus `startSession` to boot the mic for barge-in before the
+ * learner's first turn (e.g. during the opening greeting).
  *
  * `permission` values: "unknown" | "prompt" | "granted" | "denied".
  */
 export class VoiceRecorder {
-  private mediaRecorder: MediaRecorder | null = null;
-  private stream: MediaStream | null = null;
-  private chunks: BlobPart[] = [];
+  private vad: MicVAD | null = null;
+  private starting: Promise<void> | null = null;
   private transcribeAbort: AbortController | null = null;
-  private cancelled = false;
-
-  // Voice-activity detection state for the current clip.
-  private audioContext: AudioContext | null = null;
-  private vadTimer: ReturnType<typeof setInterval> | null = null;
-  private lastVoiceAt = 0;
-  private autoStopping = false;
+  private destroyed = false;
+  // Two independent gates can close the mic. `suspended` is automatic — held
+  // shut for the tutor's whole speaking/thinking turn so its own voice (or room
+  // noise) can never interrupt it (half-duplex). `userMuted` is the manual
+  // Mute-Mic button. The mic only listens when BOTH are open.
+  private suspended = false;
+  private userMuted = false;
 
   onTranscript: (text: string) => void = () => { };
   onError: (message: string) => void = () => { };
+  /** Fires when confirmed speech starts — the store turns this into a barge-in. */
+  onSpeechStart: () => void = () => { };
   getLanguage: () => SpeechLanguage | undefined = () => undefined;
   onState: (patch: Partial<VoiceRecorderState>) => void = () => { };
 
-  /** True when this browser supports microphone recording. */
+  /** True when this browser can capture the mic (getUserMedia + AudioWorklet). */
   isSupportedNow(): boolean {
-    return isMediaRecorderSupported();
+    return (
+      typeof navigator !== "undefined" &&
+      !!navigator.mediaDevices?.getUserMedia &&
+      typeof AudioContext !== "undefined"
+    );
   }
 
   /**
    * Tracks the live permission state. The `onchange` handler is what lets the
-   * UI recover the moment the user re-enables a previously blocked mic in
-   * their browser site settings — no page reload required.
+   * UI recover the moment the user re-enables a previously blocked mic in their
+   * browser site settings — no page reload required.
    */
   watchPermission(): void {
     if (typeof navigator === "undefined" || !navigator.permissions?.query) return;
@@ -74,7 +90,9 @@ export class VoiceRecorder {
       return false;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: VOICE_AUDIO_CONSTRAINTS
+      });
       // Only probing the grant here — release the device immediately.
       stream.getTracks().forEach((track) => track.stop());
       this.onState({ permission: "granted" });
@@ -85,98 +103,137 @@ export class VoiceRecorder {
         this.onState({ permission: "denied" });
         return false;
       }
-      this.onError(describeRecorderError(error));
+      this.onError(error instanceof Error ? error.message : "Microphone error.");
       return false;
     }
   }
 
-  /** Starts recording a clip. */
-  async start(): Promise<void> {
+  /**
+   * Boots the continuous VAD session (idempotent). Use this to have the mic
+   * listening for a barge-in *without* presenting an active "your turn" state —
+   * e.g. while the tutor speaks the opening greeting.
+   */
+  async startSession(): Promise<void> {
     if (!this.isSupportedNow()) {
       this.onError(NOT_SUPPORTED_MESSAGE);
       return;
     }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.stream = stream;
-      this.onState({ permission: "granted" });
-      const recorder = this.buildRecorder(stream);
-      this.mediaRecorder = recorder;
-      this.cancelled = false;
-      recorder.start();
-      this.startVad(stream);
-      this.onState({ isListening: true });
-    } catch (error) {
-      this.cleanupStream();
-      // Browsers without the Permissions API only reveal a block here.
-      if (isPermissionDenied(error)) {
-        this.onState({ permission: "denied" });
-        return;
-      }
-      this.onError(describeRecorderError(error));
+    if (this.vad) {
+      this.applyGate();
+      return;
     }
+    if (this.starting) return this.starting;
+
+    this.destroyed = false;
+    this.starting = this.buildVad()
+      .then((vad) => {
+        if (this.destroyed) {
+          void vad.destroy();
+          return;
+        }
+        this.vad = vad;
+        this.onState({ permission: "granted" });
+        this.applyGate();
+      })
+      .catch((error) => {
+        if (isPermissionDenied(error)) {
+          this.onState({ permission: "denied" });
+        } else {
+          this.onError(error instanceof Error ? error.message : "Microphone error.");
+        }
+      })
+      .finally(() => {
+        this.starting = null;
+      });
+
+    return this.starting;
   }
 
-  /** Stops recording; the clip is then transcribed and reported. */
+  /** Begins the learner's turn: ensures the VAD is live, then opens the gate. */
+  async start(): Promise<void> {
+    this.suspended = false;
+    await this.startSession();
+  }
+
+  /** Suspends/resumes the mic for the tutor's turn (half-duplex). */
+  setSuspended(value: boolean): void {
+    if (this.suspended === value) return;
+    this.suspended = value;
+    this.applyGate();
+  }
+
+  /** Manual Mute-Mic toggle from the control bar. */
+  setUserMuted(value: boolean): void {
+    if (this.userMuted === value) return;
+    this.userMuted = value;
+    this.applyGate();
+  }
+
+  /** Ends the current turn's "listening" state without tearing the session down. */
   stop(): void {
-    const recorder = this.mediaRecorder;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop();
-    } else {
-      this.cleanupStream();
-      this.onState({ isListening: false });
-    }
+    this.onState({ isListening: false });
   }
 
-  /** Stops recording and aborts any in-flight transcription without sending it. */
+  /** Fully stops the session: aborts any in-flight transcription and releases the mic. */
   cancel(): void {
-    this.cancelled = true;
+    this.destroyed = true;
+    this.suspended = false;
+    this.userMuted = false;
     this.transcribeAbort?.abort();
     this.transcribeAbort = null;
-    const recorder = this.mediaRecorder;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop();
-    } else {
-      this.cleanupStream();
-    }
+    const vad = this.vad;
+    this.vad = null;
+    if (vad) void vad.destroy();
     this.onState({ isListening: false, isTranscribing: false });
   }
 
-  private buildRecorder(stream: MediaStream): MediaRecorder {
-    const mimeType = pickAudioMimeType();
-    const recorder = mimeType
-      ? new MediaRecorder(stream, { mimeType })
-      : new MediaRecorder(stream);
-    this.chunks = [];
-
-    recorder.ondataavailable = (event) => {
-      if (event.data && event.data.size > 0) this.chunks.push(event.data);
-    };
-
-    recorder.onerror = () => {
-      this.onError("Recording failed. Check your microphone and try again.");
-      this.cleanupStream();
+  /**
+   * The single source of truth for whether the mic is live. The VAD only runs
+   * when a session exists and neither gate is closed; otherwise it's paused so
+   * no audio (the tutor's own voice included) can reach it.
+   */
+  private applyGate(): void {
+    const open = !!this.vad && !this.suspended && !this.userMuted && !this.destroyed;
+    if (open) {
+      void this.vad!.start();
+      this.onState({ isListening: true });
+    } else {
+      void this.vad?.pause();
       this.onState({ isListening: false });
-    };
-
-    recorder.onstop = () => {
-      const chunks = this.chunks;
-      this.chunks = [];
-      this.cleanupStream();
-      if (chunks.length === 0 || this.cancelled) {
-        this.onState({ isListening: false });
-        return;
-      }
-      const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
-      void this.transcribeBlob(blob);
-    };
-
-    return recorder;
+    }
   }
 
-  private async transcribeBlob(blob: Blob): Promise<void> {
+  private async buildVad(): Promise<MicVAD> {
+    return MicVAD.new({
+      // Reuse the noise-suppressed constraints; echo cancellation is what keeps
+      // the tutor's own voice from tripping the VAD during playback.
+      getStream: () =>
+        navigator.mediaDevices.getUserMedia({ audio: VOICE_AUDIO_CONSTRAINTS }),
+      positiveSpeechThreshold: VAD_POSITIVE_SPEECH_THRESHOLD,
+      negativeSpeechThreshold: VAD_NEGATIVE_SPEECH_THRESHOLD,
+      minSpeechMs: VAD_MIN_SPEECH_MS,
+      redemptionMs: VAD_REDEMPTION_MS,
+      preSpeechPadMs: VAD_PRE_SPEECH_PAD_MS,
+      baseAssetPath: VAD_ASSET_BASE,
+      onnxWASMBasePath: ORT_WASM_BASE,
+      // Confirmed real speech (not a misfire): claim the turn + signal barge-in.
+      onSpeechRealStart: () => {
+        this.onState({ isListening: true });
+        this.onSpeechStart();
+      },
+      // Too short to be speech (cough/clap/noise) — ignore entirely.
+      onVADMisfire: () => { },
+      onSpeechEnd: (audio) => {
+        void this.handleSpeechEnd(audio);
+      }
+    });
+  }
+
+  private async handleSpeechEnd(audio: Float32Array): Promise<void> {
     this.onState({ isListening: false, isTranscribing: true });
+    const wav = utils.encodeWAV(audio, 1, 16000, 1, 16);
+    const blob = new Blob([wav], { type: "audio/wav" });
+
     const controller = new AbortController();
     this.transcribeAbort = controller;
     try {
@@ -190,71 +247,5 @@ export class VoiceRecorder {
       if (this.transcribeAbort === controller) this.transcribeAbort = null;
       this.onState({ isTranscribing: false });
     }
-  }
-
-  private startVad(stream: MediaStream): void {
-    this.stopVad();
-    this.autoStopping = false;
-    this.lastVoiceAt = Date.now();
-
-    try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
-      if (!AudioCtx) return;
-
-      const context = new AudioCtx();
-      this.audioContext = context;
-      if (context.state === "suspended") void context.resume().catch(() => { });
-      const source = context.createMediaStreamSource(stream);
-      const analyser = context.createAnalyser();
-      analyser.fftSize = 1024;
-      source.connect(analyser);
-      const samples = new Uint8Array(analyser.fftSize).fill(128);
-
-      this.vadTimer = setInterval(() => {
-        analyser.getByteTimeDomainData(samples);
-        let sumSquares = 0;
-        for (let i = 0; i < samples.length; i += 1) {
-          const deviation = (samples[i] - 128) / 128;
-          sumSquares += deviation * deviation;
-        }
-        const level = Math.sqrt(sumSquares / samples.length);
-
-        const now = Date.now();
-        if (level >= VAD_SPEECH_THRESHOLD) {
-          this.lastVoiceAt = now;
-          return;
-        }
-        if (now - this.lastVoiceAt >= SILENCE_TIMEOUT_MS) {
-          this.autoStop();
-        }
-      }, VAD_CHECK_INTERVAL_MS);
-    } catch {
-    }
-  }
-
-  private autoStop(): void {
-    if (this.autoStopping) return;
-    this.autoStopping = true;
-    this.cancel();
-  }
-
-  private stopVad(): void {
-    if (this.vadTimer !== null) {
-      clearInterval(this.vadTimer);
-      this.vadTimer = null;
-    }
-    if (this.audioContext) {
-      void this.audioContext.close().catch(() => { });
-      this.audioContext = null;
-    }
-  }
-
-  private cleanupStream(): void {
-    this.stopVad();
-    this.stream?.getTracks().forEach((track) => track.stop());
-    this.stream = null;
   }
 }

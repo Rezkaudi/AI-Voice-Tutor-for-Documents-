@@ -9,11 +9,13 @@ export async function transcribeRecording(
   language?: SpeechLanguage,
   signal?: AbortSignal
 ): Promise<string> {
-  const extension = blob.type.includes("ogg")
-    ? "ogg"
-    : blob.type.includes("mp4")
-      ? "m4a"
-      : "webm";
+  const extension = blob.type.includes("wav")
+    ? "wav"
+    : blob.type.includes("ogg")
+      ? "ogg"
+      : blob.type.includes("mp4")
+        ? "m4a"
+        : "webm";
 
   const formData = new FormData();
   formData.append(

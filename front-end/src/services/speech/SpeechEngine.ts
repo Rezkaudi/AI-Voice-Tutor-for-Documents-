@@ -17,6 +17,7 @@ export class SpeechEngine {
   private audio: HTMLAudioElement | null = null;
   private sessionId = 0;
   private speakAbort: AbortController | null = null;
+  private muted = false;
   // The arrow forwards to the latest `onCaption`, so the store can reassign
   // it at any time and the controller keeps emitting through the new handler.
   private readonly caption = new CaptionController((value) => this.onCaption(value));
@@ -24,7 +25,27 @@ export class SpeechEngine {
   onSpeakingChange: (speaking: boolean) => void = () => { };
   onCaption: (caption: SpeechCaption | null) => void = () => { };
   unlock(): void {
-    unlockAudioPlayback((this.audio ??= new Audio()));
+    unlockAudioPlayback(this.ensureAudio());
+  }
+
+  /** Lazily creates the shared <audio> element, keeping its muted state in sync. */
+  private ensureAudio(): HTMLAudioElement {
+    this.audio ??= new Audio();
+    this.audio.muted = this.muted;
+    return this.audio;
+  }
+
+  /**
+   * Mutes/unmutes the tutor's voice from the control bar. Captions keep showing
+   * so the learner can still follow along silently. The speech-synthesis
+   * fallback is cancelled outright since its volume can't change mid-utterance.
+   */
+  setMuted(value: boolean): void {
+    this.muted = value;
+    if (this.audio) this.audio.muted = value;
+    if (value && typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
   }
 
   clearCaption(): void {
@@ -84,7 +105,7 @@ export class SpeechEngine {
 
         if (blob) {
           await playAudioClip({
-            audio: (this.audio ??= new Audio()),
+            audio: this.ensureAudio(),
             blob,
             segmented,
             isStale,
