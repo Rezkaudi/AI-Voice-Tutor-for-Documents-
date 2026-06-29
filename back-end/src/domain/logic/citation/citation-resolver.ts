@@ -2,8 +2,7 @@ import type { Citation } from "@/domain/entities/chat";
 import type { DocumentPage } from "@/domain/entities/document";
 import type { CitationCandidate } from "@/domain/logic/citation/citation-types";
 import type { QuoteLocator } from "@/domain/logic/citation/quote-locator";
-import type { AnswerAutoCiter } from "@/domain/logic/citation/answer-auto-citer";
-import { canonicalizeGlyphs } from "@/shared/text";
+import type { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
 
 export type { CitationCandidate } from "@/domain/logic/citation/citation-types";
 
@@ -14,7 +13,7 @@ export class CitationResolver {
 
   constructor(
     private readonly locator: QuoteLocator,
-    private readonly autoCiter: AnswerAutoCiter
+    private readonly textNormalizer: TextNormalizer
   ) { }
 
   resolve(candidates: ReadonlyArray<CitationCandidate>, pages: ReadonlyArray<DocumentPage>): Citation[] {
@@ -29,7 +28,7 @@ export class CitationResolver {
 
     for (const candidate of candidates) {
       const page = pageByNumber.get(candidate.pageNumber);
-      const quote = candidate.quote ? canonicalizeGlyphs(candidate.quote).trim() : undefined;
+      const quote = candidate.quote ? this.textNormalizer.canonicalize(candidate.quote).trim() : undefined;
       if (!page || !quote || !CitationResolver.longEnough(quote)) {
         continue;
       }
@@ -58,9 +57,5 @@ export class CitationResolver {
       ? CitationResolver.MIN_QUOTE_LENGTH_CJK
       : CitationResolver.MIN_QUOTE_LENGTH;
     return quote.length >= min;
-  }
-
-  autoCiteFromAnswer(answer: string, page: DocumentPage, maxCitations: number = 2): Citation[] {
-    return this.autoCiter.cite(canonicalizeGlyphs(answer), page, maxCitations);
   }
 }

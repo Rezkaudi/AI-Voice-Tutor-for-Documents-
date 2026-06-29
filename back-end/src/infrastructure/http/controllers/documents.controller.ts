@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+
 import type { DeleteDocumentUseCase } from "@/application/use-cases/documents/delete-document.use-case";
 import type { GetDocumentUseCase } from "@/application/use-cases/documents/get-document.use-case";
 import type { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";

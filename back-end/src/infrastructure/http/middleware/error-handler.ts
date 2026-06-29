@@ -1,9 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import { MulterError } from "multer";
 import { AppError } from "@/domain/errors/app-error";
-import { logger } from "@/shared/logger";
+import type { Logger } from "@/domain/services/logger";
 
-export function errorHandler() {
+export function errorHandler(logger: Logger) {
   return (error: unknown, req: Request, res: Response, _next: NextFunction): void => {
     if (res.headersSent) {
       res.end();

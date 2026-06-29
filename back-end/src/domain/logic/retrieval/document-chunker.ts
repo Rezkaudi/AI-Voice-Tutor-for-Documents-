@@ -1,6 +1,6 @@
 import type { DocumentChunk, DocumentPage } from "@/domain/entities/document";
 import type { IdGenerator } from "@/domain/services/id-generator";
-import { normalizeText } from "@/shared/text";
+import type { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
 
 export interface ChunkOptions {
   maxChars?: number;
@@ -11,7 +11,10 @@ export class DocumentChunker {
   private static readonly DEFAULT_MAX_CHARS = 1600;
   private static readonly DEFAULT_OVERLAP_CHARS = 220;
 
-  constructor(private readonly idGenerator: IdGenerator) { }
+  constructor(
+    private readonly idGenerator: IdGenerator,
+    private readonly textNormalizer: TextNormalizer
+  ) { }
 
   chunk(
     pages: Array<
@@ -28,7 +31,7 @@ export class DocumentChunker {
     const chunks: DocumentChunk[] = [];
 
     for (const page of pages) {
-      const normalized = normalizeText(page.text);
+      const normalized = this.textNormalizer.collapseWhitespace(page.text);
       if (!normalized) {
         continue;
       }

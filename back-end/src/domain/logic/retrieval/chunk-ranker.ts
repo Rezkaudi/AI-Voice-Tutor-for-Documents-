@@ -1,5 +1,5 @@
 import type { DocumentChunk } from "@/domain/entities/document";
-import type { TextTokenizer } from "@/domain/logic/text-tokenizer";
+import type { TokenSimilarity } from "@/domain/logic/citation/token-similarity";
 
 export interface RankedChunk {
   chunk: DocumentChunk;
@@ -7,11 +7,11 @@ export interface RankedChunk {
 }
 
 export class ChunkRanker {
-  constructor(private readonly tokenizer: TextTokenizer) { }
+  constructor(private readonly tokenizer: TokenSimilarity) { }
 
   rank(query: string, chunks: DocumentChunk[], queryEmbedding?: number[] | null): RankedChunk[] {
 
-    const terms = this.tokenizer.tokenize(query);
+    const terms = [...this.tokenizer.tokenize(query)];
     const ranked = chunks
       .map((chunk) => {
         const keyword = this.keywordScore(terms, chunk.text);

@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import type { Reference } from "@/domain/entities/chat";
-import type { CitationCandidate } from "@/domain/logic/citation-resolver";
+import type { CitationCandidate } from "@/domain/logic/citation/citation-resolver";
 import type { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import type { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
 import type { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
@@ -9,9 +9,8 @@ import type { EnvConfig } from "@/config/env.config";
 import type { Logger } from "@/domain/services/logger";
 import { TutorRequestFactory } from "./tutor-request-factory";
 import { TutorToolExecutor } from "./tutor-tool-executor";
-import { CitationTrailerParser } from "./citation-trailer-parser";
+import { CitationTrailerParser } from "@/domain/logic/citation/citation-trailer-parser";
 import { OpenAiResponseStreamReader, type PendingToolCall } from "./openai-response-stream-reader";
-import { truncate } from "@/shared/logger";
 
 type CreateResponse = (
   body: Record<string, unknown>,
@@ -20,7 +19,6 @@ type CreateResponse = (
 
 interface TurnState {
   referencesByPage: Map<number, Reference>;
-  fallbackReference: Reference | null;
   citedCandidates: CitationCandidate[];
 }
 
@@ -49,12 +47,11 @@ export class OpenAiTutorService implements TutorService {
     const log = this.logger.scope("tutor");
     const state: TurnState = {
       referencesByPage: new Map(),
-      fallbackReference: null,
       citedCandidates: []
     };
 
     log.info(
-      `turn start — "${truncate(request.message)}" · model=${settings.model} ` +
+      `turn start — "${this.logger.preview(request.message)}" · model=${settings.model} ` +
       `· saveCost=${request.saveCost} · effort=${settings.reasoningEffort} ` +
       `· maxSteps=${settings.maxToolSteps} · history=${request.history.length} ` +
       `· pages=${request.pages.length} · chunks=${request.chunks.length}`
@@ -110,7 +107,7 @@ export class OpenAiTutorService implements TutorService {
             log.detail("citations trailer", formatCitations(candidates));
           }
           log.info(
-            `final answer (${spokenText.length} chars): "${truncate(spokenText)}"`
+            `final answer (${spokenText.length} chars): "${this.logger.preview(spokenText)}"`
           );
           log.detail("final answer (full)", spokenText);
           yield* this.emitAnswer(spokenText, request, state, log);
@@ -167,9 +164,7 @@ export class OpenAiTutorService implements TutorService {
     log: Logger
   ): Generator<TutorStreamEvent> {
     const reference = this.referenceSelector.select({
-      answer: stepText,
       referencesByPage: state.referencesByPage,
-      fallback: state.fallbackReference,
       pages: request.pages,
       chunks: request.chunks,
       citedCandidates: state.citedCandidates
@@ -182,7 +177,7 @@ export class OpenAiTutorService implements TutorService {
 
     const { text, question } = this.questionExtractor.extract(aligned.text);
     if (question) {
-      log.info(`learner question → "${truncate(question)}"`);
+      log.info(`learner question → "${this.logger.preview(question)}"`);
       yield { type: "question", text: question };
     }
     yield { type: "delta", text };
@@ -196,7 +191,7 @@ export class OpenAiTutorService implements TutorService {
   ): Promise<Record<string, unknown>[]> {
     const outputs: Record<string, unknown>[] = [];
     for (const call of toolCalls) {
-      log.info(`tool ${call.name}(${truncate(call.args, 160)})`);
+      log.info(`tool ${call.name}(${this.logger.preview(call.args, 160)})`);
       const result = await this.tools.execute(call.name, call.args, request, log);
       log.info(
         `tool ${call.name} ← ${result.output.length} chars · ` +
@@ -207,9 +202,6 @@ export class OpenAiTutorService implements TutorService {
         if (!state.referencesByPage.has(reference.pageNumber)) {
           state.referencesByPage.set(reference.pageNumber, reference);
         }
-      }
-      if (result.references[0]) {
-        state.fallbackReference = result.references[0];
       }
       outputs.push(this.functionOutput(call.callId, result.output));
     }

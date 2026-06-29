@@ -2,7 +2,6 @@ import { ValidationError } from "@/domain/errors/app-error";
 import type { TranscriptionService } from "@/domain/services/speech-services";
 import type { Logger } from "@/domain/services/logger";
 import type { CostTracker } from "@/application/services/cost-tracker";
-import { truncate } from "@/shared/logger";
 
 export interface TranscribeAudioInput {
   readonly audio: Buffer;
@@ -32,7 +31,7 @@ export class TranscribeAudioUseCase {
     );
     const result = await this.transcription.transcribe(input, signal);
     const text = result.text.trim();
-    log.info(`transcribed ${text.length} char(s): "${truncate(text)}"`);
+    log.info(`transcribed ${text.length} char(s): "${log.preview(text)}"`);
     await this.costTracker.track(userId, result.usage);
     return { text };
   }

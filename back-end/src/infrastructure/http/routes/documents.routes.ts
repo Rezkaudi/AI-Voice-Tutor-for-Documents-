@@ -1,29 +1,17 @@
 import { Router } from "express";
-import multer from "multer";
+
 import { asyncHandler } from "@/infrastructure/http/middleware/async-handler";
+import { documentUpload } from "@/infrastructure/http/middleware/document-upload";
 import type { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
 import { documentIdParamValidation, uploadDocumentValidation } from "@/infrastructure/http/validations/document.validation";
 
-const DOCUMENT_LIMIT_BYTES = 25 * 1024 * 1024;
-
 export function buildDocumentRoutes(controller: DocumentsController): Router {
   const router = Router();
-  const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: DOCUMENT_LIMIT_BYTES },
-    // PDF only: reject anything else before it is buffered.
-    fileFilter: (_req, file, cb) => {
-      const isPdf =
-        file.mimetype === "application/pdf" ||
-        file.originalname.toLowerCase().endsWith(".pdf");
-      cb(null, isPdf);
-    }
-  });
 
   router.get("/documents", asyncHandler(controller.list));
   router.post(
     "/documents",
-    upload.single("file"),
+    documentUpload.single("file"),
     uploadDocumentValidation,
     asyncHandler(controller.upload)
   );

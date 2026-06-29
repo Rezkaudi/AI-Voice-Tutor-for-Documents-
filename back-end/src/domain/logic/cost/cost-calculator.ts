@@ -1,6 +1,6 @@
 import type { AiUsage } from "@/domain/services/ai-usage";
-import type { ModelRate } from "@/config/pricing.config";
-import { DEFAULT_RATE } from "@/config/pricing.config";
+import type { ModelRate } from "./model-rate";
+import { DEFAULT_RATE } from "./model-rate";
 import type { Logger } from "@/domain/services/logger";
 
 export class CostCalculator {

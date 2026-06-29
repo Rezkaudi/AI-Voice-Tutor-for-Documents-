@@ -3,10 +3,10 @@ import type { Server as HttpServer } from "node:http";
 import { buildContainer } from "@/container";
 import { ENV_CONFIG } from "@/config/env.config";
 import { Server } from "@/infrastructure/http/server";
-import { logger } from "@/shared/logger";
 
 async function bootstrap(): Promise<void> {
   const { dataSource, deps } = await buildContainer();
+  const { logger } = deps;
   const appServer = new Server(ENV_CONFIG.PORT, deps);
   const httpServer: HttpServer = appServer.start();
 
@@ -31,6 +31,6 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch((error) => {
-  logger.error("Fatal error during startup", error);
+  console.error("Fatal error during startup", error);
   process.exit(1);
 });

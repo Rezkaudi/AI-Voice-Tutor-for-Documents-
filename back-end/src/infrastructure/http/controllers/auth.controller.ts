@@ -1,19 +1,24 @@
 import type { Request, Response } from "express";
-import { ENV_CONFIG } from "@/config/env.config";
+
 import { UnauthorizedError } from "@/domain/errors/app-error";
+import type { Logger } from "@/domain/services/logger";
+
 import type { AuthenticateWithGoogleUseCase } from "@/application/use-cases/auth/authenticate-with-google.use-case";
 import type { GetCurrentUserUseCase } from "@/application/use-cases/auth/get-current-user.use-case";
 import type { GetGoogleAuthUrlUseCase } from "@/application/use-cases/auth/get-google-auth-url.use-case";
 import type { RefreshSessionUseCase } from "@/application/use-cases/auth/refresh-session.use-case";
+
+import { ENV_CONFIG } from "@/config/env.config";
 import { OAUTH_STATE_COOKIE, REFRESH_TOKEN_COOKIE, clearAuthCookies, clearStateCookie, setAuthCookies, setStateCookie } from "@/config/cookies.config";
-import { logger } from "@/shared/logger";
+
 
 export class AuthController {
   constructor(
     private readonly getGoogleAuthUrl: GetGoogleAuthUrlUseCase,
     private readonly authenticateWithGoogle: AuthenticateWithGoogleUseCase,
     private readonly refreshSession: RefreshSessionUseCase,
-    private readonly getCurrentUser: GetCurrentUserUseCase
+    private readonly getCurrentUser: GetCurrentUserUseCase,
+    private readonly logger: Logger
   ) { }
 
   start = (_req: Request, res: Response): void => {
@@ -35,7 +40,7 @@ export class AuthController {
           : !state
             ? "no state in query"
             : "state value mismatch";
-      logger.warn(`Rejected Google callback: ${reason}.`);
+      this.logger.warn(`Rejected Google callback: ${reason}.`);
       res.redirect(`${ENV_CONFIG.FRONTEND_URL}/?auth=error`);
       return;
     }
@@ -45,7 +50,7 @@ export class AuthController {
       setAuthCookies(res, tokens);
       res.redirect(ENV_CONFIG.FRONTEND_URL);
     } catch (err) {
-      logger.warn("Google sign-in failed during code exchange.", err);
+      this.logger.warn("Google sign-in failed during code exchange.", err);
       res.redirect(`${ENV_CONFIG.FRONTEND_URL}/?auth=error`);
     }
   };

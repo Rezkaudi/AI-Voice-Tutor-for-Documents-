@@ -14,30 +14,25 @@ import { AuthenticateWithGoogleUseCase } from "@/application/use-cases/auth/auth
 import { RefreshSessionUseCase } from "@/application/use-cases/auth/refresh-session.use-case";
 import { GetCurrentUserUseCase } from "@/application/use-cases/auth/get-current-user.use-case";
 
-import { TextTokenizer } from "@/domain/logic/text-tokenizer";
-import { ChunkRanker } from "@/domain/logic/chunk-ranker";
-import { CitationResolver } from "@/domain/logic/citation-resolver";
+import { ChunkRanker } from "@/domain/logic/retrieval/chunk-ranker";
+import { CitationResolver } from "@/domain/logic/citation/citation-resolver";
 import { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
 import { TokenSimilarity } from "@/domain/logic/citation/token-similarity";
 import { QuoteLocator } from "@/domain/logic/citation/quote-locator";
-import { SentenceSplitter } from "@/domain/logic/citation/sentence-splitter";
-import { AnswerAutoCiter } from "@/domain/logic/citation/answer-auto-citer";
 import { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
 import { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
 import { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
-import { DocumentChunker } from "@/domain/logic/document-chunker";
+import { DocumentChunker } from "@/domain/logic/retrieval/document-chunker";
 import { UploadValidator } from "@/domain/logic/upload-validator";
 import { FileNaming } from "@/domain/logic/file-naming";
 import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
-import { CostCalculator } from "@/domain/logic/cost-calculator";
+import { CostCalculator } from "@/domain/logic/cost/cost-calculator";
 
 import { initializeDatabase } from "@/infrastructure/database/data-source";
 import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositories/typeorm-document.repository";
 import { TypeOrmUserRepository } from "@/infrastructure/database/repositories/typeorm-user.repository";
 import { TypeOrmUserCostRepository } from "@/infrastructure/database/repositories/typeorm-user-cost.repository";
-
-import { MODEL_PRICING } from "@/config/pricing.config";
 
 import { GoogleOAuthService } from "@/infrastructure/services/auth/google-oauth.service";
 import { JwtTokenService } from "@/infrastructure/services/auth/jwt-token.service";
@@ -60,14 +55,8 @@ import { buildRequireAuth } from "@/infrastructure/http/middleware/require-auth"
 import type { ServerDependencies } from "@/infrastructure/http/server";
 
 import { ENV_CONFIG } from "@/config/env.config";
+import { MODEL_PRICING } from "@/config/pricing.config";
 
-/**
- * Composition root — the single place that knows every concrete class.
- *
- * It wires the dependency graph inward: infrastructure adapters → application
- * use cases → HTTP controllers. Swapping an adapter (S3 → GCS, OpenAI → another
- * provider) changes this file alone.
- */
 export interface Container {
   dataSource: DataSource;
   deps: ServerDependencies;
@@ -78,19 +67,19 @@ export async function buildContainer(): Promise<Container> {
   const idGenerator = new CryptoIdGenerator();
 
   // ─── Persistence ─────────────────────────────────────────────────────────
-  const dataSource = await initializeDatabase();
+  const dataSource = await initializeDatabase(logger);
 
   // ─── Domain services (pure business logic) ───────────────────────────────
-  const tokenizer = new TextTokenizer();
+  const tokenizer = new TokenSimilarity();
+  const textNormalizer = new TextNormalizer();
   const chunkRanker = new ChunkRanker(tokenizer);
-  const quoteLocator = new QuoteLocator(new TextNormalizer(), new TokenSimilarity());
-  const answerAutoCiter = new AnswerAutoCiter(tokenizer, new SentenceSplitter());
-  const citationResolver = new CitationResolver(quoteLocator, answerAutoCiter);
+  const quoteLocator = new QuoteLocator(textNormalizer, tokenizer);
+  const citationResolver = new CitationResolver(quoteLocator, textNormalizer);
   const referenceFactory = new DocumentReferenceFactory();
   const referenceSelector = new ReferenceSelector(citationResolver, referenceFactory);
   const citationMarkerReconciler = new CitationMarkerReconciler();
   const learnerQuestionExtractor = new LearnerQuestionExtractor();
-  const documentChunker = new DocumentChunker(idGenerator);
+  const documentChunker = new DocumentChunker(idGenerator, textNormalizer);
   const uploadValidator = new UploadValidator();
   const fileNaming = new FileNaming();
   const historySanitizer = new ChatHistorySanitizer();
@@ -105,11 +94,7 @@ export async function buildContainer(): Promise<Container> {
   const fileStorage = new S3FileStorage(ENV_CONFIG);
   const textExtractor = PdfJsTextExtractor.createDefault();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
-  const tutorToolExecutor = new TutorToolExecutor(
-    embeddingService,
-    chunkRanker,
-    referenceFactory
-  );
+  const tutorToolExecutor = new TutorToolExecutor(embeddingService, chunkRanker, referenceFactory);
   const tutorService = new OpenAiTutorService(
     ENV_CONFIG,
     tutorToolExecutor,
@@ -189,9 +174,11 @@ export async function buildContainer(): Promise<Container> {
       getGoogleAuthUrl,
       authenticateWithGoogle,
       refreshSession,
-      getCurrentUser
+      getCurrentUser,
+      logger
     ),
-    requireAuth
+    requireAuth,
+    logger
   };
 
   return { dataSource, deps };
