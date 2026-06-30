@@ -49,13 +49,9 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
   const circleSize = large ? "h-[3.25rem] w-[3.25rem]" : "h-9 w-9";
   const iconSize = large ? 24 : 17;
   const barChrome = large ? "gap-2.5 p-2" : "gap-1.5 p-1";
-  const endBtnSize = large
-    ? "h-[3.25rem] gap-2 px-6 text-[0.95rem]"
-    : "h-9 gap-1.5 px-3.5 text-[0.8rem]";
+  const endBtnSize = large ? "h-[3.25rem] gap-2 px-6 text-[0.95rem]" : "h-9 w-9";
   const endIconSize = large ? 20 : 15;
-  const startBtnSize = large
-    ? "h-[3.5rem] gap-2.5 px-9 text-[1.05rem]"
-    : "h-12 gap-2.5 px-7 text-[0.95rem]";
+  const startBtnSize = large ? "h-[3.5rem] gap-2.5 px-9 text-[1.05rem]" : "h-12 w-12";
   const startIconSize = large ? 21 : 18;
 
   const menuWrapClass = large
@@ -213,7 +209,7 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
             disabled={!isSupported || micBlocked}
           >
             <Phone size={startIconSize} aria-hidden />
-            <span>{t("controls.session.start")}</span>
+            {large ? <span>{t("controls.session.start")}</span> : null}
           </button>
         </div>
       ) : (
@@ -265,14 +261,14 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
           <button
             type="button"
             className={cx(
-              "inline-flex items-center rounded-full border-0 bg-[linear-gradient(to_bottom,oklch(0.53_0.045_27),oklch(0.6_0.24_27))] font-bold text-[oklch(0.99_0.005_100)] shadow-[0_10px_24px_oklch(0.18_0.04_27/0.5)] transition-[transform,filter] duration-150 ease-out [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]",
+              "animate-listen-pulse-slow inline-flex items-center justify-center rounded-full border-0 bg-[linear-gradient(to_bottom,oklch(0.53_0.045_27),oklch(0.6_0.24_27))] bg-size-[100%_200%] bg-position-[50%_0%] font-bold text-[oklch(0.99_0.005_100)] shadow-[0_10px_24px_oklch(0.18_0.04_27/0.5)] transition-[transform,filter,background-position] duration-320 ease-out [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 [&:hover:not(:disabled)]:bg-position-[50%_100%] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]",
               endBtnSize
             )}
             aria-label={t("controls.session.endAria")}
             onClick={handleCallToggle}
           >
             <PhoneOff size={endIconSize} aria-hidden />
-            <span>{t("controls.session.end")}</span>
+            {large ? <span>{t("controls.session.end")}</span> : null}
           </button>
         </div>
       )}
