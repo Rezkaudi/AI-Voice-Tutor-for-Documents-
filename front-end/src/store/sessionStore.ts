@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { CALL_RESUME_DELAY_MS, GREETING_PROMPT } from "@/lib/constants";
+import { CALL_RESUME_DELAY_MS } from "@/lib/constants";
 import { useChatStore } from "./chatStore";
 import { useDocumentStore } from "./documentStore";
 import { useSpeechStore } from "./speechStore";
@@ -147,12 +147,14 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }
 
     set({ pageDialogOpen: true });
+    void useVoiceStore.getState().prewarm();
   },
 
   openPageDialog: () => {
     useChatStore.getState().abort();
     useSpeechStore.getState().stopSpeaking();
     set({ pageDialogOpen: true });
+    void useVoiceStore.getState().prewarm();
   },
 
   closePageDialog: () => set({ pageDialogOpen: false }),
@@ -170,15 +172,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     const granted = await voice.requestPermission();
     if (!granted) return;
 
-    set({ callMode: true });
-
-    if (!get().hasIntroduced) {
-      set({ hasIntroduced: true });
-      void voice.startSession();
-      useChatStore.getState().sendMessage(GREETING_PROMPT, { hidden: true });
-    } else {
-      voice.start();
-    }
+    set({ callMode: true, hasIntroduced: true });
+    void voice.start();
   },
 
   handleUpload: async (file) => {
