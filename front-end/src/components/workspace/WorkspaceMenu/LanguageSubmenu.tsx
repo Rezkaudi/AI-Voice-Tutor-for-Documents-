@@ -5,11 +5,10 @@ import { LANGUAGES } from "@/i18n/config";
 
 interface LanguageSubmenuProps {
   currentLang: string;
-  /** Picks a language and dismisses the whole menu. */
+
   onSelect: (action: () => void) => void;
 }
 
-/** The expandable UI-language picker nested inside the workspace menu. */
 export function LanguageSubmenu({ currentLang, onSelect }: LanguageSubmenuProps) {
   const { t, i18n } = useTranslation();
   return (

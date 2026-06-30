@@ -27,7 +27,6 @@ import { useVoiceStore } from "@/store/voiceStore";
 import { LanguageMenu } from "./LanguageMenu";
 import { MenuDivider, MenuItem, StateChip } from "./MenuItem";
 
-/** Circular icon button used for the bar's mic / settings / voice controls. */
 const circleBase =
   "relative grid place-items-center rounded-full border text-[oklch(0.95_0.012_100)] transition-[transform,background,border-color] duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-45 [&:active:not(:disabled)]:scale-[0.97] [&:hover:not(:disabled)]:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.82_0.09_200)]";
 const circleIdle =
@@ -45,7 +44,6 @@ interface SessionControlBarProps {
 export function SessionControlBar({ large = false, showMenu = true }: SessionControlBarProps) {
   const { t } = useTranslation();
 
-  // Size tokens — desktop ("large") vs the compact mobile pill.
   const circleSize = large ? "h-[3.25rem] w-[3.25rem]" : "h-9 w-9";
   const iconSize = large ? 24 : 17;
   const barChrome = large ? "gap-2.5 p-2" : "gap-1.5 p-1";
@@ -54,9 +52,9 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
     : "h-9 gap-1.5 px-3.5 text-[0.8rem]";
   const endIconSize = large ? 20 : 15;
   const startBtnSize = large
-    ? "h-[3.25rem] gap-2.5 px-8 text-[1.02rem]"
-    : "h-10 gap-2 px-5 text-[0.85rem]";
-  const startIconSize = large ? 20 : 16;
+    ? "h-[3.5rem] gap-2.5 px-9 text-[1.05rem]"
+    : "h-12 gap-2.5 px-7 text-[0.95rem]";
+  const startIconSize = large ? 21 : 18;
 
   const menuWrapClass = large
     ? "pointer-events-auto absolute end-4 top-4 z-50"
@@ -80,7 +78,7 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
   const isSupported = useVoiceStore((s) => s.isSupported);
   const permission = useVoiceStore((s) => s.permission);
   const micMuted = useVoiceStore((s) => s.micMuted);
-  const isListening = useVoiceStore((s) => s.isListening);
+  const isUserSpeaking = useVoiceStore((s) => s.isUserSpeaking);
   const isTranscribing = useVoiceStore((s) => s.isTranscribing);
   const toggleMicMuted = useVoiceStore((s) => s.toggleMicMuted);
 
@@ -115,84 +113,90 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
       {showMenu ? (
         <div className={menuWrapClass}>
           {menuOpen ? (
-          <div
-            className={cx(
-              "absolute z-50 w-[212px] animate-modal-pop rounded-xl border border-[oklch(1_0_0/0.12)] bg-[oklch(0.16_0.022_244/0.96)] p-1 shadow-[0_24px_60px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[16px]",
-              menuPopoverPos
-            )}
-            role="menu"
-            aria-label={t("controls.settings.open")}
-          >
-            <MenuItem
-              icon={BookOpen}
-              label={t("common.teachingPages")}
-              onClick={() => {
-                setMenuOpen(false);
-                openPageDialog();
-              }}
-            />
-            <MenuItem
-              icon={isFullscreen ? Minimize2 : Maximize2}
-              label={isFullscreen ? t("common.exitFullscreen") : t("common.fullscreen")}
-              active={isFullscreen}
-              onClick={() => {
-                toggleFullscreen();
-                setMenuOpen(false);
-              }}
-            />
-            <MenuDivider />
-            <MenuItem
-              icon={Captions}
-              label={t("controls.liveCaptions")}
-              active={showCaption}
-              onClick={toggleCaption}
-              trailing={<StateChip on={showCaption} />}
-            />
-            <MenuItem
-              icon={ScrollText}
-              label={t("common.transcript")}
-              active={showTranscript}
-              onClick={() => {
-                setMenuOpen(false);
-                toggleTranscript();
-              }}
-            />
-            <MenuDivider />
-            <LanguageMenu onSelect={() => setMenuOpen(false)} />
-            <MenuDivider />
-            <MenuItem
-              icon={RotateCcw}
-              label={t("common.restartLesson")}
-              danger
-              onClick={handleRestart}
-            />
-          </div>
-        ) : null}
+            <div
+              className={cx(
+                "absolute z-50 w-[212px] animate-modal-pop rounded-xl border border-[oklch(1_0_0/0.12)] bg-[oklch(0.16_0.022_244/0.96)] p-1 shadow-[0_24px_60px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[16px]",
+                menuPopoverPos
+              )}
+              role="menu"
+              aria-label={t("controls.settings.open")}
+            >
+              <MenuItem
+                icon={BookOpen}
+                label={t("common.teachingPages")}
+                onClick={() => {
+                  setMenuOpen(false);
+                  openPageDialog();
+                }}
+              />
+              <MenuItem
+                icon={isFullscreen ? Minimize2 : Maximize2}
+                label={isFullscreen ? t("common.exitFullscreen") : t("common.fullscreen")}
+                active={isFullscreen}
+                onClick={() => {
+                  toggleFullscreen();
+                  setMenuOpen(false);
+                }}
+              />
+              <MenuDivider />
+              <MenuItem
+                icon={Captions}
+                label={t("controls.liveCaptions")}
+                active={showCaption}
+                onClick={toggleCaption}
+                trailing={<StateChip on={showCaption} />}
+              />
+              <MenuItem
+                icon={ScrollText}
+                label={t("common.transcript")}
+                active={showTranscript}
+                onClick={() => {
+                  setMenuOpen(false);
+                  toggleTranscript();
+                }}
+              />
+              <MenuDivider />
+              <LanguageMenu onSelect={() => setMenuOpen(false)} />
+              <MenuDivider />
+              <MenuItem
+                icon={RotateCcw}
+                label={t("common.restartLesson")}
+                danger
+                onClick={handleRestart}
+              />
+            </div>
+          ) : null}
 
-        <button
-          type="button"
-          className={cx(
-            "grid h-10 w-10 place-items-center rounded-full border shadow-[0_10px_26px_oklch(0.05_0.02_244/0.5)] backdrop-blur-[12px] transition-[transform,background,border-color] duration-150 ease-out [&:hover:not(:disabled)]:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.82_0.13_165)]",
-            menuOpen
-              ? "border-transparent bg-[oklch(0.82_0.13_165)] text-[oklch(0.18_0.04_230)]"
-              : "border-[oklch(1_0_0/0.12)] bg-[oklch(0.15_0.022_244/0.86)] text-[oklch(0.95_0.01_215)]"
-          )}
-          aria-label={menuOpen ? t("controls.settings.close") : t("controls.settings.open")}
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          {menuOpen ? <X size={18} aria-hidden /> : <Settings2 size={18} aria-hidden />}
-        </button>
+          <button
+            type="button"
+            className={cx(
+              "grid h-10 w-10 place-items-center rounded-full border shadow-[0_10px_26px_oklch(0.05_0.02_244/0.5)] backdrop-blur-[12px] transition-[transform,background,border-color] duration-150 ease-out [&:hover:not(:disabled)]:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.82_0.13_165)]",
+              menuOpen
+                ? "border-transparent bg-[oklch(0.82_0.13_165)] text-[oklch(0.18_0.04_230)]"
+                : "border-[oklch(1_0_0/0.12)] bg-[oklch(0.15_0.022_244/0.86)] text-[oklch(0.95_0.01_215)]"
+            )}
+            aria-label={menuOpen ? t("controls.settings.close") : t("controls.settings.open")}
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            {menuOpen ? <X size={18} aria-hidden /> : <Settings2 size={18} aria-hidden />}
+          </button>
         </div>
       ) : null}
 
       {!callMode ? (
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto relative grid place-items-center">
+          {isSupported && !micBlocked ? (
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-full bg-[oklch(0.62_0.14_154)] blur-[3px] animate-halo-pulse motion-reduce:hidden"
+            />
+          ) : null}
           <button
             type="button"
             className={cx(
-              "inline-flex items-center rounded-full border-0 bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))] font-bold text-[oklch(0.99_0.005_100)] shadow-[0_12px_30px_oklch(0.18_0.04_244/0.5)] transition-[transform,filter] duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]",
+              "relative inline-flex items-center justify-center rounded-full bg-[linear-gradient(140deg,oklch(0.68_0.15_154),oklch(0.5_0.13_162))] font-bold tracking-[0.01em] text-[oklch(0.99_0.005_100)] ring-1 ring-inset ring-[oklch(1_0_0/0.18)] shadow-[0_14px_34px_oklch(0.45_0.1_154/0.45),inset_0_1px_0_oklch(1_0_0/0.25)] transition-[transform,filter] duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none [&:active:not(:disabled)]:scale-[0.97] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]",
               startBtnSize
             )}
             aria-label={t("controls.session.startAria")}
@@ -212,13 +216,12 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
           role="group"
           aria-label={t("controls.callControls")}
         >
-          {/* Mute / unmute microphone */}
           <button
             type="button"
             className={cx(
               circleSize,
               circleBase,
-              micMuted ? circleDanger : isListening ? circleActive : circleIdle
+              micMuted ? circleDanger : isUserSpeaking ? circleActive : circleIdle
             )}
             aria-label={micMuted ? t("controls.micMute.unmuteAria") : t("controls.micMute.muteAria")}
             aria-pressed={micMuted}
@@ -235,7 +238,6 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
             )}
           </button>
 
-          {/* Mute / unmute the tutor's voice */}
           <button
             type="button"
             className={cx(circleSize, circleBase, agentMuted ? circleDanger : circleIdle)}
@@ -251,7 +253,6 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
             )}
           </button>
 
-          {/* End session */}
           <button
             type="button"
             className={cx(

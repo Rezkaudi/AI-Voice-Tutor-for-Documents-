@@ -1,12 +1,5 @@
 import type { StreamEvent } from "@/types";
 
-/**
- * Read a `text/event-stream` body and invoke `onEvent` for every complete
- * `event: …\ndata: …` frame as it arrives.
- *
- * @param {ReadableStream<Uint8Array>} body
- * @param {(event: StreamEvent) => void} onEvent
- */
 export async function readEventStream(
   body: ReadableStream<Uint8Array>,
   onEvent: (event: StreamEvent) => void
@@ -34,13 +27,6 @@ export async function readEventStream(
   }
 }
 
-/**
- * Parse a single SSE frame. Returns `null` for incomplete or malformed frames
- * so a corrupt chunk never aborts an otherwise healthy stream.
- *
- * @param {string} part
- * @returns {StreamEvent | null}
- */
 export function parseStreamEvent(part: string): StreamEvent | null {
   const lines = part.split("\n");
   const eventLine = lines.find((line) => line.startsWith("event: "));

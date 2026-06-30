@@ -2,7 +2,6 @@ import type { CaptionSpeaker, SegmentedText, SpeechCaption } from "@/types";
 
 type CaptionListener = (caption: SpeechCaption | null) => void;
 
-/** Owns the word-reveal timer and pushes caption updates to a listener. */
 export class CaptionController {
   private timer: number | null = null;
 
@@ -12,7 +11,6 @@ export class CaptionController {
     this.emit = emit;
   }
 
-  /** Stops the rolling timer and clears the visible caption. */
   reset(): void {
     this.clearTimer();
     this.emit(null);
@@ -25,13 +23,11 @@ export class CaptionController {
     }
   }
 
-  /** Pushes a single caption snapshot, e.g. from a precise boundary event. */
   show(caption: SpeechCaption): void {
     this.clearTimer();
     this.emit(caption);
   }
 
-  /** Reveals words one at a time, pacing the reveal to fit `durationMs`. */
   reveal(segmented: SegmentedText, durationMs: number, speaker: CaptionSpeaker): void {
     const { words, styles, spaced, rtl } = segmented;
     this.clearTimer();

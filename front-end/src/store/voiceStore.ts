@@ -6,6 +6,7 @@ import type { MicPermission } from "@/types";
 
 interface VoiceStore {
   isListening: boolean;
+  isUserSpeaking: boolean;
   isTranscribing: boolean;
   isSupported: boolean;
   micMuted: boolean;
@@ -23,7 +24,7 @@ const recorder = new VoiceRecorder();
 
 export const useVoiceStore = create<VoiceStore>((set, get) => {
   recorder.onState = (patch) => {
-    if (patch.isListening) useSpeechStore.getState().clearCaption();
+    if (patch.isUserSpeaking) useSpeechStore.getState().clearCaption();
     set(patch);
   };
   recorder.onTranscript = (text) =>
@@ -34,6 +35,7 @@ export const useVoiceStore = create<VoiceStore>((set, get) => {
 
   return {
     isListening: false,
+    isUserSpeaking: false,
     isTranscribing: false,
     isSupported: true,
     micMuted: false,

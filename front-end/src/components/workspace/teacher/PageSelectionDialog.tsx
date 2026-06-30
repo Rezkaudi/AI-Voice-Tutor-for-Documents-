@@ -5,17 +5,16 @@ import { MAX_LESSON_PAGES } from "@/lib/constants";
 import { cx, ui } from "@/lib/uiClasses";
 
 interface PageSelectionDialogProps {
-  /** Total pages in the loaded document. */
+
   pageCount: number;
-  /** Pages currently chosen, so the picker opens on the last selection. */
+
   selectedPages: number[];
-  /** True while a call is already running — changes the confirm wording. */
+
   callMode: boolean;
   onConfirm: (pages: number[]) => void;
   onCancel: () => void;
 }
 
-/** Clamps and orders a raw selection: in-range, unique, sorted, capped. */
 function normalize(pages: number[], pageCount: number): number[] {
   return Array.from(new Set(pages))
     .filter((page) => page >= 1 && page <= pageCount)
@@ -23,12 +22,6 @@ function normalize(pages: number[], pageCount: number): number[] {
     .slice(0, MAX_LESSON_PAGES);
 }
 
-/**
- * The lesson-pages picker shown when the learner starts (or edits) a call.
- * They tap up to {@link MAX_LESSON_PAGES} pages; the tutor teaches exactly
- * those, in order, page by page. The parent mounts this only while open, so
- * the initial selection is seeded once on mount.
- */
 export function PageSelectionDialog({
   pageCount,
   selectedPages,
@@ -143,7 +136,7 @@ export function PageSelectionDialog({
               );
             })}
           </div>
-          {/* Soft fade hints there are more pages to scroll to. */}
+
           <div
             className="pointer-events-none absolute inset-x-2 bottom-px h-7 rounded-b-xl bg-linear-to-t from-paper to-transparent"
             aria-hidden

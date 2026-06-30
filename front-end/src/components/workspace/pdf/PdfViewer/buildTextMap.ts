@@ -119,7 +119,6 @@ const RTL_CHARS = /[\u0590-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\
 /** Strong LTR letters: Latin, Greek, Cyrillic, and CJK (all read left→right). */
 const LTR_CHARS = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u3040-\u30FF\u3400-\u9FFF]/g;
 
-/** A line reads right-to-left when its strong RTL chars outnumber its LTR ones. */
 function isRightToLeft(text: string): boolean {
   const rtl = text.match(RTL_CHARS)?.length ?? 0;
   const ltr = text.match(LTR_CHARS)?.length ?? 0;
@@ -145,7 +144,6 @@ function normalizeLayoutTrackingOffsets(value: string): {
   let normalized = "";
   const offsetMap: number[] = new Array(value.length);
   let started = false;
-
 
   let pendingKind: "none" | "space" | "newline" = "none";
   let pendingNewlines = 0;

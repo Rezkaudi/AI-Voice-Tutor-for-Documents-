@@ -5,7 +5,6 @@ import { useAuthStore } from "@/store/authStore";
 import { cx, ui } from "@/lib/uiClasses";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 
-/** Place the supplied teacher artwork at front-end/public/teacher-avatar.png */
 const AVATAR_SRC = "/teacher-avatar.png";
 
 function GoogleMark() {
@@ -55,14 +54,13 @@ export function LoginPage() {
     <main className="relative grid h-dvh w-full place-items-center overflow-hidden bg-paper text-ink">
       <BackdropDecor />
 
-      {/* Brand lockup — no nav, on-brand minimal */}
       <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between p-5 sm:p-7">
         <span className="text-[0.95rem] font-[760] tracking-tight">{t("login.brand")}</span>
         <LanguageSwitcher />
       </header>
 
       <section className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-8 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
-        {/* Copy + the single CTA */}
+
         <div className="order-2 mx-auto max-w-xl text-center lg:order-1 lg:mx-0 lg:text-left">
           <h1 className="text-[clamp(2rem,5vw,3.5rem)] font-[820] leading-[1.03] tracking-[-0.022em]">
             {t("login.headlineLead")}
@@ -110,7 +108,6 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* Teacher avatar on a soft branded stage */}
         <div className="order-1 flex items-end justify-center lg:order-2">
           <AvatarStage failed={avatarFailed} onFail={() => setAvatarFailed(true)} />
         </div>
@@ -127,7 +124,7 @@ function AvatarStage({ failed, onFail }: { failed: boolean; onFail: () => void }
   const { t } = useTranslation();
   return (
     <div className="relative grid place-items-center">
-      {/* Halo echoing the in-app teacher avatar */}
+
       <div
         aria-hidden
         className="pointer-events-none absolute h-[min(72vw,440px)] w-[min(72vw,440px)] rounded-full bg-[radial-gradient(circle_at_50%_42%,oklch(0.86_0.035_210/0.6)_0%,oklch(0.58_0.11_154/0.16)_46%,transparent_70%)] motion-safe:animate-halo-breath"

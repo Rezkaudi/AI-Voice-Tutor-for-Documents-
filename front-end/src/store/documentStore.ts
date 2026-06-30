@@ -22,12 +22,12 @@ interface DocumentStore {
   uploadState: UploadState;
   activePage: number;
   highlight: DocumentReference | null;
-  /** Stable key of the citation currently highlighted in the viewer. */
+
   activeCitationKey: string | null;
   library: DocumentSummary[];
   libraryLoading: boolean;
   deletingId: string | null;
-  /** Upload-specific failure, surfaced in the upload panel/library — not the document view. */
+
   uploadError: string | null;
   setActivePage: (activePage: number) => void;
   setUploadError: (uploadError: string | null) => void;
@@ -41,11 +41,6 @@ interface DocumentStore {
   initLibrary: () => Promise<void>;
 }
 
-/**
- * Document store: upload + processing, the active page, the teacher's
- * page-reference highlight, and the library of previously processed documents
- * the learner can switch between.
- */
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
   loadedDocument: null,
   uploadState: "idle",
@@ -93,7 +88,6 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }
   },
 
-  /** Loads an existing document (no re-upload) and remembers it as current. */
   selectDocument: async (documentId) => {
     if (get().loadedDocument?.document.id === documentId) {
       return;
@@ -116,7 +110,6 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }
   },
 
-  /** Uploads a file, waits for processing, then loads the document. */
   uploadFile: async (file) => {
     if (!file) {
       return null;
@@ -140,7 +133,6 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }
   },
 
-  /** Returns to the upload/library landing by unloading the current document. */
   closeDocument: () =>
     set({
       loadedDocument: null,
@@ -149,7 +141,6 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       activeCitationKey: null
     }),
 
-  /** Deletes a document from the server and prunes it from local state. */
   deleteDocument: async (documentId) => {
     if (get().deletingId) return;
     set({ deletingId: documentId });
@@ -179,18 +170,15 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }
   },
 
-  /** On app start: just load the library. The user picks which document to open. */
   initLibrary: async () => {
     await get().loadLibrary();
   }
 }));
 
-/** Stable identifier for one citation across its lifetime. */
 export function citationKey(citation: DocumentCitation): string {
   return `${citation.pageNumber}:${citation.start}:${citation.end}`;
 }
 
-/** Derives the page object for the active page number. */
 export function selectCurrentPage(state: DocumentStore): DocumentPage | null {
   const { loadedDocument, activePage } = state;
   if (!loadedDocument) {

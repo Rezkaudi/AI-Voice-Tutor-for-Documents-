@@ -1,12 +1,6 @@
 import type { ChatPayload } from "@/types";
 import { api, extractErrorMessage } from "@/services/apiBase";
 
-/**
- * Tutor chat transport. Opens the streaming `/api/chat` SSE response.
- *
- * Uses axios's fetch adapter with responseType "stream" so we get the raw
- * ReadableStream — the default XHR adapter buffers the whole body.
- */
 export async function streamChat(
   payload: ChatPayload,
   signal: AbortSignal

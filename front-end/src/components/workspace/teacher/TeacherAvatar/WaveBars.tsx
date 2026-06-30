@@ -10,7 +10,6 @@ interface WaveBarsProps {
   listening: boolean;
 }
 
-/** Animated equalizer bars below the avatar; visible while the call is live. */
 export function WaveBars({ visible, listening }: WaveBarsProps) {
   return (
     <div

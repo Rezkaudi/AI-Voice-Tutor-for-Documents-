@@ -36,7 +36,6 @@ export function PdfViewer({
   useScrollSync(pdf, page, focusCitationKey, scrollRef, slotRefs, onVisiblePageChange);
   const renderSet = usePageWindowing(pdf, fitWidth, scrollRef, slotRefs, page, numPages);
 
-  // Track the scroll container's width so pages render fit-to-width.
   useEffect(() => {
     if (!scrollRef.current) return;
     const observer = new ResizeObserver((entries) => {

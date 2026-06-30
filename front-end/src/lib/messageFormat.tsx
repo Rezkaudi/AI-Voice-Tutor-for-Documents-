@@ -4,11 +4,6 @@ import { useDocumentStore } from "@/store/documentStore";
 import { useSessionStore } from "@/store/sessionStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-/**
- * Strip simple markdown bold/italic markers, parse `[[N]]` inline citation
- * markers into clickable badges, and split a message into paragraphs for
- * readable rendering in a chat bubble.
- */
 export function renderMessageBody(
   content: string,
   citations: DocumentCitation[] = []
@@ -32,18 +27,12 @@ export function renderMessageBody(
   });
 }
 
-/** Unicode ranges for right-to-left scripts (Arabic, Hebrew, etc.). */
 const RTL_CHAR =
   /[֐-׿؀-ۿ܀-ݏݐ-ݿࢠ-ࣿיִ-ﭏﭐ-﷿ﹰ-﻿]/;
-/** Strong left-to-right scripts: Latin, CJK (Japanese/Chinese), Kana, Hangul. */
+
 const LTR_CHAR =
   /[A-Za-zÀ-ɏͰ-Ͽ぀-ヿ㐀-䶿一-鿿가-힯＀-￯]/;
 
-/**
- * Decide a paragraph's base writing direction from its first strong
- * directional character — Arabic/Hebrew → RTL, English/Japanese/etc → LTR.
- * Mirrors the browser's `dir="auto"` heuristic but lets us also align text.
- */
 function detectBaseDirection(text: string): "rtl" | "ltr" {
   for (const char of text) {
     if (RTL_CHAR.test(char)) return "rtl";

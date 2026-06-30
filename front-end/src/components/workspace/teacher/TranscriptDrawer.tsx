@@ -24,7 +24,7 @@ export function TranscriptDrawer({ open, messages, onClose }: TranscriptDrawerPr
 
   return (
     <>
-      {/* Scrim — only interactive while open so it never blocks the document. */}
+
       <div
         className={cx(
           "fixed inset-0 z-40 bg-[oklch(0.1_0.02_244/0.5)] backdrop-blur-[2px] transition-opacity duration-300 ease-out motion-reduce:transition-none",
@@ -36,9 +36,7 @@ export function TranscriptDrawer({ open, messages, onClose }: TranscriptDrawerPr
       <aside
         className={cx(
           "fixed inset-y-0 right-0 z-50 flex w-[min(420px,92vw)] flex-col border-l border-[oklch(1_0_0/0.1)] bg-[radial-gradient(120%_80%_at_50%_0%,oklch(0.26_0.04_236)_0%,oklch(0.18_0.03_244)_70%)] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-          // Keep the left-facing shadow only while open — when closed the panel
-          // sits just off the right edge and its blurred shadow would otherwise
-          // bleed back onto the screen as a vertical band along the right edge.
+
           open
             ? "translate-x-0 shadow-[-24px_0_60px_oklch(0.05_0.02_244/0.6)]"
             : "translate-x-full shadow-none"

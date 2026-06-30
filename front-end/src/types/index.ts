@@ -67,7 +67,7 @@ export interface ChatPayload {
   message: string;
   language: SpeechLanguage;
   messages: ChatHistoryMessage[];
-  /** 1-based page numbers the student chose to study this call (max 5). */
+
   selectedPages: number[];
   saveCost: boolean;
 }
@@ -82,9 +82,9 @@ export type StreamEvent =
 export interface SegmentedText {
   words: string[];
   offsets: number[];
-  /** Per-word style bitmask — see the WORD_* flags in lib/textSegmentation. */
+
   styles: number[];
-  /** Sentence with markdown markers stripped; what `offsets` index into. */
+
   clean: string;
   spaced: boolean;
   rtl: boolean;
@@ -93,7 +93,7 @@ export interface SegmentedText {
 export interface SpeechCaption {
   speaker: CaptionSpeaker;
   words: string[];
-  /** Per-word style bitmask — see the WORD_* flags in lib/textSegmentation. */
+
   styles: number[];
   spoken: number;
   spaced: boolean;
@@ -115,6 +115,7 @@ export interface CallStatus {
 
 export interface VoiceRecorderState {
   isListening: boolean;
+  isUserSpeaking: boolean;
   isTranscribing: boolean;
   isSupported: boolean;
   permission: MicPermission;

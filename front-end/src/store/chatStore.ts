@@ -18,7 +18,6 @@ interface ChatStore {
   sendMessage: (content: string, options?: SendMessageOptions) => Promise<void>;
 }
 
-/** Applies a partial patch to the message with the given id. */
 function patchMessage(
   messages: ChatMessage[],
   id: string,
@@ -29,12 +28,8 @@ function patchMessage(
   );
 }
 
-/**
- * Chat store: streams answers from `/api/chat`, mirrors page references to
- * the document store, and feeds finished sentences to TTS as they arrive.
- */
 export const useChatStore = create<ChatStore>((set, get) => {
-  // Kept outside store state — it is transport plumbing, not UI state.
+
   let abortController: AbortController | null = null;
 
   const patchAssistant = (id: string, patch: Partial<ChatMessage>) => {
@@ -50,12 +45,10 @@ export const useChatStore = create<ChatStore>((set, get) => {
     messages: [],
     isStreaming: false,
 
-    /** Aborts the in-flight request, keeping any text streamed so far. */
     abort: () => {
       abortController?.abort();
       abortController = null;
-      // Clear the flag now: the stream may be parked on TTS playback, where the
-      // request controller no longer drives the `finally` that would reset it.
+
       set({ isStreaming: false });
     },
 
@@ -65,7 +58,6 @@ export const useChatStore = create<ChatStore>((set, get) => {
       set({ messages: [], isStreaming: false });
     },
 
-    /** Sends a learner message and streams the tutor's answer. */
     sendMessage: async (content, options = {}) => {
       const trimmed = content.trim();
       const loadedDocument = useDocumentStore.getState().loadedDocument;
@@ -120,8 +112,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
         useSessionStore.getState().maybeContinueCall();
       } catch (error) {
         if (controller.signal.aborted) {
-          // Call ended mid-answer: drop the request silently and keep what
-          // streamed so far instead of surfacing an error.
+
           return;
         }
         useSessionStore

@@ -13,7 +13,6 @@ export function useScrollSync(
   const onVisibleRef = useRef(onVisiblePageChange);
   onVisibleRef.current = onVisiblePageChange;
 
-  // A freshly-loaded document starts from its requested page.
   useEffect(() => {
     dominantRef.current = page;
   }, [pdf]);

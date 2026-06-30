@@ -12,13 +12,6 @@ export const bubbleBase =
 export const callHint =
   "text-center text-[0.92rem] leading-[1.55] text-[oklch(0.82_0.02_215)] px-3";
 
-// Occupies the panel grid's flexible middle row (between the status block
-// and the call controls) and centers in it via the grid's place-items-center.
-// Sharing the row with the transcript instead of using absolute offsets keeps
-// it vertically centered at every panel height without pushing siblings.
-// Fixed width (not max-w): the box must not shrink-wrap short phrases, or it
-// would resize on every revealed word — the two-line window inside handles
-// overflow instead.
 export const captionBase =
   "pointer-events-none z-30 col-start-1 row-start-3 flex w-[min(560px,calc(100%_-_24px))] flex-nowrap items-center gap-2 rounded-xl border border-[oklch(1_0_0/0.1)] bg-[oklch(0.13_0.022_244/0.9)] px-3.5 py-2 shadow-[0_14px_36px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[10px] animate-caption-rise motion-reduce:animate-none min-[920px]:w-[min(640px,calc(100%_-_24px))] min-[920px]:gap-2.5 min-[920px]:rounded-2xl min-[920px]:px-[18px] min-[920px]:py-[11px]";
 
@@ -43,7 +36,5 @@ export const micCircleBase =
 export const micCircleActive =
   "animate-speak-pulse border-[oklch(0.7_0.13_154)] bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))] text-[oklch(0.99_0.008_138)]";
 
-// Tutor is preparing a reply: keep the circle clearly legible (override the
-// dimmed disabled opacity) so the bouncing dots read as "thinking", not "off".
 export const micCircleThinking =
   "border-[oklch(0.46_0.07_230)] bg-[oklch(0.28_0.04_232)] disabled:opacity-90";

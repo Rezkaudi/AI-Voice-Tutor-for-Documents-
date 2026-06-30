@@ -58,7 +58,7 @@ export function QuestionPopup({
             "shadow-[0_28px_70px_oklch(0.18_0.03_244/0.35)] animate-modal-pop"
           )}
         >
-          {/* Header: badge + dismiss */}
+
           <div className="flex items-center justify-between gap-3 px-5 pt-4">
             <span
               className={cx(
@@ -84,7 +84,6 @@ export function QuestionPopup({
             </button>
           </div>
 
-          {/* The question itself */}
           <div className="px-5 pb-4 pt-2.5">
             <p id="question-popup-title" className="sr-only">
               {t("question.title")}
@@ -98,7 +97,6 @@ export function QuestionPopup({
             </p>
           </div>
 
-          {/* Live listening footer */}
           <div
             className="flex items-center gap-3 border-t border-line bg-paper px-5 py-3.5"
             aria-live="polite"
@@ -117,7 +115,6 @@ export function QuestionPopup({
   );
 }
 
-/** Pulsing mic disc — radiating rings while listening, calm while idle. */
 function MicPulse({ active }: { active: boolean }) {
   return (
     <span className="relative grid h-11 w-11 flex-none place-items-center" aria-hidden>

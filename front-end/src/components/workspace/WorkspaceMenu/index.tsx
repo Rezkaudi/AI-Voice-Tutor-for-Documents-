@@ -30,10 +30,6 @@ interface WorkspaceMenuProps {
   onRestart: () => void;
 }
 
-/**
- * Single overflow control for the document workspace. Collapses every
- * secondary action into one compact dropdown so the workspace stays uncluttered.
- */
 export function WorkspaceMenu({
   showTranscript,
   showCaption,

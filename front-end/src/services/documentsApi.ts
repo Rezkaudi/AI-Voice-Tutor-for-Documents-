@@ -22,10 +22,6 @@ export async function listDocuments(): Promise<DocumentSummary[]> {
   }
 }
 
-/**
- * Document transport. Talks to the backend's `/api/documents`.
- */
-
 export async function uploadDocument(file: File): Promise<{ documentId: string }> {
   const formData = new FormData();
   formData.append("file", file);

@@ -1,10 +1,5 @@
 import { useEffect, type RefObject } from "react";
 
-/**
- * Closes a popup on an outside click or the Escape key while it is open.
- * The effect only attaches its listeners when `open` is true, so a closed
- * menu carries no global handlers.
- */
 export function useDismissable(
   open: boolean,
   rootRef: RefObject<HTMLElement | null>,
