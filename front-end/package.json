@@ -14,11 +14,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ricky0123/vad-web": "^0.0.30",
     "@tailwindcss/vite": "^4.3.0",
     "axios": "^1.16.1",
     "i18next": "^26.3.1",
     "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^1.16.0",
+    "onnxruntime-web": "^1.27.0",
     "pdfjs-dist": "^5.7.284",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

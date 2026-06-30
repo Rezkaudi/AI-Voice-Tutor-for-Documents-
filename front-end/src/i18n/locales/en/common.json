@@ -117,6 +117,26 @@
       "hideTitle": "Hide controls",
       "menuAria": "More controls"
     },
+    "session": {
+      "start": "Start Session",
+      "end": "End Session",
+      "startAria": "Start voice session",
+      "endAria": "End voice session"
+    },
+    "micMute": {
+      "on": "Mute microphone",
+      "off": "Unmute microphone",
+      "muteAria": "Mute microphone",
+      "unmuteAria": "Unmute microphone"
+    },
+    "voice": {
+      "muteAria": "Mute tutor voice",
+      "unmuteAria": "Unmute tutor voice"
+    },
+    "settings": {
+      "open": "Session settings",
+      "close": "Close settings"
+    },
     "liveCaptions": "Live captions"
   },
   "workspaceMenu": {

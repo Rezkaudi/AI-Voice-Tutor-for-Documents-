@@ -2,9 +2,8 @@ import type { ChatMessage, SpeechCaption, SpeechLanguage } from "@/types";
 import { MicPermissionDialog } from "../MicPermissionDialog";
 import { PageSelectionDialog } from "../PageSelectionDialog";
 import { TeacherAvatar } from "../TeacherAvatar";
-import { CallControls } from "./CallControls";
+import { SessionControlBar } from "@/components/workspace/controls/SessionControlBar";
 import { CaptionStrip } from "./CaptionStrip";
-import { LanguagePicker } from "./LanguagePicker";
 import { MicStatusBanner } from "./MicStatusBanner";
 import { TranscriptLog } from "./TranscriptLog";
 import { bubbleBase } from "./styles";
@@ -47,16 +46,12 @@ export function TeacherPanel({
   micSupported,
   micBlocked,
   callMode,
-  speechLanguage,
   showTranscript,
   showCaption,
   error,
   pageCount,
   selectedPages,
   pageDialogOpen,
-  onSpeechLanguageChange,
-  onMicToggle,
-  onCallToggle,
   onClosePageDialog,
   onSubmitPageSelection
 }: TeacherPanelProps) {
@@ -66,15 +61,6 @@ export function TeacherPanel({
   const status = { isStreaming, isSpeaking, isListening, isTranscribing, callMode };
   const orbState = deriveOrbState(status);
   const statusLabel = t(deriveStatusLabelKey(status, messages.length));
-  const langDisabled = isListening || isTranscribing || micBlocked;
-
-  const handleMicClick = () => {
-    if (micBlocked) {
-      micDialog.setOpen(true);
-      return;
-    }
-    onMicToggle();
-  };
 
   return (
     <div className="relative grid h-full min-h-0 w-full flex-1 grid-rows-[auto_auto_minmax(0,1fr)_auto] place-items-center gap-[clamp(14px,2.2vh,26px)] px-3 pb-1 pt-[clamp(60px,8vh,72px)]">
@@ -120,17 +106,7 @@ export function TeacherPanel({
 
       {showCaption && caption ? <CaptionStrip caption={caption} /> : null}
 
-      <CallControls
-        callMode={callMode}
-        isListening={isListening}
-        isSpeaking={isSpeaking}
-        isStreaming={isStreaming}
-        isTranscribing={isTranscribing}
-        micSupported={micSupported}
-        micBlocked={micBlocked}
-        onCallToggle={onCallToggle}
-        onMicClick={handleMicClick}
-      />
+      <SessionControlBar large showMenu={false} />
 
       <MicStatusBanner
         micSupported={micSupported}
