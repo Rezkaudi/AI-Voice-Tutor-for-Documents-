@@ -10,7 +10,6 @@ interface SynthDeps {
   onStart?: (durationMs: number) => void;
 }
 
-/** Browser SpeechSynthesis fallback used when server TTS is unavailable. */
 export function playWithSpeechSynthesis({
   segmented,
   isStale,
@@ -25,8 +24,7 @@ export function playWithSpeechSynthesis({
     }
 
     window.speechSynthesis.cancel();
-    // Speak the markdown-stripped text — `offsets` index into it, so the
-    // boundary events' charIndex lines up with caption words exactly.
+
     const utterance = new SpeechSynthesisUtterance(segmented.clean);
     utterance.rate = SPEECH_SYNTHESIS_RATE;
 
@@ -43,11 +41,11 @@ export function playWithSpeechSynthesis({
     utterance.onstart = () => {
       if (isStale()) return;
       onSpeakingChange(true);
-      // The browser reports real word boundaries; estimate as a safety net only.
+
       caption.reveal(segmented, estimatedMs, "teacher");
       onStart?.(estimatedMs);
     };
-    // Boundary events give exact word timing — far better than the estimate.
+
     utterance.onboundary = (event) => {
       if (event.name !== "word" || isStale()) return;
       const spoken = countWordsUpTo(offsets, event.charIndex);
@@ -68,7 +66,6 @@ export function playWithSpeechSynthesis({
   });
 }
 
-/** Counts how many words begin at or before `charIndex`. */
 function countWordsUpTo(offsets: number[], charIndex: number): number {
   let count = 0;
   for (const offset of offsets) {

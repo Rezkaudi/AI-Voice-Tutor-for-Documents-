@@ -7,11 +7,10 @@ import { avatarStyleFor } from "./avatarStyles";
 
 interface TeacherAvatarProps {
   state: AvatarState;
-  /** Override the sizing/spacing utilities (e.g. for the compact floating puck). */
+
   className?: string;
 }
 
-/** Animated illustrated teacher whose expression reflects the call state. */
 function TeacherAvatarComponent({ state, className }: TeacherAvatarProps) {
   const styles = avatarStyleFor(state);
   const { haloTone, haloAnimation, headAnimation, activeHalo, listening, speaking, thinking } =

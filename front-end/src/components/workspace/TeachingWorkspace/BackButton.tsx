@@ -7,7 +7,6 @@ interface BackButtonProps {
   onBack: () => void;
 }
 
-/** Floating "back to documents" control, shared by both workspace layouts. */
 export function BackButton({ isDesktop, onBack }: BackButtonProps) {
   const { t } = useTranslation();
   return (

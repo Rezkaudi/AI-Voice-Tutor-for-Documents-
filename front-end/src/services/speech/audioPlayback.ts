@@ -36,7 +36,7 @@ export function playAudioClip({
     audio.onplay = () => {
       if (isStale()) return;
       onSpeakingChange(true);
-      // Prefer the real clip length; fall back to an estimate if unknown.
+
       const seconds =
         Number.isFinite(audio.duration) && audio.duration > 0
           ? audio.duration
@@ -47,7 +47,7 @@ export function playAudioClip({
     audio.onended = finish;
     audio.onerror = finish;
     audio.onpause = () => {
-      // stopSpeaking() pauses playback; release the chain so it can unwind.
+
       if (isStale()) finish();
     };
     audio.play().catch(finish);

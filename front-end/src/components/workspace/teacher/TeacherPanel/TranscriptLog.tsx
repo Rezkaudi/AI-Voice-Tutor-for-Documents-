@@ -9,7 +9,6 @@ interface TranscriptLogProps {
   messages: ChatMessage[];
 }
 
-/** Scrollable lesson transcript. Auto-scrolls to the latest message. */
 export function TranscriptLog({ messages }: TranscriptLogProps) {
   const { t } = useTranslation();
   const logRef = useRef<HTMLDivElement>(null);

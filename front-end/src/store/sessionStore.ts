@@ -109,7 +109,6 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     useSpeechStore.getState().stopSpeaking();
   },
 
-
   handleMicToggle: () => {
     const voice = useVoiceStore.getState();
     if (voice.isListening) {

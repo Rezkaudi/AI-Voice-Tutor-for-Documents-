@@ -13,7 +13,6 @@ interface MenuItemProps {
   trailing?: ReactNode;
 }
 
-/** One labelled row in the workspace overflow menu. */
 export function MenuItem({
   icon: Icon,
   label,

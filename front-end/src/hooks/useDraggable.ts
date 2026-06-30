@@ -92,7 +92,7 @@ export function useDraggable(storageKey: string, fallback: () => Point) {
       try {
         event.currentTarget.releasePointerCapture(event.pointerId);
       } catch {
-        // Capture may already be gone; nothing to release.
+
       }
       if (drag?.moved) {
         setPos((prev) => {
@@ -100,7 +100,7 @@ export function useDraggable(storageKey: string, fallback: () => Point) {
             try {
               window.localStorage.setItem(storageKey, JSON.stringify(prev));
             } catch {
-              // Persisting position is best-effort.
+
             }
           }
           return prev;

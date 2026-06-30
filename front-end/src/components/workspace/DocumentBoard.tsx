@@ -18,11 +18,6 @@ interface DocumentBoardProps {
   onReady?: () => void;
 }
 
-/**
- * Renders the source document with NotebookLM-style citation highlights.
- * PDFs use a PDF.js canvas + text-layer so we can paint coloured spans over
- * the citation offsets.
- */
 function DocumentBoardComponent({
   fileUrl,
   mimeType,
@@ -73,7 +68,6 @@ function DocumentBoardComponent({
         </div>
       )}
 
-      {/* Floating page indicator (bottom-left), overlaid on the document */}
       <span
         className="pointer-events-none absolute bottom-3 start-3 z-20 rounded-md bg-[oklch(0.2_0.02_245/0.62)] px-2.5 py-1 text-[0.8rem] font-semibold text-white backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)] max-[919px]:bottom-[calc(env(safe-area-inset-bottom)+18px)]"
         aria-live="polite"
@@ -85,5 +79,5 @@ function DocumentBoardComponent({
 }
 
 export const DocumentBoard = memo(DocumentBoardComponent);
-// Re-export so the parent can pass a stable focus callback into the chip click.
+
 export { citationKey };

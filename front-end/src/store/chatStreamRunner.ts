@@ -11,10 +11,6 @@ interface RunChatStreamDeps {
   onQuestion: (question: string | null) => void;
 }
 
-/**
- * Drains the chat SSE stream into `onText` updates, voicing each finished
- * sentence as it arrives, and waiting for TTS to drain before returning.
- */
 export async function runChatStream({
   body,
   speechSession,
@@ -26,12 +22,9 @@ export async function runChatStream({
   let assistantText = "";
   let spokenChars = 0;
   let pendingQuestion: string | null = null;
-  // Box around the reference so TS keeps the union type across the await
-  // boundary even though the callback may reassign it.
+
   const refBox: { current: DocumentReference | null } = { current: null };
-  // Tracks setTimeout ids scheduled by the previous sentence so the next
-  // sentence can supersede them — prevents an old sentence's later citation
-  // from firing after the next sentence has already taken over the document.
+
   const pendingTimers: { current: number[] } = { current: [] };
 
   const pushSentence = (sentence: string) => {
@@ -39,7 +32,7 @@ export async function runChatStream({
     if (!spoken) return;
     const indices = uniqueMarkerIndices(sentence);
     if (indices.length === 0) {
-      // Keep the previous citation focused — natural while the tutor elaborates.
+
       speechSession.push(spoken);
       return;
     }
@@ -71,8 +64,6 @@ export async function runChatStream({
       assistantText += event.data.text;
       onText(assistantText);
 
-      // Speak each finished sentence as soon as it arrives, instead of
-      // waiting for the whole answer to finish streaming.
       const { sentences, consumed } = extractSentences(assistantText.slice(spokenChars));
       if (consumed > 0) {
         spokenChars += consumed;
@@ -97,10 +88,6 @@ export async function runChatStream({
   pendingTimers.current.forEach((id) => window.clearTimeout(id));
   onQuestion(pendingQuestion);
 
-  // After streaming ends, drop any citation the final text never referenced
-  // with a [[N]] marker, and renumber the surviving markers so the side panel
-  // matches what's clickable in the bubble. Safety net for cases the backend
-  // reconcile missed (older bundle, restart lag, etc.).
   const finalReference = refBox.current;
   if (finalReference && finalReference.citations.length > 0) {
     const aligned = reconcileMarkers(assistantText, finalReference);
@@ -114,12 +101,10 @@ export async function runChatStream({
   return assistantText;
 }
 
-/** [[N]] reference markers are visual-only — strip before sending to TTS. */
 function stripCitationMarkers(text: string): string {
   return text.replace(/\[\[\d+\]\]/g, "").replace(/[ \t]{2,}/g, " ");
 }
 
-/** Citation indices referenced in a sentence, in order, de-duplicated. */
 function uniqueMarkerIndices(sentence: string): number[] {
   const seen = new Set<number>();
   const out: number[] = [];
@@ -133,11 +118,6 @@ function uniqueMarkerIndices(sentence: string): number[] {
   return out;
 }
 
-/**
- * Drops citations the text never marks with [[N]], renumbers the surviving
- * markers contiguously, and rewrites the text to match. Returns the original
- * objects when nothing changes so callers can skip a redundant re-render.
- */
 function reconcileMarkers(
   text: string,
   reference: DocumentReference

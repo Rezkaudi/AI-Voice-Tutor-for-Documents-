@@ -1,59 +1,35 @@
 import type { SegmentedText } from "@/types";
 
-/**
- * Text segmentation for the live caption: stripping the tutor's inline
- * markdown into per-word style flags, splitting a sentence into display
- * words, and detecting right-to-left scripts.
- */
-
-// Per-word style bitmask values carried on `SegmentedText.styles` and
-// `SpeechCaption.styles`. OR-combined when a word carries several.
 export const WORD_BOLD = 1;
 export const WORD_ITALIC = 2;
 export const WORD_CODE = 4;
 export const WORD_QUOTED = 8;
 
-// Strong right-to-left scripts: Hebrew (+ presentation forms), Arabic
-// (+ supplement / extended / presentation forms), Syriac, Thaana, NKo.
-// Their presence flips the caption to RTL.
 const RTL_PATTERN =
   /[\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0750-\u077F\u0780-\u07BF\u07C0-\u07FF\u0860-\u08FF\uFB1D-\uFB4F\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
-/** True when the text is written in a right-to-left script. */
 export function isRtlText(text: string): boolean {
   return RTL_PATTERN.test(text);
 }
 
-// Opening quote → its closing counterpart. Single quotes/apostrophes are
-// skipped on purpose — too ambiguous with contractions like "it's".
 const QUOTE_PAIRS: Record<string, string> = {
   '"': '"',
-  "“": "”", // “ ”
-  "«": "»", // « »
-  "「": "」" // 「 」
+  "“": "”",
+  "«": "»",
+  "「": "」"
 };
 
 interface ParsedInline {
-  /** Sentence with markdown markers removed — safe to hand to TTS. */
+
   clean: string;
-  /** Style bitmask per character of `clean`. */
+
   flags: number[];
 }
 
-/**
- * Strips the tutor's inline markdown (`**bold**`, `*italic*`, `` `code` ``,
- * leading `#`/`-`/`>` line markers) and tags quoted spans, recording a style
- * bitmask per surviving character. A marker only activates when its closing
- * counterpart exists later in the sentence; an unpaired single `*` or
- * backtick stays literal so it never swallows words, while an unpaired `**`
- * is dropped outright — it's always a split artifact, never prose.
- */
 function parseInlineStyles(text: string): ParsedInline {
   let src = text;
   let baseFlags = 0;
 
-  // The sentence splitter breaks on newlines, so each markdown line arrives
-  // as its own caption sentence with its block marker still at the front.
   const heading = /^#{1,6}\s+/.exec(src);
   const blockquote = heading ? null : /^>\s+/.exec(src);
   const bullet = heading || blockquote ? null : /^[-*•]\s+/.exec(src);
@@ -88,7 +64,6 @@ function parseInlineStyles(text: string): ParsedInline {
   for (let i = 0; i < src.length; ) {
     const ch = src[i]!;
 
-    // Code spans are literal inside, so consume the whole span at once.
     if (ch === "`") {
       const close = src.indexOf("`", i + 1);
       if (close > i + 1) {
@@ -102,8 +77,7 @@ function parseInlineStyles(text: string): ParsedInline {
       if (bold || src.indexOf("**", i + 2) !== -1) {
         bold = !bold;
       }
-      // An unpaired `**` is an artifact (a bold span cut in half upstream),
-      // never prose — drop it rather than caption raw asterisks.
+
       i += 2;
       continue;
     } else if (ch === "*") {
@@ -121,7 +95,7 @@ function parseInlineStyles(text: string): ParsedInline {
 
     if (closingQuote !== null) {
       if (ch === closingQuote) {
-        // Push before clearing state so the closing mark stays tinted.
+
         push(ch);
         quoted = false;
         closingQuote = null;
@@ -143,8 +117,6 @@ function parseInlineStyles(text: string): ParsedInline {
     i += 1;
   }
 
-  // Stripping edge markers can leave whitespace at either end; trim the text
-  // and flags together so offsets keep lining up character-for-character.
   let start = 0;
   let end = cleanChars.length;
   while (start < end && /\s/.test(cleanChars[start]!)) start += 1;
@@ -156,11 +128,6 @@ function parseInlineStyles(text: string): ParsedInline {
   };
 }
 
-/**
- * A lone `*` opens emphasis only at a word boundary, before a non-space
- * character, with another `*` ahead to close it — so "2 * 3" and "3*4"
- * stay literal.
- */
 function canOpenItalic(src: string, i: number): boolean {
   const next = src[i + 1];
   if (next === undefined || next === "*" || /\s/.test(next)) return false;
@@ -169,20 +136,6 @@ function canOpenItalic(src: string, i: number): boolean {
   return src.indexOf("*", i + 1) !== -1;
 }
 
-/**
- * Splits a sentence into caption words after stripping inline markdown, and
- * tags each word with the style flags of the span it came from. Whitespace
- * languages split on spaces; languages written without spaces (Japanese,
- * Chinese, …) are segmented with `Intl.Segmenter` so the caption reveals and
- * scrolls token-by-token instead of as one unbreakable blob that overflows
- * the strip.
- *
- * `clean` is the stripped sentence the words/offsets index into — the same
- * string callers should hand to TTS so caption sync stays exact.
- *
- * @param {string} text
- * @returns {SegmentedText}
- */
 export function segmentText(text: string): SegmentedText {
   const { clean, flags } = parseInlineStyles(text.trim());
   if (!clean) {
@@ -226,7 +179,7 @@ export function segmentText(text: string): SegmentedText {
         return { words, offsets, styles, clean, spaced: false, rtl };
       }
     } catch {
-      // Older browsers without Intl.Segmenter — fall through to the whole line.
+
     }
   }
 

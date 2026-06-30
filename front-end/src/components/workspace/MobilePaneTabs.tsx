@@ -31,7 +31,6 @@ function PaneTab({ pane, label, icon: Icon, selected, onSelect }: PaneTabProps) 
   );
 }
 
-/** Mobile-only tablist (≤920px) that toggles between the document and teacher panes. */
 export function MobilePaneTabs() {
   const { t } = useTranslation();
   const mobilePane = useSessionStore((s) => s.mobilePane);

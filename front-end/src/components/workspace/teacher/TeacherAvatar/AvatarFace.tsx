@@ -7,7 +7,6 @@ interface AvatarFaceProps {
   state: string;
 }
 
-/** SVG illustration of the teacher: head, expression, antenna, shoulders. */
 export function AvatarFace({ headAnimation, speaking, thinking, state }: AvatarFaceProps) {
   return (
     <svg

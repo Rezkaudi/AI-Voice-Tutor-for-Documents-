@@ -9,7 +9,6 @@ interface LanguagePickerProps {
   onChange: (language: SpeechLanguage) => void;
 }
 
-/** Radiogroup that pins the tutor's spoken language. */
 export function LanguagePicker({ value, disabled, onChange }: LanguagePickerProps) {
   return (
     <div className="mt-3 flex flex-col items-center gap-1.5">

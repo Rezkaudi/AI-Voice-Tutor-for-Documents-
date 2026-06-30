@@ -8,16 +8,6 @@ interface CaptionStripProps {
   caption: SpeechCaption;
 }
 
-/**
- * Live caption — a fixed-size subtitle box in the style of broadcast live
- * captions: words fill a two-line window anchored to the bottom, and once a
- * sentence wraps past two lines the oldest line slides up out of view. The
- * box itself never changes size mid-sentence. Decorative: word-by-word
- * updates would flood a screen reader, and the panel's status label already
- * carries the live region. The speaker is signalled by a colored dot (green
- * for the learner, amber for the teacher) plus the word/border tint — a text
- * label would compete with the caption itself for attention.
- */
 export function CaptionStrip({ caption }: CaptionStripProps) {
   const words = caption.spoken > 0 ? caption.words.slice(0, caption.spoken) : [];
   if (words.length === 0) return null;
@@ -40,13 +30,7 @@ export function CaptionStrip({ caption }: CaptionStripProps) {
             : "bg-[oklch(0.82_0.13_90)] shadow-[0_0_8px_oklch(0.85_0.13_90/0.75)]"
         )}
       />
-      {/* Text window that grows with the caption but never exceeds two lines.
-          A short phrase makes the window one line tall, and since the box
-          centers its contents the phrase sits in the vertical middle. Once a
-          sentence passes two lines the window caps at 2lh and `items-end`
-          anchors to the bottom, so the latest two lines stay whole and older
-          lines clip cleanly above — no half-rows top and bottom.
-          Font size and line height live here so 2lh is exactly two rows. */}
+
       <span className="flex max-h-[2lh] min-w-0 flex-1 items-end overflow-hidden text-[clamp(0.9rem,2.3vh,1.12rem)] leading-[1.4] min-[920px]:text-[clamp(1.18rem,3vh,1.58rem)]">
         <span className="block">
           {words.map((text, index) => {
@@ -54,8 +38,7 @@ export function CaptionStrip({ caption }: CaptionStripProps) {
             const flags = caption.styles[index] ?? 0;
             return (
               <Fragment key={index}>
-                {/* Space lives outside the word span so a code chip's
-                    background hugs the word instead of the gap before it. */}
+
                 {spaced && index > 0 ? " " : ""}
                 <span
                   className={cx(
@@ -78,12 +61,6 @@ export function CaptionStrip({ caption }: CaptionStripProps) {
   );
 }
 
-/**
- * Picks the single text-color class for a word. Exactly one is returned —
- * stacking two `text-[...]` utilities would leave the winner to stylesheet
- * order instead of markup. The just-spoken word always gets the bright
- * speaker color; styled words sit between it and the dim base.
- */
 function wordColor(flags: number, isActive: boolean, isUser: boolean): string {
   if (isActive) {
     return isUser

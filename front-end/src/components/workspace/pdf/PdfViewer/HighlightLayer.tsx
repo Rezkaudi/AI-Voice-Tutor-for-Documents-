@@ -3,7 +3,6 @@ import type { DocumentCitation } from "@/types";
 import { citationKey } from "@/store/documentStore";
 import type { PlacedTextItem } from "./buildTextMap";
 
-
 interface HighlightBox {
   key: string;
   x: number;
@@ -11,7 +10,6 @@ interface HighlightBox {
   width: number;
   height: number;
 }
-
 
 interface HighlightLayerProps {
   placed: PlacedTextItem[];
@@ -26,7 +24,6 @@ const RTL_CHARS = /[֐-ۿݐ-ݿࢠ-ࣿיִ-﷿ﹰ-﻿]/g;
 /** Strong LTR letters: Latin, Greek, Cyrillic, and CJK (all read left→right). */
 const LTR_CHARS = /[A-Za-zÀ-ɏͰ-ϿЀ-ӿ぀-ヿ㐀-鿿]/g;
 
-/** A run reads right-to-left when its strong RTL chars outnumber its LTR ones. */
 function isRightToLeft(text: string): boolean {
   const rtl = text.match(RTL_CHARS)?.length ?? 0;
   const ltr = text.match(LTR_CHARS)?.length ?? 0;
@@ -41,7 +38,6 @@ function clipRunToCitation(
   const to = Math.min(item.end, citation.end);
   const len = item.end - item.start;
 
-  // Whole-run overlap, zero-length run, or rotated text → don't apportion.
   if (
     len <= 0 ||
     Math.abs(item.rotation) > 0.01 ||
@@ -50,7 +46,6 @@ function clipRunToCitation(
     return { x: item.x, y: item.y, width: item.width, height: item.height };
   }
 
-  // RTL runs read right-to-left, so offset `start` sits at the run's right edge.
   const leadFrac = isRightToLeft(item.text)
     ? (item.end - to) / len
     : (from - item.start) / len;
@@ -64,8 +59,6 @@ function clipRunToCitation(
   };
 }
 
-
-/** Collects the text runs that overlap the *focused* citation, clipped to the quote. */
 function collectBoxes(
   placed: PlacedTextItem[],
   highlights: DocumentCitation[],
@@ -73,7 +66,6 @@ function collectBoxes(
 ): HighlightBox[] {
   const citation = highlights.find((c) => citationKey(c) === focusCitationKey);
   if (!citation) return [];
-
 
   const boxes: HighlightBox[] = [];
   placed.forEach((item, i) => {
@@ -83,13 +75,6 @@ function collectBoxes(
   return boxes;
 }
 
-
-/**
- * Paints the PDF text runs inside the *currently focused* citation only, so a
- * single passage is highlighted at a time and tracks the sentence the teacher
- * is speaking. Boxes use a translucent yellow underlay so the canvas glyphs
- * remain crisp — same effect NotebookLM uses.
- */
 export function HighlightLayer({
   placed,
   highlights,
@@ -98,7 +83,6 @@ export function HighlightLayer({
 }: HighlightLayerProps) {
   const boxes = collectBoxes(placed, highlights, focusCitationKey);
   if (!boxes.length) return null;
-
 
   return (
     <div className="pointer-events-none absolute inset-0">

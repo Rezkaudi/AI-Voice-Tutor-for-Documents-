@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 
-/** Small On/Off state chip shown on toggle rows. */
 export function StateChip({ on }: { on: boolean }) {
   const { t } = useTranslation();
   return (

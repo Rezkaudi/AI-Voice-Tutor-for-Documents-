@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { cx, ui } from "@/lib/uiClasses";
 
-/** Translation keys for the universal mic re-enable steps, in order. */
 const ENABLE_STEP_KEYS = [
   "dialogs.mic.step1",
   "dialogs.mic.step2",
@@ -16,12 +15,6 @@ interface MicPermissionDialogProps {
   onClose: () => void;
 }
 
-/**
- * Explains how to re-enable a blocked microphone. A blocked browser permission
- * cannot be re-prompted from code, so this guides the user through their
- * browser's site settings instead. The dialog auto-closes (via `open`) once the
- * caller detects the permission has flipped back to granted.
- */
 export function MicPermissionDialog({ open, onClose }: MicPermissionDialogProps) {
   const { t } = useTranslation();
   useEffect(() => {

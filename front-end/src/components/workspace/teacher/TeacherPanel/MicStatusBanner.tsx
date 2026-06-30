@@ -7,7 +7,6 @@ interface MicStatusBannerProps {
   onOpenHelp: () => void;
 }
 
-/** Inline banner explaining why the mic is unavailable, with a way to recover. */
 export function MicStatusBanner({ micSupported, micBlocked, onOpenHelp }: MicStatusBannerProps) {
   const { t } = useTranslation();
 

@@ -36,10 +36,6 @@ type StatusLabelKey =
   | "teacher.status.tapStart"
   | "teacher.status.tapContinue";
 
-/**
- * Returns the i18n key for the panel's status line. The caller translates it,
- * so this stays a pure function with no React/i18n dependency.
- */
 export function deriveStatusLabelKey(
   { isSpeaking, isListening, isStreaming, isTranscribing, callMode }: CallStatus,
   messageCount: number

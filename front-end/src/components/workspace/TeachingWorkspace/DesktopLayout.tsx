@@ -21,7 +21,6 @@ const documentPaneClass = cx(
 const teacherPaneClass =
   "relative flex h-full min-w-0 overflow-hidden p-[clamp(14px,2vw,26px)] text-[oklch(0.96_0.008_100)] [background:radial-gradient(120%_80%_at_50%_0%,oklch(0.34_0.06_232)_0%,oklch(0.22_0.035_240)_60%,oklch(0.18_0.03_244)_100%)]";
 
-/** Classic split pane: document board on the left, teacher voice-call panel on the right. */
 export function DesktopLayout({
   vm,
   documentBoard,

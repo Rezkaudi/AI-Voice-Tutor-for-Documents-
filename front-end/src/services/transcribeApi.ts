@@ -1,9 +1,6 @@
 import type { SpeechLanguage } from "@/types";
 import { api, extractErrorMessage } from "@/services/apiBase";
 
-/**
- * Speech-to-text transport. Talks to the backend's `/api/transcribe`.
- */
 export async function transcribeRecording(
   blob: Blob,
   language?: SpeechLanguage,

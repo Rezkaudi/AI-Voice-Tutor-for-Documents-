@@ -3,7 +3,6 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 const RAW_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
 const BASE = RAW_BASE.replace(/\/+$/, "");
 
-/** Resolves an API path returned by the backend (e.g. `/api/documents/abc/file`) to an absolute URL. */
 export function resolveApiUrl(path: string | null | undefined): string | null {
   if (!path) return null;
   if (/^https?:\/\//i.test(path)) return path;
@@ -37,10 +36,8 @@ function refreshOnce(): Promise<void> {
 
 type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
 
-
 const NO_REFRESH_ON_401 = ["/api/auth/refresh", "/api/auth/logout"];
 
-// On a 401, try one silent refresh and replay the original request.
 api.interceptors.response.use(
   (response) => response,
   async (error: unknown) => {

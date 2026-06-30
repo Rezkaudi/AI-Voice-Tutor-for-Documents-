@@ -4,7 +4,6 @@ import { router } from "@/routes/router";
 import { useAuthStore } from "@/store/authStore";
 import { useDirection } from "@/hooks/i18n/useDirection";
 
-
 export function App() {
   useDirection();
 

@@ -9,18 +9,14 @@ import { usePdfPageRender } from "@/hooks/pdf-viewer/usePdfPageRender";
 interface PdfPageProps {
   pdf: PDFDocumentProxy;
   pageNumber: number;
-  /** Available pixel width for the page; height scales by aspect ratio. */
+
   fitWidth: number;
-  /** Citations to highlight on this page (the parent already filtered by page). */
+
   highlights: DocumentCitation[];
-  /** The citation whose first matched item should scroll into view. */
+
   focusCitationKey?: string | null;
 }
 
-/**
- * Renders one PDF page as a canvas plus a hidden text layer plus an overlay
- * for citation highlights. Re-renders when the page or fit width changes.
- */
 export function PdfPage({
   pdf,
   pageNumber,
