@@ -6,6 +6,7 @@ import type { MicPermission } from "@/types";
 
 interface VoiceStore {
   isListening: boolean;
+  isUserSpeaking: boolean;
   isTranscribing: boolean;
   isSupported: boolean;
   micMuted: boolean;
@@ -34,6 +35,7 @@ export const useVoiceStore = create<VoiceStore>((set, get) => {
 
   return {
     isListening: false,
+    isUserSpeaking: false,
     isTranscribing: false,
     isSupported: true,
     micMuted: false,

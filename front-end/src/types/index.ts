@@ -115,6 +115,7 @@ export interface CallStatus {
 
 export interface VoiceRecorderState {
   isListening: boolean;
+  isUserSpeaking: boolean;
   isTranscribing: boolean;
   isSupported: boolean;
   permission: MicPermission;

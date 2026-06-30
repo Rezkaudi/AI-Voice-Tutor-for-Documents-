@@ -132,7 +132,7 @@ export class VoiceRecorder {
   }
 
   stop(): void {
-    this.onState({ isListening: false });
+    this.onState({ isListening: false, isUserSpeaking: false });
   }
 
   cancel(): void {
@@ -144,17 +144,17 @@ export class VoiceRecorder {
     const vad = this.vad;
     this.vad = null;
     if (vad) void vad.destroy();
-    this.onState({ isListening: false, isTranscribing: false });
+    this.onState({ isListening: false, isUserSpeaking: false, isTranscribing: false });
   }
 
   private applyGate(): void {
     const open = !!this.vad && !this.suspended && !this.userMuted && !this.destroyed;
     if (open) {
       void this.vad!.start();
-      this.onState({ isListening: true });
+      this.onState({ isListening: true, isUserSpeaking: false });
     } else {
       void this.vad?.pause();
-      this.onState({ isListening: false });
+      this.onState({ isListening: false, isUserSpeaking: false });
     }
   }
 
@@ -175,7 +175,7 @@ export class VoiceRecorder {
       },
       onSpeechRealStart: () => {
         if (peakRms < VAD_MIN_RMS) return;
-        this.onState({ isListening: true });
+        this.onState({ isListening: true, isUserSpeaking: true });
         this.onSpeechStart();
       },
       onVADMisfire: () => { },
@@ -183,13 +183,13 @@ export class VoiceRecorder {
         const loud = rms(audio) >= VAD_MIN_RMS;
         peakRms = 0;
         if (loud) void this.handleSpeechEnd(audio);
-        else this.onState({ isListening: false });
+        else this.onState({ isListening: false, isUserSpeaking: false });
       }
     });
   }
 
   private async handleSpeechEnd(audio: Float32Array): Promise<void> {
-    this.onState({ isListening: false, isTranscribing: true });
+    this.onState({ isListening: false, isUserSpeaking: false, isTranscribing: true });
     const wav = utils.encodeWAV(audio, 1, 16000, 1, 16);
     const blob = new Blob([wav], { type: "audio/wav" });
 
