@@ -8,6 +8,7 @@ import { CaptionStrip } from "./TeacherPanel/CaptionStrip";
 import { MicStatusBanner } from "./TeacherPanel/MicStatusBanner";
 import { deriveOrbState } from "./TeacherPanel/status";
 import { useMicDialog } from "@/hooks/teacher/useMicDialog";
+import { useSpeechStore } from "@/store/speechStore";
 
 interface CallOverlayProps {
   messages: ChatMessage[];
@@ -56,8 +57,16 @@ export function CallOverlay({
   onSubmitPageSelection
 }: CallOverlayProps) {
   const micDialog = useMicDialog(micBlocked);
+  const isPaused = useSpeechStore((s) => s.agentPaused);
 
-  const orbState = deriveOrbState({ isStreaming, isSpeaking, isListening, isTranscribing, callMode });
+  const orbState = deriveOrbState({
+    isStreaming,
+    isSpeaking,
+    isListening,
+    isTranscribing,
+    isPaused,
+    callMode
+  });
 
   return (
     <>

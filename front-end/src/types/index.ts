@@ -110,6 +110,7 @@ export interface CallStatus {
   isListening: boolean;
   isStreaming: boolean;
   isTranscribing: boolean;
+  isPaused: boolean;
   callMode: boolean;
 }
 

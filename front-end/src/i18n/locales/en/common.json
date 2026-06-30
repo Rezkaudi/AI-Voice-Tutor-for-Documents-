@@ -130,8 +130,8 @@
       "unmuteAria": "Unmute microphone"
     },
     "voice": {
-      "muteAria": "Mute tutor voice",
-      "unmuteAria": "Unmute tutor voice"
+      "pauseAria": "Pause tutor voice",
+      "resumeAria": "Resume tutor voice"
     },
     "settings": {
       "open": "Session settings",
@@ -155,6 +155,7 @@
     "avatarLabel": "AI teacher — drag to reposition",
     "dragTitle": "Drag to move the teacher",
     "status": {
+      "paused": "Paused",
       "listeningNow": "Listening — speak now",
       "transcribing": "Transcribing…",
       "thinkingDoc": "Thinking from the document…",

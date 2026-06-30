@@ -7,13 +7,13 @@ import {
   Mic,
   MicOff,
   Minimize2,
+  Pause,
   Phone,
   PhoneOff,
+  Play,
   RotateCcw,
   ScrollText,
   Settings2,
-  Volume2,
-  VolumeX,
   X
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -35,6 +35,8 @@ const circleDanger =
   "border-[oklch(0.6_0.16_27/0.6)] bg-[oklch(0.4_0.12_27)] text-[oklch(0.95_0.04_27)] [&:hover:not(:disabled)]:bg-[oklch(0.46_0.14_27)]";
 const circleActive =
   "animate-speak-pulse border-[oklch(0.7_0.13_154)] bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))] text-[oklch(0.99_0.008_138)]";
+const circlePaused =
+  "border-[oklch(0.78_0.13_75/0.6)] bg-[oklch(0.45_0.1_75)] text-[oklch(0.97_0.04_75)] [&:hover:not(:disabled)]:bg-[oklch(0.5_0.11_75)]";
 
 interface SessionControlBarProps {
   large?: boolean;
@@ -81,9 +83,16 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
   const isUserSpeaking = useVoiceStore((s) => s.isUserSpeaking);
   const isTranscribing = useVoiceStore((s) => s.isTranscribing);
   const toggleMicMuted = useVoiceStore((s) => s.toggleMicMuted);
+  const setMicMuted = useVoiceStore((s) => s.setMicMuted);
 
-  const agentMuted = useSpeechStore((s) => s.agentMuted);
-  const toggleAgentMuted = useSpeechStore((s) => s.toggleAgentMuted);
+  const agentPaused = useSpeechStore((s) => s.agentPaused);
+  const toggleAgentPaused = useSpeechStore((s) => s.toggleAgentPaused);
+
+  const handlePauseToggle = () => {
+    const nextPaused = !agentPaused;
+    toggleAgentPaused();
+    setMicMuted(nextPaused);
+  };
 
   const hasMessages = useChatStore((s) => s.messages.length > 0);
 
@@ -240,16 +249,16 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
 
           <button
             type="button"
-            className={cx(circleSize, circleBase, agentMuted ? circleDanger : circleIdle)}
-            aria-label={agentMuted ? t("controls.voice.unmuteAria") : t("controls.voice.muteAria")}
-            aria-pressed={agentMuted}
-            title={agentMuted ? t("controls.voice.unmuteAria") : t("controls.voice.muteAria")}
-            onClick={toggleAgentMuted}
+            className={cx(circleSize, circleBase, agentPaused ? circlePaused : circleIdle)}
+            aria-label={agentPaused ? t("controls.voice.resumeAria") : t("controls.voice.pauseAria")}
+            aria-pressed={agentPaused}
+            title={agentPaused ? t("controls.voice.resumeAria") : t("controls.voice.pauseAria")}
+            onClick={handlePauseToggle}
           >
-            {agentMuted ? (
-              <VolumeX size={iconSize} aria-hidden />
+            {agentPaused ? (
+              <Play size={iconSize} aria-hidden />
             ) : (
-              <Volume2 size={iconSize} aria-hidden />
+              <Pause size={iconSize} aria-hidden />
             )}
           </button>
 

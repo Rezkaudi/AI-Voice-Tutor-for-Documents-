@@ -129,8 +129,8 @@
       "unmuteAria": "マイクのミュートを解除"
     },
     "voice": {
-      "muteAria": "講師の音声をミュート",
-      "unmuteAria": "講師の音声のミュートを解除"
+      "pauseAria": "講師の音声を一時停止",
+      "resumeAria": "講師の音声を再開"
     },
     "settings": {
       "open": "セッション設定",
@@ -154,6 +154,7 @@
     "avatarLabel": "AI講師 — ドラッグして移動",
     "dragTitle": "ドラッグして講師を移動",
     "status": {
+      "paused": "一時停止中",
       "listeningNow": "聞いています — 今すぐ話してください",
       "transcribing": "文字起こし中…",
       "thinkingDoc": "資料をもとに考えています…",

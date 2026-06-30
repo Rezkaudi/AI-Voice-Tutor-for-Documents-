@@ -11,7 +11,7 @@ export class SpeechEngine {
   private audio: HTMLAudioElement | null = null;
   private sessionId = 0;
   private speakAbort: AbortController | null = null;
-  private muted = false;
+  private paused = false;
 
   private readonly caption = new CaptionController((value) => this.onCaption(value));
 
@@ -23,16 +23,31 @@ export class SpeechEngine {
 
   private ensureAudio(): HTMLAudioElement {
     this.audio ??= new Audio();
-    this.audio.muted = this.muted;
     return this.audio;
   }
 
-  setMuted(value: boolean): void {
-    this.muted = value;
-    if (this.audio) this.audio.muted = value;
-    if (value && typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+  setPaused(value: boolean): void {
+    this.paused = value;
+    const audio = this.audio;
+    const synth =
+      typeof window !== "undefined" && "speechSynthesis" in window
+        ? window.speechSynthesis
+        : null;
+
+    if (value) {
+      if (audio && !audio.paused) audio.pause();
+      synth?.pause();
+      this.caption.pause();
+      this.onSpeakingChange(false);
+    } else {
+      if (audio && audio.src && !audio.ended) audio.play().catch(() => {});
+      synth?.resume();
+      this.caption.resume();
     }
+  }
+
+  get isPaused(): boolean {
+    return this.paused;
   }
 
   clearCaption(): void {
@@ -92,6 +107,7 @@ export class SpeechEngine {
             blob,
             segmented,
             isStale,
+            isPaused: () => this.paused,
             caption: this.caption,
             onSpeakingChange,
             onStart

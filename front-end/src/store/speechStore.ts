@@ -4,14 +4,14 @@ import type { SpeechCaption, SpeechSession } from "@/types";
 
 interface SpeechStore {
   isSpeaking: boolean;
-  agentMuted: boolean;
+  agentPaused: boolean;
   caption: SpeechCaption | null;
   unlockAudio: () => void;
   stopSpeaking: () => void;
   clearCaption: () => void;
   createSpeechSession: () => SpeechSession;
   showUserCaption: (text: string) => void;
-  toggleAgentMuted: () => void;
+  toggleAgentPaused: () => void;
 }
 
 const engine = new SpeechEngine();
@@ -22,7 +22,7 @@ export const useSpeechStore = create<SpeechStore>((set, get) => {
 
   return {
     isSpeaking: false,
-    agentMuted: false,
+    agentPaused: false,
     caption: null,
 
     unlockAudio: () => engine.unlock(),
@@ -35,10 +35,10 @@ export const useSpeechStore = create<SpeechStore>((set, get) => {
 
     showUserCaption: (text) => engine.showUserCaption(text),
 
-    toggleAgentMuted: () => {
-      const next = !get().agentMuted;
-      engine.setMuted(next);
-      set({ agentMuted: next });
+    toggleAgentPaused: () => {
+      const next = !get().agentPaused;
+      engine.setPaused(next);
+      set({ agentPaused: next });
     }
   };
 });
