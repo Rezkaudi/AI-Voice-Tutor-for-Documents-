@@ -24,7 +24,7 @@ const recorder = new VoiceRecorder();
 
 export const useVoiceStore = create<VoiceStore>((set, get) => {
   recorder.onState = (patch) => {
-    if (patch.isListening) useSpeechStore.getState().clearCaption();
+    if (patch.isUserSpeaking) useSpeechStore.getState().clearCaption();
     set(patch);
   };
   recorder.onTranscript = (text) =>

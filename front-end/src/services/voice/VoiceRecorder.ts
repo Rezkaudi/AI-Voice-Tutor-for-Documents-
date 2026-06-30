@@ -163,6 +163,13 @@ export class VoiceRecorder {
 
     return MicVAD.new({
       getStream: () => navigator.mediaDevices.getUserMedia({ audio: VOICE_AUDIO_CONSTRAINTS }),
+      pauseStream: async (stream) => {
+        stream.getAudioTracks().forEach((track) => (track.enabled = false));
+      },
+      resumeStream: async (stream) => {
+        stream.getAudioTracks().forEach((track) => (track.enabled = true));
+        return stream;
+      },
       positiveSpeechThreshold: VAD_POSITIVE_SPEECH_THRESHOLD,
       negativeSpeechThreshold: VAD_NEGATIVE_SPEECH_THRESHOLD,
       minSpeechMs: VAD_MIN_SPEECH_MS,
