@@ -8,6 +8,7 @@ import { CaptionStrip } from "./TeacherPanel/CaptionStrip";
 import { MicStatusBanner } from "./TeacherPanel/MicStatusBanner";
 import { deriveOrbState } from "./TeacherPanel/status";
 import { useMicDialog } from "@/hooks/teacher/useMicDialog";
+import { useThinkingCue } from "@/hooks/teacher/useThinkingCue";
 import { useSpeechStore } from "@/store/speechStore";
 
 interface CallOverlayProps {
@@ -68,9 +69,18 @@ export function CallOverlay({
     callMode
   });
 
+  const isThinking = useThinkingCue({
+    isStreaming,
+    isSpeaking,
+    isListening,
+    isTranscribing,
+    isPaused,
+    callMode
+  });
+
   return (
     <>
-      <FloatingTutor state={orbState} />
+      <FloatingTutor state={orbState} thinking={isThinking} />
 
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col items-center gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
         {error ? (
