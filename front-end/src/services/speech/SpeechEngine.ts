@@ -12,11 +12,19 @@ export class SpeechEngine {
   private sessionId = 0;
   private speakAbort: AbortController | null = null;
   private paused = false;
+  private preparing = false;
 
   private readonly caption = new CaptionController((value) => this.onCaption(value));
 
   onSpeakingChange: (speaking: boolean) => void = () => { };
+  onPreparingChange: (preparing: boolean) => void = () => { };
   onCaption: (caption: SpeechCaption | null) => void = () => { };
+
+  private setPreparing(value: boolean): void {
+    if (this.preparing === value) return;
+    this.preparing = value;
+    this.onPreparingChange(value);
+  }
   unlock(): void {
     unlockAudioPlayback(this.ensureAudio());
   }
@@ -40,7 +48,7 @@ export class SpeechEngine {
       this.caption.pause();
       this.onSpeakingChange(false);
     } else {
-      if (audio && audio.src && !audio.ended) audio.play().catch(() => {});
+      if (audio && audio.src && !audio.ended) audio.play().catch(() => { });
       synth?.resume();
       this.caption.resume();
     }
@@ -56,6 +64,7 @@ export class SpeechEngine {
 
   stopSpeaking(): void {
     this.sessionId += 1;
+    this.setPreparing(false);
     this.speakAbort?.abort();
     this.speakAbort = null;
     const audio = this.audio;
@@ -78,7 +87,11 @@ export class SpeechEngine {
     const controller = new AbortController();
     this.speakAbort = controller;
     let chain: Promise<void> = Promise.resolve();
-    const onSpeakingChange = (value: boolean) => this.onSpeakingChange(value);
+    this.setPreparing(true);
+    const onSpeakingChange = (value: boolean) => {
+      if (value) this.setPreparing(false);
+      this.onSpeakingChange(value);
+    };
 
     const push = (sentence: string, onPlaybackStart?: (durationMs: number) => void) => {
 
@@ -129,8 +142,10 @@ export class SpeechEngine {
       push,
       finished: () =>
         chain.then(() => {
-
-          if (!isStale()) this.caption.reset();
+          if (!isStale()) {
+            this.setPreparing(false);
+            this.caption.reset();
+          }
         })
     };
   }

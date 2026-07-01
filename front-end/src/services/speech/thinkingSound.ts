@@ -36,22 +36,60 @@ class ThinkingSound {
   private nodes: AudioScheduledSourceNode[] = [];
   private active = false;
   private enabled = true;
+  private startToken = 0;
 
   setEnabled(value: boolean): void {
     this.enabled = value;
     if (!value) this.stop();
   }
 
+
+  unlock(): void {
+    if (!this.enabled) return;
+    const ctx = this.ensureContext();
+    if (ctx && ctx.state !== "running") void ctx.resume().catch(() => { });
+  }
+
+  private ensureContext(): AudioContext | null {
+    // A closed context can never resume — drop it so a fresh one is built.
+    if (this.ctx && this.ctx.state === "closed") {
+      this.ctx = null;
+      this.noiseBuffer = null;
+    }
+    if (!this.ctx) {
+      const Ctor = resolveAudioContext();
+      if (!Ctor) return null;
+      this.ctx = new Ctor();
+    }
+    return this.ctx;
+  }
+
   start(): void {
     if (!this.enabled || this.active) return;
 
-    const Ctor = resolveAudioContext();
-    if (!Ctor) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
 
-    this.ctx ??= new Ctor();
+    this.active = true;
+    const token = ++this.startToken;
+
+    if (ctx.state === "running") {
+      this.beginPlayback(token);
+    } else {
+      ctx.resume()
+        .then(() => this.beginPlayback(token))
+        .catch(() => {
+          // Could not resume (no active gesture yet). Release the guard so a
+          // later start() — or an unlock() from the next tap — can retry.
+          if (token === this.startToken) this.active = false;
+        });
+    }
+  }
+
+  private beginPlayback(token: number): void {
+    // Bail if stop()/a newer start() superseded this attempt while resuming.
+    if (!this.active || token !== this.startToken || !this.ctx) return;
     const ctx = this.ctx;
-    // The call already began from a user gesture, so resuming is permitted.
-    void ctx.resume().catch(() => { });
 
     const now = ctx.currentTime;
     const master = ctx.createGain();
@@ -83,7 +121,6 @@ class ThinkingSound {
 
     this.popBus = filter;
     this.master = master;
-    this.active = true;
 
     const firstPhraseAt = now + START_OFFSET_SECONDS;
     this.schedulePhrase(firstPhraseAt);
@@ -92,6 +129,8 @@ class ThinkingSound {
   }
 
   stop(): void {
+    // Invalidate any in-flight resume() so a pending beginPlayback() bails.
+    this.startToken += 1;
     if (!this.active || !this.ctx || !this.master) {
       this.active = false;
       return;

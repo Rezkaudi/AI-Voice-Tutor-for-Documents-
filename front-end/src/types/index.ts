@@ -112,6 +112,7 @@ export interface CallStatus {
   isTranscribing: boolean;
   isPaused: boolean;
   callMode: boolean;
+  isPreparing?: boolean;
 }
 
 export interface VoiceRecorderState {

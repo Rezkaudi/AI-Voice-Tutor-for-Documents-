@@ -60,6 +60,7 @@ export function CallOverlay({
 }: CallOverlayProps) {
   const micDialog = useMicDialog(micBlocked);
   const isPaused = useSpeechStore((s) => s.agentPaused);
+  const isPreparing = useSpeechStore((s) => s.speechPending);
 
   const orbState = deriveOrbState({
     isStreaming,
@@ -67,7 +68,8 @@ export function CallOverlay({
     isListening,
     isTranscribing,
     isPaused,
-    callMode
+    callMode,
+    isPreparing
   });
 
   const isThinking = useThinkingCue({
@@ -76,7 +78,8 @@ export function CallOverlay({
     isListening,
     isTranscribing,
     isPaused,
-    callMode
+    callMode,
+    isPreparing
   });
 
   return (
