@@ -116,6 +116,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
 
           return;
         }
+        useSpeechStore.getState().stopSpeaking();
         useSessionStore
           .getState()
           .setError(error instanceof Error ? error.message : "The teacher could not respond.");

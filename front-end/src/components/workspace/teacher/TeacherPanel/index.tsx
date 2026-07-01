@@ -60,8 +60,9 @@ export function TeacherPanel({
   const { t } = useTranslation();
   const micDialog = useMicDialog(micBlocked);
   const isPaused = useSpeechStore((s) => s.agentPaused);
+  const isPreparing = useSpeechStore((s) => s.speechPending);
 
-  const status = { isStreaming, isSpeaking, isListening, isTranscribing, isPaused, callMode };
+  const status = { isStreaming, isSpeaking, isListening, isTranscribing, isPaused, callMode, isPreparing };
   const orbState = deriveOrbState(status);
   const statusLabel = t(deriveStatusLabelKey(status, messages.length));
   const isThinking = useThinkingCue(status);

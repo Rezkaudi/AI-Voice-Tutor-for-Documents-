@@ -107,6 +107,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       useVoiceStore.getState().cancel();
     }
     useSpeechStore.getState().stopSpeaking();
+    useSpeechStore.getState().resetPaused();
   },
 
   handleMicToggle: () => {
@@ -138,6 +139,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       useChatStore.getState().abort();
       useVoiceStore.getState().cancel();
       useSpeechStore.getState().stopSpeaking();
+      useSpeechStore.getState().resetPaused();
       return;
     }
 
@@ -195,6 +197,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       set({ callMode: false });
       useVoiceStore.getState().cancel();
     }
+    useSpeechStore.getState().resetPaused();
     set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false, pendingQuestion: null });
     await docs.selectDocument(documentId);
   },
@@ -206,6 +209,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       set({ callMode: false });
       useVoiceStore.getState().cancel();
     }
+    useSpeechStore.getState().resetPaused();
     set({ hasIntroduced: false, selectedPages: [1], pageDialogOpen: false, error: null, pendingQuestion: null });
     useDocumentStore.getState().closeDocument();
   }
