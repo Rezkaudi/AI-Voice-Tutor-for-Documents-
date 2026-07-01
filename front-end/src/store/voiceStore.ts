@@ -15,9 +15,11 @@ interface VoiceStore {
   requestPermission: () => Promise<boolean>;
   startSession: () => Promise<void>;
   start: () => Promise<void>;
+  prewarm: () => Promise<void>;
   stop: () => void;
   cancel: () => void;
   toggleMicMuted: () => void;
+  setMicMuted: (value: boolean) => void;
 }
 
 const recorder = new VoiceRecorder();
@@ -48,15 +50,17 @@ export const useVoiceStore = create<VoiceStore>((set, get) => {
     requestPermission: () => recorder.requestPermission(),
     startSession: () => recorder.startSession(),
     start: () => recorder.start(),
+    prewarm: () => recorder.prewarm(),
     stop: () => recorder.stop(),
     cancel: () => {
       set({ micMuted: false });
       recorder.cancel();
     },
-    toggleMicMuted: () => {
-      const next = !get().micMuted;
-      set({ micMuted: next });
-      recorder.setUserMuted(next);
+    toggleMicMuted: () => get().setMicMuted(!get().micMuted),
+    setMicMuted: (value) => {
+      if (get().micMuted === value) return;
+      set({ micMuted: value });
+      recorder.setUserMuted(value);
     }
   };
 });

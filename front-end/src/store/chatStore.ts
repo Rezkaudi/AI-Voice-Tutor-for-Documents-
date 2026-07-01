@@ -103,6 +103,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
         await runChatStream({
           body,
           speechSession: useSpeechStore.getState().createSpeechSession(),
+          signal: controller.signal,
           onText: (text) => patchAssistant(assistantId, { content: text }),
           onReference: (reference) => applyReference(assistantId, reference),
           onFocusCitation: (citation) => useDocumentStore.getState().focusCitation(citation),

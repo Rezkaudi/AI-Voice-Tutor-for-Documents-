@@ -5,6 +5,7 @@ import type { DocumentCitation, DocumentReference, SpeechSession } from "@/types
 interface RunChatStreamDeps {
   body: ReadableStream<Uint8Array>;
   speechSession: SpeechSession;
+  signal: AbortSignal;
   onText: (text: string) => void;
   onReference: (reference: DocumentReference | null) => void;
   onFocusCitation: (citation: DocumentCitation) => void;
@@ -14,6 +15,7 @@ interface RunChatStreamDeps {
 export async function runChatStream({
   body,
   speechSession,
+  signal,
   onText,
   onReference,
   onFocusCitation,
@@ -86,6 +88,9 @@ export async function runChatStream({
   if (tail) pushSentence(tail);
   await speechSession.finished();
   pendingTimers.current.forEach((id) => window.clearTimeout(id));
+
+  if (signal.aborted) return assistantText;
+
   onQuestion(pendingQuestion);
 
   const finalReference = refBox.current;

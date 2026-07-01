@@ -7,6 +7,7 @@ interface PlayClipDeps {
   blob: Blob;
   segmented: SegmentedText;
   isStale: () => boolean;
+  isPaused: () => boolean;
   caption: CaptionController;
   onSpeakingChange: (speaking: boolean) => void;
   onStart?: (durationMs: number) => void;
@@ -17,6 +18,7 @@ export function playAudioClip({
   blob,
   segmented,
   isStale,
+  isPaused,
   caption,
   onSpeakingChange,
   onStart
@@ -33,9 +35,13 @@ export function playAudioClip({
     };
 
     audio.src = URL.createObjectURL(blob);
+    let started = false;
     audio.onplay = () => {
       if (isStale()) return;
       onSpeakingChange(true);
+
+      if (started) return;
+      started = true;
 
       const seconds =
         Number.isFinite(audio.duration) && audio.duration > 0
@@ -50,7 +56,7 @@ export function playAudioClip({
 
       if (isStale()) finish();
     };
-    audio.play().catch(finish);
+    if (!isPaused()) audio.play().catch(finish);
   });
 }
 

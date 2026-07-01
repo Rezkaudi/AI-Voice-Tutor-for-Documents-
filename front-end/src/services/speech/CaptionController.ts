@@ -4,6 +4,12 @@ type CaptionListener = (caption: SpeechCaption | null) => void;
 
 export class CaptionController {
   private timer: number | null = null;
+  private active: {
+    segmented: SegmentedText;
+    speaker: CaptionSpeaker;
+    step: number;
+    spoken: number;
+  } | null = null;
 
   constructor(private emit: CaptionListener) {}
 
@@ -13,6 +19,7 @@ export class CaptionController {
 
   reset(): void {
     this.clearTimer();
+    this.active = null;
     this.emit(null);
   }
 
@@ -25,28 +32,63 @@ export class CaptionController {
 
   show(caption: SpeechCaption): void {
     this.clearTimer();
+    this.active = null;
     this.emit(caption);
   }
 
   reveal(segmented: SegmentedText, durationMs: number, speaker: CaptionSpeaker): void {
-    const { words, styles, spaced, rtl } = segmented;
+    const { words } = segmented;
     this.clearTimer();
     if (words.length === 0) {
+      this.active = null;
       this.emit(null);
       return;
     }
 
-    let spoken = 1;
-    this.emit({ speaker, words, styles, spoken, spaced, rtl });
-    if (words.length === 1) return;
-
     const step = Math.max(140, durationMs / words.length);
+    this.active = { segmented, speaker, step, spoken: 1 };
+    this.emitActive();
+    if (words.length === 1) {
+      this.active = null;
+      return;
+    }
+    this.startTicking();
+  }
+
+  pause(): void {
+    this.clearTimer();
+  }
+
+  resume(): void {
+    if (!this.active) return;
+    if (this.active.spoken >= this.active.segmented.words.length) return;
+    this.startTicking();
+  }
+
+  private startTicking(): void {
+    if (!this.active) return;
     this.timer = window.setInterval(() => {
-      spoken += 1;
-      this.emit({ speaker, words, styles, spoken: Math.min(spoken, words.length), spaced, rtl });
-      if (spoken >= words.length) {
+      if (!this.active) return;
+      this.active.spoken += 1;
+      this.emitActive();
+      if (this.active.spoken >= this.active.segmented.words.length) {
         this.clearTimer();
+        this.active = null;
       }
-    }, step);
+    }, this.active.step);
+  }
+
+  private emitActive(): void {
+    if (!this.active) return;
+    const { segmented, speaker, spoken } = this.active;
+    const { words, styles, spaced, rtl } = segmented;
+    this.emit({
+      speaker,
+      words,
+      styles,
+      spoken: Math.min(spoken, words.length),
+      spaced,
+      rtl
+    });
   }
 }

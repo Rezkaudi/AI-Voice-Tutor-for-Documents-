@@ -7,13 +7,13 @@ import {
   Mic,
   MicOff,
   Minimize2,
+  Pause,
   Phone,
   PhoneOff,
+  Play,
   RotateCcw,
   ScrollText,
   Settings2,
-  Volume2,
-  VolumeX,
   X
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -35,6 +35,8 @@ const circleDanger =
   "border-[oklch(0.6_0.16_27/0.6)] bg-[oklch(0.4_0.12_27)] text-[oklch(0.95_0.04_27)] [&:hover:not(:disabled)]:bg-[oklch(0.46_0.14_27)]";
 const circleActive =
   "animate-speak-pulse border-[oklch(0.7_0.13_154)] bg-[linear-gradient(140deg,oklch(0.66_0.14_154),oklch(0.5_0.13_162))] text-[oklch(0.99_0.008_138)]";
+const circlePaused =
+  "border-[oklch(0.78_0.13_75/0.6)] bg-[oklch(0.45_0.1_75)] text-[oklch(0.97_0.04_75)] [&:hover:not(:disabled)]:bg-[oklch(0.5_0.11_75)]";
 
 interface SessionControlBarProps {
   large?: boolean;
@@ -47,13 +49,9 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
   const circleSize = large ? "h-[3.25rem] w-[3.25rem]" : "h-9 w-9";
   const iconSize = large ? 24 : 17;
   const barChrome = large ? "gap-2.5 p-2" : "gap-1.5 p-1";
-  const endBtnSize = large
-    ? "h-[3.25rem] gap-2 px-6 text-[0.95rem]"
-    : "h-9 gap-1.5 px-3.5 text-[0.8rem]";
+  const endBtnSize = large ? "h-[3.25rem] gap-2 px-6 text-[0.95rem]" : "h-9 w-9";
   const endIconSize = large ? 20 : 15;
-  const startBtnSize = large
-    ? "h-[3.5rem] gap-2.5 px-9 text-[1.05rem]"
-    : "h-12 gap-2.5 px-7 text-[0.95rem]";
+  const startBtnSize = large ? "h-[3.5rem] gap-2.5 px-9 text-[1.05rem]" : "h-12 w-12";
   const startIconSize = large ? 21 : 18;
 
   const menuWrapClass = large
@@ -81,9 +79,16 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
   const isUserSpeaking = useVoiceStore((s) => s.isUserSpeaking);
   const isTranscribing = useVoiceStore((s) => s.isTranscribing);
   const toggleMicMuted = useVoiceStore((s) => s.toggleMicMuted);
+  const setMicMuted = useVoiceStore((s) => s.setMicMuted);
 
-  const agentMuted = useSpeechStore((s) => s.agentMuted);
-  const toggleAgentMuted = useSpeechStore((s) => s.toggleAgentMuted);
+  const agentPaused = useSpeechStore((s) => s.agentPaused);
+  const toggleAgentPaused = useSpeechStore((s) => s.toggleAgentPaused);
+
+  const handlePauseToggle = () => {
+    const nextPaused = !agentPaused;
+    toggleAgentPaused();
+    setMicMuted(nextPaused);
+  };
 
   const hasMessages = useChatStore((s) => s.messages.length > 0);
 
@@ -204,7 +209,7 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
             disabled={!isSupported || micBlocked}
           >
             <Phone size={startIconSize} aria-hidden />
-            <span>{t("controls.session.start")}</span>
+            {large ? <span>{t("controls.session.start")}</span> : null}
           </button>
         </div>
       ) : (
@@ -240,30 +245,30 @@ export function SessionControlBar({ large = false, showMenu = true }: SessionCon
 
           <button
             type="button"
-            className={cx(circleSize, circleBase, agentMuted ? circleDanger : circleIdle)}
-            aria-label={agentMuted ? t("controls.voice.unmuteAria") : t("controls.voice.muteAria")}
-            aria-pressed={agentMuted}
-            title={agentMuted ? t("controls.voice.unmuteAria") : t("controls.voice.muteAria")}
-            onClick={toggleAgentMuted}
+            className={cx(circleSize, circleBase, agentPaused ? circlePaused : circleIdle)}
+            aria-label={agentPaused ? t("controls.voice.resumeAria") : t("controls.voice.pauseAria")}
+            aria-pressed={agentPaused}
+            title={agentPaused ? t("controls.voice.resumeAria") : t("controls.voice.pauseAria")}
+            onClick={handlePauseToggle}
           >
-            {agentMuted ? (
-              <VolumeX size={iconSize} aria-hidden />
+            {agentPaused ? (
+              <Play size={iconSize} aria-hidden />
             ) : (
-              <Volume2 size={iconSize} aria-hidden />
+              <Pause size={iconSize} aria-hidden />
             )}
           </button>
 
           <button
             type="button"
             className={cx(
-              "inline-flex items-center rounded-full border-0 bg-[linear-gradient(to_bottom,oklch(0.53_0.045_27),oklch(0.6_0.24_27))] font-bold text-[oklch(0.99_0.005_100)] shadow-[0_10px_24px_oklch(0.18_0.04_27/0.5)] transition-[transform,filter] duration-150 ease-out [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]",
+              "animate-listen-pulse-slow inline-flex items-center justify-center rounded-full border-0 bg-[linear-gradient(to_bottom,oklch(0.53_0.045_27),oklch(0.6_0.24_27))] bg-size-[100%_200%] bg-position-[50%_0%] font-bold text-[oklch(0.99_0.005_100)] shadow-[0_10px_24px_oklch(0.18_0.04_27/0.5)] transition-[transform,filter,background-position] duration-320 ease-out [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 [&:hover:not(:disabled)]:bg-position-[50%_100%] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]",
               endBtnSize
             )}
             aria-label={t("controls.session.endAria")}
             onClick={handleCallToggle}
           >
             <PhoneOff size={endIconSize} aria-hidden />
-            <span>{t("controls.session.end")}</span>
+            {large ? <span>{t("controls.session.end")}</span> : null}
           </button>
         </div>
       )}

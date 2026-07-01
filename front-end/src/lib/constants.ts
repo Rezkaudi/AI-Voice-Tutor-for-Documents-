@@ -16,7 +16,7 @@ export const CALL_RESUME_DELAY_MS = 350;
 export const VOICE_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
   echoCancellation: true,
   noiseSuppression: true,
-  autoGainControl: true
+  autoGainControl: false
 };
 
 export const VAD_POSITIVE_SPEECH_THRESHOLD = 0.7;

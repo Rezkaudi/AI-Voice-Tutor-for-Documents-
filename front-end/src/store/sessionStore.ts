@@ -147,12 +147,14 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }
 
     set({ pageDialogOpen: true });
+    void useVoiceStore.getState().prewarm();
   },
 
   openPageDialog: () => {
     useChatStore.getState().abort();
     useSpeechStore.getState().stopSpeaking();
     set({ pageDialogOpen: true });
+    void useVoiceStore.getState().prewarm();
   },
 
   closePageDialog: () => set({ pageDialogOpen: false }),
@@ -170,15 +172,10 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     const granted = await voice.requestPermission();
     if (!granted) return;
 
-    set({ callMode: true });
+    set({ callMode: true, hasIntroduced: true });
 
-    if (!get().hasIntroduced) {
-      set({ hasIntroduced: true });
-      void voice.startSession();
-      useChatStore.getState().sendMessage(GREETING_PROMPT, { hidden: true });
-    } else {
-      voice.start();
-    }
+    void voice.start();
+    void useChatStore.getState().sendMessage(GREETING_PROMPT, { hidden: true });
   },
 
   handleUpload: async (file) => {

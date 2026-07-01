@@ -9,6 +9,7 @@ import { TranscriptLog } from "./TranscriptLog";
 import { bubbleBase } from "./styles";
 import { deriveOrbState, deriveStatusLabelKey } from "./status";
 import { useMicDialog } from "@/hooks/teacher/useMicDialog";
+import { useSpeechStore } from "@/store/speechStore";
 import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 
@@ -57,8 +58,9 @@ export function TeacherPanel({
 }: TeacherPanelProps) {
   const { t } = useTranslation();
   const micDialog = useMicDialog(micBlocked);
+  const isPaused = useSpeechStore((s) => s.agentPaused);
 
-  const status = { isStreaming, isSpeaking, isListening, isTranscribing, callMode };
+  const status = { isStreaming, isSpeaking, isListening, isTranscribing, isPaused, callMode };
   const orbState = deriveOrbState(status);
   const statusLabel = t(deriveStatusLabelKey(status, messages.length));
 

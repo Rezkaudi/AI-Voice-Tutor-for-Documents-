@@ -119,6 +119,12 @@ export class VoiceRecorder {
     await this.startSession();
   }
 
+  async prewarm(): Promise<void> {
+    if (this.vad || this.starting) return;
+    this.suspended = true;
+    await this.startSession();
+  }
+
   setSuspended(value: boolean): void {
     if (this.suspended === value) return;
     this.suspended = value;
@@ -149,6 +155,7 @@ export class VoiceRecorder {
 
   private applyGate(): void {
     const open = !!this.vad && !this.suspended && !this.userMuted && !this.destroyed;
+    console.log("[VAD] applyGate", { open, hasVad: !!this.vad, suspended: this.suspended, userMuted: this.userMuted, destroyed: this.destroyed });
     if (open) {
       void this.vad!.start();
       this.onState({ isListening: true, isUserSpeaking: false });
@@ -160,6 +167,7 @@ export class VoiceRecorder {
 
   private async buildVad(): Promise<MicVAD> {
     let peakRms = 0;
+    console.log("[VAD] buildVad: loading models...");
 
     return MicVAD.new({
       getStream: () => navigator.mediaDevices.getUserMedia({ audio: VOICE_AUDIO_CONSTRAINTS }),
@@ -181,13 +189,16 @@ export class VoiceRecorder {
         peakRms = Math.max(rms(frame), peakRms * 0.92);
       },
       onSpeechRealStart: () => {
+        console.log("[VAD] onSpeechRealStart", { peakRms, min: VAD_MIN_RMS, gated: peakRms < VAD_MIN_RMS });
         if (peakRms < VAD_MIN_RMS) return;
         this.onState({ isListening: true, isUserSpeaking: true });
         this.onSpeechStart();
       },
-      onVADMisfire: () => { },
+      onVADMisfire: () => { console.log("[VAD] onVADMisfire"); },
       onSpeechEnd: (audio) => {
-        const loud = rms(audio) >= VAD_MIN_RMS;
+        const endRms = rms(audio);
+        const loud = endRms >= VAD_MIN_RMS;
+        console.log("[VAD] onSpeechEnd", { endRms, min: VAD_MIN_RMS, loud, samples: audio.length });
         peakRms = 0;
         if (loud) void this.handleSpeechEnd(audio);
         else this.onState({ isListening: false, isUserSpeaking: false });
@@ -204,6 +215,7 @@ export class VoiceRecorder {
     this.transcribeAbort = controller;
     try {
       const text = await transcribeRecording(blob, this.getLanguage(), controller.signal);
+      console.log("[VAD] transcript", JSON.stringify(text));
       if (text) this.onTranscript(text);
     } catch (error) {
       if (!controller.signal.aborted) {
