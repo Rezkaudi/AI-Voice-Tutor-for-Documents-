@@ -163,6 +163,11 @@
       "onCall": "On call",
       "tapStart": "Tap Call to start your lesson",
       "tapContinue": "Tap Call to keep going"
+    },
+    "unavailable": {
+      "status": "Temporary problem",
+      "message": "Something went wrong on our side — not yours. Please try again in a few minutes.",
+      "contact": "Still not working? Contact support"
     }
   },
   "question": {

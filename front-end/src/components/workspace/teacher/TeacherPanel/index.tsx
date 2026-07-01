@@ -7,13 +7,12 @@ import { CaptionStrip } from "./CaptionStrip";
 import { ThinkingDots } from "./ThinkingDots";
 import { MicStatusBanner } from "./MicStatusBanner";
 import { TranscriptLog } from "./TranscriptLog";
-import { bubbleBase } from "./styles";
+import { TutorRestingState } from "../TutorRestingState";
 import { deriveOrbState, deriveStatusLabelKey } from "./status";
 import { useMicDialog } from "@/hooks/teacher/useMicDialog";
 import { useThinkingCue } from "@/hooks/teacher/useThinkingCue";
 import { useSpeechStore } from "@/store/speechStore";
 import { useTranslation } from "react-i18next";
-import { cx } from "@/lib/uiClasses";
 
 interface TeacherPanelProps {
   messages: ChatMessage[];
@@ -85,17 +84,7 @@ export function TeacherPanel({
       </div>
 
       <div className="col-start-1 row-start-3 flex h-full min-h-0 w-full max-w-[520px] flex-col items-center justify-center gap-2.5">
-        {error ? (
-          <div
-            className={cx(
-              bubbleBase,
-              "self-start rounded-bl bg-[oklch(0.31_0.07_30)] font-semibold text-[oklch(0.86_0.1_32)] border border-[oklch(0.5_0.12_30)]"
-            )}
-            role="alert"
-          >
-            {error}
-          </div>
-        ) : null}
+        {error ? <TutorRestingState variant="panel" /> : null}
 
         {showTranscript ? (
           <TranscriptLog messages={messages} />
