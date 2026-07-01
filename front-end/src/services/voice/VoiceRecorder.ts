@@ -25,6 +25,7 @@ function rms(frame: Float32Array): number {
 
 export class VoiceRecorder {
   private vad: MicVAD | null = null;
+  private stream: MediaStream | null = null;
   private starting: Promise<void> | null = null;
   private transcribeAbort: AbortController | null = null;
   private destroyed = false;
@@ -149,7 +150,10 @@ export class VoiceRecorder {
     this.transcribeAbort = null;
     const vad = this.vad;
     this.vad = null;
+    const stream = this.stream;
+    this.stream = null;
     if (vad) void vad.destroy();
+    stream?.getTracks().forEach((track) => track.stop());
     this.onState({ isListening: false, isUserSpeaking: false, isTranscribing: false });
   }
 
@@ -170,7 +174,11 @@ export class VoiceRecorder {
     console.log("[VAD] buildVad: loading models...");
 
     return MicVAD.new({
-      getStream: () => navigator.mediaDevices.getUserMedia({ audio: VOICE_AUDIO_CONSTRAINTS }),
+      getStream: async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: VOICE_AUDIO_CONSTRAINTS });
+        this.stream = stream;
+        return stream;
+      },
       pauseStream: async (stream) => {
         stream.getAudioTracks().forEach((track) => (track.enabled = false));
       },
