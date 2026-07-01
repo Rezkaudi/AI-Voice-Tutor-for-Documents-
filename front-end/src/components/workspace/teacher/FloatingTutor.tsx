@@ -4,6 +4,7 @@ import { cx } from "@/lib/uiClasses";
 import { useDraggable } from "@/hooks/useDraggable";
 import type { AvatarState } from "@/types";
 import { TeacherAvatar } from "./TeacherAvatar";
+import { ThinkingDots } from "./TeacherPanel/ThinkingDots";
 
 const STORAGE_KEY = "tutorPuckPos";
 
@@ -17,9 +18,10 @@ const RING_BY_STATE: Record<AvatarState, string> = {
 
 interface FloatingTutorProps {
   state: AvatarState;
+  thinking?: boolean;
 }
 
-export function FloatingTutor({ state }: FloatingTutorProps) {
+export function FloatingTutor({ state, thinking = false }: FloatingTutorProps) {
   const { t } = useTranslation();
   const { ref, pos, dragging, handlers } = useDraggable(STORAGE_KEY, () => ({
     x: Number.MAX_SAFE_INTEGER,
@@ -67,6 +69,17 @@ export function FloatingTutor({ state }: FloatingTutorProps) {
           </span>
         </div>
       </div>
+
+      {thinking ? (
+        <div
+          className="pointer-events-none mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[oklch(0.74_0.12_230/0.5)] bg-[oklch(0.15_0.022_244/0.9)] px-2.5 py-1 text-[0.72rem] font-semibold text-[oklch(0.82_0.06_225)] shadow-[0_8px_20px_oklch(0.05_0.02_244/0.5)] backdrop-blur-[8px] animate-caption-rise motion-reduce:animate-none"
+          role="status"
+          aria-live="polite"
+        >
+          {t("teacher.thinking")}
+          <ThinkingDots className="text-[oklch(0.74_0.12_230)]" />
+        </div>
+      ) : null}
     </div>
   );
 }
