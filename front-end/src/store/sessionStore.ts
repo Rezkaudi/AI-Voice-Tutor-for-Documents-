@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { CALL_RESUME_DELAY_MS } from "@/lib/constants";
+import { CALL_RESUME_DELAY_MS, GREETING_PROMPT } from "@/lib/constants";
 import { useChatStore } from "./chatStore";
 import { useDocumentStore } from "./documentStore";
 import { useSpeechStore } from "./speechStore";
@@ -173,7 +173,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     if (!granted) return;
 
     set({ callMode: true, hasIntroduced: true });
+
     void voice.start();
+    void useChatStore.getState().sendMessage(GREETING_PROMPT, { hidden: true });
   },
 
   handleUpload: async (file) => {
