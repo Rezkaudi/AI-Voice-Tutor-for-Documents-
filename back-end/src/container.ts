@@ -43,7 +43,8 @@ import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-te
 import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.service";
 import { TutorToolExecutor } from "@/infrastructure/services/ai/tutor-tool-executor";
 import { OpenAiEmbeddingService } from "@/infrastructure/services/ai/openai-embedding.service";
-import { OpenAiSpeechSynthesisService, OpenAiTranscriptionService } from "@/infrastructure/services/ai/openai-speech.service";
+import { OpenAiTextToSpeechService } from "@/infrastructure/services/ai/openai-text-to-speech.service";
+import { OpenAiSpeechToTextService } from "@/infrastructure/services/ai/openai-speech-to-text.service";
 import { ConsoleLogger } from "@/infrastructure/logging/console-logger";
 
 import { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
@@ -103,8 +104,8 @@ export async function buildContainer(): Promise<Container> {
     learnerQuestionExtractor,
     logger
   );
-  const speechService = new OpenAiSpeechSynthesisService(ENV_CONFIG);
-  const transcriptionService = new OpenAiTranscriptionService(ENV_CONFIG);
+  const speechService = new OpenAiTextToSpeechService(ENV_CONFIG);
+  const transcriptionService = new OpenAiSpeechToTextService(ENV_CONFIG);
 
   // Single seam every AI flow calls to bill a user's usage (USD + questions).
   const costTracker = new CostTracker(userCostRepository, costCalculator, logger);
