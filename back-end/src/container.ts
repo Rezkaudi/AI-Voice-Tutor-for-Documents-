@@ -36,7 +36,7 @@ import { TypeOrmUserCostRepository } from "@/infrastructure/database/repositorie
 
 import { GoogleOAuthService } from "@/infrastructure/services/auth/google-oauth.service";
 import { JwtTokenService } from "@/infrastructure/services/auth/jwt-token.service";
-import { CryptoIdGenerator } from "@/infrastructure/services/crypto-id-generator";
+import { CryptoIdGenerator } from "@/infrastructure/services/generators/crypto-id-generator";
 
 import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage";
 import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
