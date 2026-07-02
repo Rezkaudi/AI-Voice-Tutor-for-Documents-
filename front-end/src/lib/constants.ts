@@ -20,9 +20,9 @@ export const VOICE_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
   autoGainControl: true     // auto raise/lower mic volume
 };
 
-export const VAD_POSITIVE_SPEECH_THRESHOLD = 0.7;// Confidence to say "speech STARTED" (0-1). Higher = harder to trigger.
-export const VAD_NEGATIVE_SPEECH_THRESHOLD = 0.45;// Below this confidence = treated as silence (0-1).
-export const VAD_MIN_SPEECH_MS = 600;// Speech shorter than this is ignored as noise (ms). Lower = catch short words.
+export const VAD_POSITIVE_SPEECH_THRESHOLD = 0.5;// Confidence to say "speech STARTED" (0-1). Higher = harder to trigger.
+export const VAD_NEGATIVE_SPEECH_THRESHOLD = 0.35;// Below this confidence = treated as silence (0-1).
+export const VAD_MIN_SPEECH_MS = 200;// Speech shorter than this is ignored as noise (ms). Lower = catch short single words.
 export const VAD_REDEMPTION_MS = 900;// Silence to wait before saying "user finished talking" (ms).
 export const VAD_PRE_SPEECH_PAD_MS = 600;// Extra audio kept before the start, so the first word is not cut (ms).
 export const VAD_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.30/dist/";

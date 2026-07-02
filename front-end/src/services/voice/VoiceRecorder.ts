@@ -165,6 +165,7 @@ export class VoiceRecorder {
     console.log("[VAD] buildVad: loading models...");
 
     return MicVAD.new({
+      model: "v5",
       getStream: async () => {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: VOICE_AUDIO_CONSTRAINTS });
         this.stream = stream;
