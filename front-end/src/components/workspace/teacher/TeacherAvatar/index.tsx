@@ -1,32 +1,32 @@
 import { memo } from "react";
 import { cx } from "@/lib/uiClasses";
 import type { AvatarState } from "@/types";
+import {
+  avatarStyleFor,
+  container,
+  haloLayer1,
+  haloLayer2
+} from "@/styles/components/workspace/teacher/teacherAvatar";
 import { AvatarFace } from "./AvatarFace";
 import { WaveBars } from "./WaveBars";
-import { avatarStyleFor } from "./avatarStyles";
 
 interface TeacherAvatarProps {
   state: AvatarState;
-
   className?: string;
 }
 
 function TeacherAvatarComponent({ state, className }: TeacherAvatarProps) {
-  const styles = avatarStyleFor(state);
   const { haloTone, haloAnimation, headAnimation, activeHalo, listening, speaking, thinking } =
-    styles;
+    avatarStyleFor(state);
 
   return (
     <div
-      className={cx(
-        "relative grid aspect-[1/1.05] place-items-center",
-        className ?? "mt-1 w-[clamp(180px,26vh,260px)]"
-      )}
+      className={cx(container, className ?? "mt-1 w-[clamp(180px,26vh,260px)]")}
       aria-hidden
     >
       <span
         className={cx(
-          "pointer-events-none absolute inset-[-6%] z-1 rounded-full opacity-0",
+          haloLayer1,
           haloTone,
           activeHalo && "opacity-100",
           activeHalo && haloAnimation,
@@ -35,7 +35,7 @@ function TeacherAvatarComponent({ state, className }: TeacherAvatarProps) {
       />
       <span
         className={cx(
-          "pointer-events-none absolute inset-[-18%] z-1 rounded-full opacity-0",
+          haloLayer2,
           haloTone,
           activeHalo && "opacity-100",
           activeHalo && haloAnimation,

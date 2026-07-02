@@ -3,6 +3,15 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MAX_LESSON_PAGES } from "@/lib/constants";
 import { cx, ui } from "@/lib/uiClasses";
+import {
+  counter,
+  fade,
+  grid,
+  iconOverride,
+  pageButtonActive,
+  pageButtonBase,
+  pageButtonIdle
+} from "@/styles/components/workspace/teacher/pageSelectionDialog";
 
 interface PageSelectionDialogProps {
 
@@ -66,13 +75,7 @@ export function PageSelectionDialog({
         onClick={(event) => event.stopPropagation()}
       >
         <div className={cx(ui.modalHead, "gap-2.5")}>
-          <div
-            className={cx(
-              ui.modalIcon,
-              "h-8! w-8! border-[oklch(0.82_0.07_165)]! bg-[oklch(0.95_0.04_165)]! text-[oklch(0.45_0.13_165)]!"
-            )}
-            aria-hidden
-          >
+          <div className={cx(ui.modalIcon, iconOverride)} aria-hidden>
             <BookOpen size={17} />
           </div>
           <div>
@@ -85,10 +88,7 @@ export function PageSelectionDialog({
           </div>
         </div>
 
-        <div
-          className="flex items-center justify-between text-[0.78rem] font-semibold text-[oklch(0.42_0.02_244)]"
-          aria-live="polite"
-        >
+        <div className={counter} aria-live="polite">
           <span>
             {t("dialogs.pages.selected", { count: chosen.length, max: MAX_LESSON_PAGES })}
           </span>
@@ -100,7 +100,7 @@ export function PageSelectionDialog({
         </div>
 
         <div className="relative -mx-1">
-          <div className="grid max-h-[42vh] grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-1.5 overflow-y-auto overscroll-contain rounded-xl border border-line bg-paper p-2.5 pr-2 [scrollbar-color:oklch(0.7_0.03_86)_transparent] scrollbar-thin [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[oklch(0.7_0.03_86/0.6)] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5">
+          <div className={grid}>
             {pages.map((page) => {
               const active = chosen.includes(page);
               const disabled = !active && atLimit;
@@ -117,12 +117,7 @@ export function PageSelectionDialog({
                   }
                   disabled={disabled}
                   onClick={() => toggle(page)}
-                  className={cx(
-                    "relative grid aspect-square min-h-[38px] place-items-center rounded-lg border text-[0.8rem] font-bold transition-[transform,background,border-color,box-shadow] duration-140 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40",
-                    active
-                      ? "border-transparent bg-accent text-[oklch(0.98_0.01_138)] shadow-app"
-                      : "border-line bg-paper-strong text-ink [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:border-accent [&:hover:not(:disabled)]:shadow-app"
-                  )}
+                  className={cx(pageButtonBase, active ? pageButtonActive : pageButtonIdle)}
                 >
                   {page}
                   {active ? (
@@ -137,10 +132,7 @@ export function PageSelectionDialog({
             })}
           </div>
 
-          <div
-            className="pointer-events-none absolute inset-x-2 bottom-px h-7 rounded-b-xl bg-linear-to-t from-paper to-transparent"
-            aria-hidden
-          />
+          <div className={fade} aria-hidden />
         </div>
 
         <div className={ui.modalActions}>

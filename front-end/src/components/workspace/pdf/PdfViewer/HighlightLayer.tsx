@@ -1,7 +1,7 @@
 import type { MutableRefObject } from "react";
 import type { DocumentCitation } from "@/types";
 import { citationKey } from "@/store/documentStore";
-import type { PlacedTextItem } from "./buildTextMap";
+import type { PlacedTextItem } from "@/lib/pdfTextMap";
 
 interface HighlightBox {
   key: string;

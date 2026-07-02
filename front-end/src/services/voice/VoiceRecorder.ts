@@ -3,7 +3,6 @@ import { transcribeRecording } from "../transcribeApi";
 import {
   ORT_WASM_BASE,
   VAD_ASSET_BASE,
-  VAD_MIN_RMS,
   VAD_MIN_SPEECH_MS,
   VAD_NEGATIVE_SPEECH_THRESHOLD,
   VAD_POSITIVE_SPEECH_THRESHOLD,
@@ -16,13 +15,6 @@ import { isPermissionDenied } from "./recorderErrors";
 
 const NOT_SUPPORTED_MESSAGE = "Microphone recording is not supported in this browser.";
 
-function rms(frame: Float32Array): number {
-  if (frame.length === 0) return 0;
-  let sum = 0;
-  for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
-  return Math.sqrt(sum / frame.length);
-}
-
 export class VoiceRecorder {
   private vad: MicVAD | null = null;
   private stream: MediaStream | null = null;
@@ -34,7 +26,6 @@ export class VoiceRecorder {
 
   onTranscript: (text: string) => void = () => { };
   onError: (message: string) => void = () => { };
-  onSpeechStart: () => void = () => { };
   getLanguage: () => SpeechLanguage | undefined = () => undefined;
   onState: (patch: Partial<VoiceRecorderState>) => void = () => { };
   isSupportedNow(): boolean {
@@ -170,10 +161,10 @@ export class VoiceRecorder {
   }
 
   private async buildVad(): Promise<MicVAD> {
-    let peakRms = 0;
     console.log("[VAD] buildVad: loading models...");
 
     return MicVAD.new({
+      model: "v5",
       getStream: async () => {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: VOICE_AUDIO_CONSTRAINTS });
         this.stream = stream;
@@ -193,23 +184,14 @@ export class VoiceRecorder {
       preSpeechPadMs: VAD_PRE_SPEECH_PAD_MS,
       baseAssetPath: VAD_ASSET_BASE,
       onnxWASMBasePath: ORT_WASM_BASE,
-      onFrameProcessed: (_probabilities, frame) => {
-        peakRms = Math.max(rms(frame), peakRms * 0.92);
-      },
       onSpeechRealStart: () => {
-        console.log("[VAD] onSpeechRealStart", { peakRms, min: VAD_MIN_RMS, gated: peakRms < VAD_MIN_RMS });
-        if (peakRms < VAD_MIN_RMS) return;
+        console.log("[VAD] onSpeechRealStart");
         this.onState({ isListening: true, isUserSpeaking: true });
-        this.onSpeechStart();
       },
       onVADMisfire: () => { console.log("[VAD] onVADMisfire"); },
       onSpeechEnd: (audio) => {
-        const endRms = rms(audio);
-        const loud = endRms >= VAD_MIN_RMS;
-        console.log("[VAD] onSpeechEnd", { endRms, min: VAD_MIN_RMS, loud, samples: audio.length });
-        peakRms = 0;
-        if (loud) void this.handleSpeechEnd(audio);
-        else this.onState({ isListening: false, isUserSpeaking: false });
+        console.log("[VAD] onSpeechEnd", { samples: audio.length });
+        void this.handleSpeechEnd(audio);
       }
     });
   }
