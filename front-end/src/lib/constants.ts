@@ -25,10 +25,6 @@ export const VAD_NEGATIVE_SPEECH_THRESHOLD = 0.45;// Below this confidence = tre
 export const VAD_MIN_SPEECH_MS = 600;// Speech shorter than this is ignored as noise (ms). Lower = catch short words.
 export const VAD_REDEMPTION_MS = 900;// Silence to wait before saying "user finished talking" (ms).
 export const VAD_PRE_SPEECH_PAD_MS = 600;// Extra audio kept before the start, so the first word is not cut (ms).
-
-// RMS = Root Mean Square
-export const VAD_MIN_RMS = 0.04;// Minimum loudness to accept the speech.
-
 export const VAD_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.30/dist/";
 export const ORT_WASM_BASE = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/";
 
