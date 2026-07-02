@@ -34,7 +34,6 @@ interface SessionStore {
   maybeContinueCall: () => void;
   clearChat: () => void;
   handleMicToggle: () => void;
-  handleSpeechStart: () => void;
   handleCallToggle: () => Promise<void>;
   openPageDialog: () => void;
   closePageDialog: () => void;
@@ -82,11 +81,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   handleVoiceTranscript: (transcript) => {
     const trimmed = transcript.trim();
+    if (!trimmed) return;
+
     if (get().pendingQuestion) set({ pendingQuestion: null });
-    if (trimmed) {
-      useSpeechStore.getState().showUserCaption(trimmed);
-      useChatStore.getState().sendMessage(trimmed);
+    if (get().callMode) {
+      useChatStore.getState().abort();
+      useSpeechStore.getState().stopSpeaking();
     }
+    useSpeechStore.getState().showUserCaption(trimmed);
+    useChatStore.getState().sendMessage(trimmed);
   },
 
   maybeContinueCall: () => {
@@ -121,16 +124,6 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       useSpeechStore.getState().unlockAudio();
       voice.start();
     }
-  },
-
-  handleSpeechStart: () => {
-    if (!get().callMode) return;
-    const speaking = useSpeechStore.getState().isSpeaking;
-    const streaming = useChatStore.getState().isStreaming;
-    if (!speaking && !streaming) return;
-    if (get().pendingQuestion) set({ pendingQuestion: null });
-    useChatStore.getState().abort();
-    useSpeechStore.getState().stopSpeaking();
   },
 
   handleCallToggle: async () => {

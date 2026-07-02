@@ -26,7 +26,6 @@ export class VoiceRecorder {
 
   onTranscript: (text: string) => void = () => { };
   onError: (message: string) => void = () => { };
-  onSpeechStart: () => void = () => { };
   getLanguage: () => SpeechLanguage | undefined = () => undefined;
   onState: (patch: Partial<VoiceRecorderState>) => void = () => { };
   isSupportedNow(): boolean {
@@ -188,7 +187,6 @@ export class VoiceRecorder {
       onSpeechRealStart: () => {
         console.log("[VAD] onSpeechRealStart");
         this.onState({ isListening: true, isUserSpeaking: true });
-        this.onSpeechStart();
       },
       onVADMisfire: () => { console.log("[VAD] onVADMisfire"); },
       onSpeechEnd: (audio) => {

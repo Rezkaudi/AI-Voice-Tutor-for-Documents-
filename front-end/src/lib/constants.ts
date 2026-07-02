@@ -17,7 +17,7 @@ export const CALL_RESUME_DELAY_MS = 350;
 export const VOICE_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
   echoCancellation: true,   // remove the tutor's own voice from your mic
   noiseSuppression: true,   // remove background noise
-  autoGainControl: true     // auto raise/lower mic volume
+  autoGainControl: false     // auto raise/lower mic volume
 };
 
 export const VAD_POSITIVE_SPEECH_THRESHOLD = 0.5;// Confidence to say "speech STARTED" (0-1). Higher = harder to trigger.
