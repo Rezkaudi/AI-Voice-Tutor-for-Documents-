@@ -15,6 +15,15 @@ import { cx } from "@/lib/uiClasses";
 import { LANGUAGES } from "@/i18n/config";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import {
+  chevron,
+  divider,
+  langTrailing,
+  popover,
+  triggerBase,
+  triggerClosed,
+  triggerOpen
+} from "@/styles/components/workspace/workspaceMenu";
 import { MenuItem } from "./MenuItem";
 import { StateChip } from "./StateChip";
 import { LanguageSubmenu } from "./LanguageSubmenu";
@@ -61,7 +70,7 @@ export function WorkspaceMenu({
         <div
           role="menu"
           aria-label={t("workspaceMenu.menuAria")}
-          className="absolute end-0 top-12 w-60 origin-top rounded-xl border border-line bg-paper-strong p-1.5 shadow-app animate-modal-pop"
+          className={popover}
         >
           {onEditPages ? (
             <MenuItem icon={BookOpen} label={t("common.teachingPages")} onClick={() => run(onEditPages)} />
@@ -86,7 +95,7 @@ export function WorkspaceMenu({
             trailing={<StateChip on={showCaption} />}
             onClick={() => run(onToggleCaption)}
           />
-          <div className="my-1 h-px bg-line" />
+          <div className={divider} />
           <MenuItem
             icon={Globe}
             label={t("language.label")}
@@ -94,18 +103,18 @@ export function WorkspaceMenu({
             expanded={langOpen}
             onClick={() => setLangOpen((v) => !v)}
             trailing={
-              <span className="flex items-center gap-1.5 text-[0.78rem] font-semibold text-muted">
+              <span className={langTrailing}>
                 {!langOpen ? <span>{currentLangLabel}</span> : null}
                 <ChevronDown
                   size={14}
                   aria-hidden
-                  className={cx("transition-transform duration-200 ease-out", langOpen && "rotate-180")}
+                  className={cx(chevron, langOpen && "rotate-180")}
                 />
               </span>
             }
           />
           {langOpen ? <LanguageSubmenu currentLang={currentLang} onSelect={run} /> : null}
-          <div className="my-1 h-px bg-line" />
+          <div className={divider} />
           <MenuItem
             icon={RotateCcw}
             label={t("common.restartLesson")}
@@ -121,15 +130,7 @@ export function WorkspaceMenu({
 
       <button
         type="button"
-        className={cx(
-          "inline-flex h-10 items-center gap-2 rounded-full px-4 text-[0.85rem] font-semibold tracking-[0.01em]",
-          "shadow-[0_8px_22px_oklch(0.08_0.02_245/0.45)] backdrop-blur-[10px] [-webkit-backdrop-filter:blur(10px)]",
-          "transition-[transform,background,border-color] duration-200 ease-out",
-          "[&:hover:not(:disabled)]:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.78_0.13_165)]",
-          open
-            ? "border border-transparent bg-[oklch(0.82_0.13_165)] text-[oklch(0.18_0.04_230)]"
-            : "border border-[oklch(1_0_0/0.22)] bg-[oklch(0.17_0.025_244/0.78)] text-[oklch(0.97_0.01_215)] [&:hover:not(:disabled)]:border-[oklch(0.78_0.13_165/0.7)] [&:hover:not(:disabled)]:bg-[oklch(0.22_0.03_244/0.88)]"
-        )}
+        className={cx(triggerBase, open ? triggerOpen : triggerClosed)}
         aria-label={t("workspaceMenu.lessonControlsMenu")}
         aria-haspopup="menu"
         aria-expanded={open}

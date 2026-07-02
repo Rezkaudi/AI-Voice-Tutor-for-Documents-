@@ -1,7 +1,7 @@
 import { SPEECH_LANGUAGES } from "@/lib/constants";
 import { cx } from "@/lib/uiClasses";
 import type { SpeechLanguage } from "@/types";
-import { langOptionActive, langOptionBase } from "./styles";
+import { langOptionActive, langOptionBase } from "@/styles/components/workspace/teacher/teacherPanel";
 
 interface LanguagePickerProps {
   value: SpeechLanguage;

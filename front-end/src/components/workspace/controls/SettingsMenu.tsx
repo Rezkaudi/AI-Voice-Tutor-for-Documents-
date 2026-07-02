@@ -15,6 +15,16 @@ import { useFullscreen } from "@/hooks/useFullscreen";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useChatStore } from "@/store/chatStore";
 import { useSessionStore } from "@/store/sessionStore";
+import {
+  popover,
+  popoverPosLarge,
+  popoverPosSmall,
+  triggerBase,
+  triggerClosed,
+  triggerOpen,
+  wrapLarge,
+  wrapSmall
+} from "@/styles/components/workspace/controls/settingsMenu";
 import { LanguageMenu } from "./LanguageMenu";
 import { MenuDivider, MenuItem, StateChip } from "./MenuItem";
 
@@ -26,12 +36,8 @@ interface SettingsMenuProps {
 export function SettingsMenu({ large = false }: SettingsMenuProps) {
   const { t } = useTranslation();
 
-  const wrapClass = large
-    ? "pointer-events-auto absolute end-4 top-4 z-50"
-    : "pointer-events-auto fixed bottom-[calc(env(safe-area-inset-bottom)+12px)] end-3 z-50";
-  const popoverPos = large
-    ? "top-[calc(100%+10px)] end-0 origin-top-right"
-    : "bottom-[calc(100%+10px)] end-0 origin-bottom-right";
+  const wrapClass = large ? wrapLarge : wrapSmall;
+  const popoverPos = large ? popoverPosLarge : popoverPosSmall;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -70,10 +76,7 @@ export function SettingsMenu({ large = false }: SettingsMenuProps) {
       <div className={wrapClass}>
         {menuOpen ? (
           <div
-            className={cx(
-              "absolute z-50 w-[212px] animate-modal-pop rounded-xl border border-[oklch(1_0_0/0.12)] bg-[oklch(0.16_0.022_244/0.96)] p-1 shadow-[0_24px_60px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[16px]",
-              popoverPos
-            )}
+            className={cx(popover, popoverPos)}
             role="menu"
             aria-label={t("controls.settings.open")}
           >
@@ -125,12 +128,7 @@ export function SettingsMenu({ large = false }: SettingsMenuProps) {
 
         <button
           type="button"
-          className={cx(
-            "grid h-10 w-10 place-items-center rounded-full border shadow-[0_10px_26px_oklch(0.05_0.02_244/0.5)] backdrop-blur-[12px] transition-[transform,background,border-color] duration-150 ease-out [&:hover:not(:disabled)]:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.82_0.13_165)]",
-            menuOpen
-              ? "border-transparent bg-[oklch(0.82_0.13_165)] text-[oklch(0.18_0.04_230)]"
-              : "border-[oklch(1_0_0/0.12)] bg-[oklch(0.15_0.022_244/0.86)] text-[oklch(0.95_0.01_215)]"
-          )}
+          className={cx(triggerBase, menuOpen ? triggerOpen : triggerClosed)}
           aria-label={menuOpen ? t("controls.settings.close") : t("controls.settings.open")}
           aria-expanded={menuOpen}
           aria-haspopup="menu"

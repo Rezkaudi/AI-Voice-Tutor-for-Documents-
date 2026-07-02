@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { renderMessageBody } from "@/lib/messageFormat";
 import { cx } from "@/lib/uiClasses";
 import type { ChatMessage } from "@/types";
-import { bubbleBase, callHint } from "./styles";
+import { bubbleBase, callHint } from "@/styles/components/workspace/teacher/teacherPanel";
 
 interface TranscriptLogProps {
   messages: ChatMessage[];
