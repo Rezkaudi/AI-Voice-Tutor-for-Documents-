@@ -25,13 +25,12 @@ export function buildTextMap(
 ): { pageText: string; placed: PlacedTextItem[] } {
   const runs: OrderedRun[] = [];
   for (const item of items) {
-
     const raw = item.str ?? "";
     if (!raw) continue;
     if (!Array.isArray(item.transform) || item.transform.length < 6) continue;
     const canonical = raw.normalize("NFKC");
 
-    const transform = pdfjs_util_transform(viewport.transform, item.transform);
+    const transform = multiplyTransform(viewport.transform, item.transform);
     const fontHeight = Math.hypot(transform[2] ?? 0, transform[3] ?? 1);
 
     runs.push({
@@ -43,7 +42,6 @@ export function buildTextMap(
         height: fontHeight,
         rotation: Math.atan2(transform[1] ?? 0, transform[0] ?? 1)
       },
-
       rawY: item.transform[5]!,
       rawX: item.transform[4]!,
       rawHeight: item.height ?? Math.abs(item.transform[3] ?? 0)
@@ -125,8 +123,8 @@ function isRightToLeft(text: string): boolean {
   return rtl > ltr;
 }
 
-/** Computes the 2x3 transform `a * b` (column-vector convention) like pdf.js. */
-function pdfjs_util_transform(a: number[], b: number[]): number[] {
+/** Computes the 2x3 transform `a * b` (column-vector convention), mirroring pdf.js `Util.transform`. */
+function multiplyTransform(a: number[], b: number[]): number[] {
   return [
     (a[0] ?? 1) * (b[0] ?? 1) + (a[2] ?? 0) * (b[1] ?? 0),
     (a[1] ?? 0) * (b[0] ?? 1) + (a[3] ?? 1) * (b[1] ?? 0),

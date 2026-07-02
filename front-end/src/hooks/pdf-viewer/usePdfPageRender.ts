@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { pdfjs } from "@/lib/pdfWorker";
 import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import type { TextItem, TextMarkedContent } from "pdfjs-dist/types/src/display/api";
-import { buildTextMap, type PlacedTextItem } from "@/components/workspace/pdf/PdfViewer/buildTextMap";
+import { buildTextMap, type PlacedTextItem } from "@/lib/pdfTextMap";
 
 export interface RenderedPage {
   placed: PlacedTextItem[];
