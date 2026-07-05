@@ -47,21 +47,27 @@ export class DocumentsController {
   file = async (req: Request, res: Response): Promise<void> => {
     const result = await this.getDocumentFile.execute(req.params.id, req.auth!.userId);
     res.setHeader("Content-Type", result.contentType);
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${sanitizeHeaderFileName(result.fileName)}"`
-    );
+    res.setHeader("Content-Disposition", contentDisposition(result.fileName));
     res.setHeader("Content-Length", result.body.length);
     res.send(result.body);
   };
 }
 
-function sanitizeHeaderFileName(fileName: string): string {
-  const stripped = Array.from(fileName)
-    .filter((char) => {
-      const code = char.codePointAt(0) ?? 0;
-      return code > 0x1f && char !== '"' && char !== "\\";
-    })
-    .join("");
-  return stripped.trim() || "document";
+function contentDisposition(fileName: string): string {
+  const name = String(fileName ?? "").slice(0, 200);
+  const asciiFallback =
+    Array.from(name)
+      .map((char) => {
+        const code = char.codePointAt(0) ?? 0;
+        return code > 0x1f && code < 0x7f && char !== '"' && char !== "\\"
+          ? char
+          : "_";
+      })
+      .join("")
+      .trim() || "document";
+  const encoded = encodeURIComponent(name).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `inline; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
 }
