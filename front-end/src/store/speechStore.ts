@@ -9,6 +9,7 @@ interface SpeechStore {
   agentPaused: boolean;
   caption: SpeechCaption | null;
   unlockAudio: () => void;
+  resumeThinkingCue: () => void;
   stopSpeaking: () => void;
   clearCaption: () => void;
   createSpeechSession: () => SpeechSession;
@@ -34,6 +35,8 @@ export const useSpeechStore = create<SpeechStore>((set, get) => {
       engine.unlock();
       thinkingSound.unlock();
     },
+
+    resumeThinkingCue: () => thinkingSound.unlock(),
 
     stopSpeaking: () => engine.stopSpeaking(),
 

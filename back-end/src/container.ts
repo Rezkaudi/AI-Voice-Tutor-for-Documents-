@@ -1,10 +1,12 @@
 import type { DataSource } from "typeorm";
 
 import { DeleteDocumentUseCase } from "@/application/use-cases/documents/delete-document.use-case";
+import { EndLessonSessionUseCase } from "@/application/use-cases/documents/end-lesson-session.use-case";
 import { GetDocumentUseCase } from "@/application/use-cases/documents/get-document.use-case";
 import { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";
 import { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
 import { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
+import { LoadLessonPagesUseCase } from "@/application/use-cases/documents/load-lesson-pages.use-case";
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
 import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
 import { TranscribeAudioUseCase } from "@/application/use-cases/transcription/transcribe-audio.use-case";
@@ -40,6 +42,7 @@ import { CryptoIdGenerator } from "@/infrastructure/services/generators/crypto-i
 
 import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage";
 import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
+import { InMemoryPageCache } from "@/infrastructure/services/cache/in-memory-page-cache";
 import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.service";
 import { TutorToolExecutor } from "@/infrastructure/services/ai/tutor-tool-executor";
 import { OpenAiEmbeddingService } from "@/infrastructure/services/ai/openai-embedding.service";
@@ -94,6 +97,7 @@ export async function buildContainer(): Promise<Container> {
   const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
   const textExtractor = PdfJsTextExtractor.createDefault();
+  const pageCache = new InMemoryPageCache();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
   const tutorToolExecutor = new TutorToolExecutor(embeddingService, chunkRanker, referenceFactory);
   const tutorService = new OpenAiTutorService(
@@ -115,11 +119,15 @@ export async function buildContainer(): Promise<Container> {
     documentRepository,
     fileStorage,
     textExtractor,
-    embeddingService,
     uploadValidator,
-    documentChunker,
     fileNaming,
     idGenerator,
+    logger
+  );
+  const loadLessonPages = new LoadLessonPagesUseCase(
+    fileStorage,
+    textExtractor,
+    pageCache,
     logger
   );
   const getDocument = new GetDocumentUseCase(documentRepository);
@@ -129,10 +137,12 @@ export async function buildContainer(): Promise<Container> {
   );
   const listDocuments = new ListDocumentsUseCase(documentRepository);
   const deleteDocument = new DeleteDocumentUseCase(documentRepository, fileStorage);
+  const endLessonSession = new EndLessonSessionUseCase(pageCache);
   const streamChat = new StreamChatUseCase(
     documentRepository,
     tutorService,
     historySanitizer,
+    loadLessonPages,
     costTracker,
     logger
   );
@@ -166,7 +176,8 @@ export async function buildContainer(): Promise<Container> {
       getDocument,
       getDocumentFile,
       listDocuments,
-      deleteDocument
+      deleteDocument,
+      endLessonSession
     ),
     chat: new ChatController(streamChat),
     speech: new SpeechController(synthesizeSpeech),

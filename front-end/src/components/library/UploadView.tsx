@@ -17,6 +17,7 @@ export function UploadView() {
   const documentStore = useDocumentStore.getState();
 
   const handleSelect = (documentId: string) => navigate(paths.document(documentId));
+  const handleReject = (message: string) => documentStore.setUploadError(message);
   const handleUpload = async (file: File | null) => {
     const documentId = await session.handleUpload(file);
     if (documentId) {
@@ -36,6 +37,7 @@ export function UploadView() {
         libraryLoading={libraryLoading}
         deletingId={deletingId}
         onFile={handleUpload}
+        onReject={handleReject}
         onSelect={handleSelect}
         onDelete={documentStore.deleteDocument}
       />

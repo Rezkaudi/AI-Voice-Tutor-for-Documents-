@@ -1,3 +1,4 @@
+import { endLessonSession } from "@/services/documentsApi";
 import { useSpeechStore } from "../speechStore";
 import { useVoiceStore } from "../voiceStore";
 import type { SessionStore } from "./types";
@@ -14,6 +15,7 @@ export function haltCall(set: Set, get: Get): void {
   if (get().callMode) {
     set({ callMode: false });
     useVoiceStore.getState().cancel();
+    void endLessonSession();
   }
   useSpeechStore.getState().stopSpeaking();
   useSpeechStore.getState().resetPaused();

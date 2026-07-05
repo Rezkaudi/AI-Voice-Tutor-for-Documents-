@@ -6,6 +6,7 @@ import type { DocumentRepository } from "@/domain/repositories/document-reposito
 import type { TutorService } from "@/domain/services/tutor-service";
 import type { Logger } from "@/domain/services/logger";
 import type { CostTracker } from "@/application/services/cost-tracker";
+import type { LoadLessonPagesUseCase } from "@/application/use-cases/documents/load-lesson-pages.use-case";
 import { MAX_LESSON_PAGES } from "@/config/constant.config";
 
 export interface StreamChatInput {
@@ -23,6 +24,7 @@ export class StreamChatUseCase {
     private readonly repository: DocumentRepository,
     private readonly tutor: TutorService,
     private readonly historySanitizer: ChatHistorySanitizer,
+    private readonly loadLessonPages: LoadLessonPagesUseCase,
     private readonly costTracker: CostTracker,
     private readonly logger: Logger
   ) { }
@@ -49,21 +51,24 @@ export class StreamChatUseCase {
       throw new NotFoundError("Document not found.");
     }
 
-    const pages = await this.repository.getPages(documentId);
-
     const history = this.historySanitizer.sanitize(input.messages);
 
-    const validPages = new Set(pages.map((page) => page.pageNumber));
     const selectedPages = Array.from(new Set(input.selectedPages))
-      .filter((pageNumber) => validPages.has(pageNumber))
+      .filter((pageNumber) => pageNumber >= 1 && pageNumber <= document.pageCount)
       .sort((a, b) => a - b)
       .slice(0, MAX_LESSON_PAGES);
 
-    // const chunks =selectedPages.length > 0 ? [] : await this.repository.getChunks(documentId);
+    const pages = await this.loadLessonPages.execute({
+      userId: input.userId,
+      documentId,
+      storagePath: document.storagePath,
+      pageNumbers: selectedPages
+    });
+
     const chunks: never[] = [];
 
     log.info(
-      `loaded document "${document.title}" · ${pages.length} page(s) · ` +
+      `loaded document "${document.title}" · ${pages.length} lesson page(s) · ` +
       `chunks disabled · ${history.length} history turn(s) · ` +
       `lesson pages=[${selectedPages.join(", ")}] → streaming answer`
     );

@@ -5,13 +5,15 @@ import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from "./config";
 import en from "./locales/en/common.json";
 import ar from "./locales/ar/common.json";
 import ja from "./locales/ja/common.json";
+import de from "./locales/de/common.json";
 
 export const defaultNS = "common";
 
 export const resources = {
   en: { common: en },
   ar: { common: ar },
-  ja: { common: ja }
+  ja: { common: ja },
+  de: { common: de }
 } as const;
 
 void i18n

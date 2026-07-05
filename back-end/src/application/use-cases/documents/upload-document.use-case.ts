@@ -1,11 +1,9 @@
-import type { DocumentChunk, DocumentRecord } from "@/domain/entities/document";
+import type { DocumentRecord } from "@/domain/entities/document";
 import { UnprocessableEntityError } from "@/domain/errors/app-error";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
-import type { EmbeddingService } from "@/domain/services/embedding-service";
 import type { FileStorage } from "@/domain/services/file-storage";
 import type { IdGenerator } from "@/domain/services/id-generator";
-import type { DocumentChunker } from "@/domain/logic/retrieval/document-chunker";
 import type { UploadValidator } from "@/domain/logic/upload-validator";
 import type { FileNaming } from "@/domain/logic/file-naming";
 import type { Logger } from "@/domain/services/logger";
@@ -28,9 +26,7 @@ export class UploadDocumentUseCase {
     private readonly repository: DocumentRepository,
     private readonly storage: FileStorage,
     private readonly extractor: DocumentTextExtractor,
-    private readonly embeddings: EmbeddingService,
     private readonly validator: UploadValidator,
-    private readonly chunker: DocumentChunker,
     private readonly naming: FileNaming,
     private readonly idGenerator: IdGenerator,
     private readonly logger: Logger
@@ -52,28 +48,18 @@ export class UploadDocumentUseCase {
       log.warn(`rejected — ${validation.error}`);
       throw new UnprocessableEntityError(validation.error);
     }
-    log.info(`validated as ${validation.kind} → extracting text`);
+    log.info(`validated as ${validation.kind} → counting pages`);
 
     const id = this.idGenerator.uuid();
-    const pages = (await this.extractor.extract(input.buffer, validation.kind)).map(
-      (page) => ({ ...page, id: this.idGenerator.uuid(), documentId: id })
-    );
-    log.info(`extracted ${pages.length} page(s)`);
 
-    // const chunks: DocumentChunk[] = this.chunker.chunk(pages).map((chunk) => ({
-    //   ...chunk,
-    //   documentId: id
-    // }));
-    const chunks: DocumentChunk[] = [];
-
-    const hasText = pages.some((page) => page.text.trim().length > 0);
-    if (!hasText) {
-      log.warn("no searchable text found in any page — rejecting");
+    const pageCount = await this.extractor.countPages(input.buffer);
+    if (pageCount < 1) {
+      log.warn("PDF reports no pages — rejecting");
       throw new UnprocessableEntityError(
-        "No searchable text was found in this file."
+        "We couldn't read any pages in this PDF."
       );
     }
-    log.info(`documentId=${id} (chunking/embedding disabled)`);
+    log.info(`documentId=${id} · ${pageCount} page(s) · text extraction deferred`);
 
     const storagePath = `${input.userId}/${id}/${this.naming.safe(input.filename)}`;
     await this.storage.put({
@@ -93,41 +79,16 @@ export class UploadDocumentUseCase {
       fileType: validation.kind,
       fileSize: input.size,
       status: "ready",
-      pageCount: pages.length,
+      pageCount,
       storagePath,
       createdAt: now,
       updatedAt: now,
       error: null
     };
 
-    await this.repository.save({ record, pages, chunks });
-    log.info(`persisted document and pages · status=${record.status}`);
-
-    // log.info(`embedding ${chunks.length} chunk(s) in background → returning now`);
-    // void this.embedInBackground(id, chunks, log);
+    await this.repository.save({ record, pages: [], chunks: [] });
+    log.info(`persisted document row · status=${record.status}`);
 
     return { documentId: id, status: record.status };
   }
-
-  // private async embedInBackground(
-  //   documentId: string,
-  //   chunks: DocumentChunk[],
-  //   log: Logger
-  // ): Promise<void> {
-  //   try {
-  //     const vectors = await this.embeddings.embedTexts(
-  //       chunks.map((chunk) => chunk.text)
-  //     );
-  //     await this.repository.updateChunkEmbeddings(
-  //       documentId,
-  //       chunks.map((chunk, index) => ({
-  //         id: chunk.id,
-  //         embedding: vectors[index] ?? null
-  //       }))
-  //     );
-  //     log.info(`embeddings stored for document ${documentId}`);
-  //   } catch (error) {
-  //     log.error(`background embedding failed for document ${documentId}`, error);
-  //   }
-  // }
 }

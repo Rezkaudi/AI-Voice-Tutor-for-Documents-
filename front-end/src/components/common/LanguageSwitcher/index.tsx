@@ -36,7 +36,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
   }, [open]);
 
   const trigger = cx(
-    "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[0.82rem] font-semibold transition-colors duration-150 ease-out",
+    "inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-[0.82rem] font-semibold transition-colors duration-150 ease-out",
     ui.focusAccent,
     "border-line bg-paper-strong text-ink [&:hover:not(:disabled)]:border-accent"
   );

@@ -42,7 +42,11 @@
     "pdfHint": "Use a text-based PDF. Image-only or scanned documents can't be read and won't work.",
     "processingTitle": "Preparing your document",
     "processingBody": "Extracting pages, building lesson passages, and warming up the teacher.",
-    "loadingLibrary": "Loading your library…"
+    "loadingLibrary": "Loading your library…",
+    "errorType": "That file isn’t a PDF. Please choose a PDF document.",
+    "errorSize": "That file is too large. Please choose a PDF under 25MB.",
+    "dropActive": "Release to upload your PDF",
+    "dropAria": "Upload a PDF — drop a file here or choose one"
   },
   "library": {
     "listAria": "Your documents",
@@ -57,7 +61,10 @@
     "justNow": "just now",
     "minutesAgo": "{{count}}m ago",
     "hoursAgo": "{{count}}h ago",
-    "daysAgo": "{{count}}d ago"
+    "daysAgo": "{{count}}d ago",
+    "startLesson": "Start lesson",
+    "resumeLesson": "Resume lesson",
+    "startLessonAria": "Start lesson for {{name}}"
   },
   "dialogs": {
     "delete": {

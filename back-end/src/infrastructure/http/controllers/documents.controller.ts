@@ -5,6 +5,7 @@ import type { GetDocumentUseCase } from "@/application/use-cases/documents/get-d
 import type { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";
 import type { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
 import type { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
+import type { EndLessonSessionUseCase } from "@/application/use-cases/documents/end-lesson-session.use-case";
 
 export class DocumentsController {
   constructor(
@@ -12,8 +13,15 @@ export class DocumentsController {
     private readonly getDocument: GetDocumentUseCase,
     private readonly getDocumentFile: GetDocumentFileUseCase,
     private readonly listDocuments: ListDocumentsUseCase,
-    private readonly deleteDocument: DeleteDocumentUseCase
+    private readonly deleteDocument: DeleteDocumentUseCase,
+    private readonly endLessonSession: EndLessonSessionUseCase
   ) { }
+
+  /** POST /api/documents/session/end — releases the user's cached lesson pages. */
+  endSession = async (req: Request, res: Response): Promise<void> => {
+    await this.endLessonSession.execute(req.auth!.userId);
+    res.status(204).end();
+  };
 
   list = async (req: Request, res: Response): Promise<void> => {
     res.json({ documents: await this.listDocuments.execute(req.auth!.userId) });
@@ -47,21 +55,27 @@ export class DocumentsController {
   file = async (req: Request, res: Response): Promise<void> => {
     const result = await this.getDocumentFile.execute(req.params.id, req.auth!.userId);
     res.setHeader("Content-Type", result.contentType);
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${sanitizeHeaderFileName(result.fileName)}"`
-    );
+    res.setHeader("Content-Disposition", contentDisposition(result.fileName));
     res.setHeader("Content-Length", result.body.length);
     res.send(result.body);
   };
 }
 
-function sanitizeHeaderFileName(fileName: string): string {
-  const stripped = Array.from(fileName)
-    .filter((char) => {
-      const code = char.codePointAt(0) ?? 0;
-      return code > 0x1f && char !== '"' && char !== "\\";
-    })
-    .join("");
-  return stripped.trim() || "document";
+function contentDisposition(fileName: string): string {
+  const name = String(fileName ?? "").slice(0, 200);
+  const asciiFallback =
+    Array.from(name)
+      .map((char) => {
+        const code = char.codePointAt(0) ?? 0;
+        return code > 0x1f && code < 0x7f && char !== '"' && char !== "\\"
+          ? char
+          : "_";
+      })
+      .join("")
+      .trim() || "document";
+  const encoded = encodeURIComponent(name).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `inline; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
 }

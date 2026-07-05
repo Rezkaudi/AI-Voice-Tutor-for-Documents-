@@ -42,7 +42,11 @@
     "pdfHint": "テキストベースのPDFをご利用ください。画像のみ・スキャンされた資料は読み取れず、動作しません。",
     "processingTitle": "資料を準備しています",
     "processingBody": "ページを抽出し、レッスンの本文を構築し、講師を準備しています。",
-    "loadingLibrary": "ライブラリを読み込んでいます…"
+    "loadingLibrary": "ライブラリを読み込んでいます…",
+    "errorType": "このファイルはPDFではありません。PDF文書を選択してください。",
+    "errorSize": "このファイルは大きすぎます。25MB未満のPDFを選択してください。",
+    "dropActive": "ここで離してPDFをアップロード",
+    "dropAria": "PDFをアップロード — ここにファイルをドロップ、または選択"
   },
   "library": {
     "listAria": "あなたの資料",
@@ -56,7 +60,10 @@
     "justNow": "たった今",
     "minutesAgo": "{{count}}分前",
     "hoursAgo": "{{count}}時間前",
-    "daysAgo": "{{count}}日前"
+    "daysAgo": "{{count}}日前",
+    "startLesson": "レッスンを開始",
+    "resumeLesson": "レッスンを再開",
+    "startLessonAria": "{{name}} のレッスンを開始"
   },
   "dialogs": {
     "delete": {

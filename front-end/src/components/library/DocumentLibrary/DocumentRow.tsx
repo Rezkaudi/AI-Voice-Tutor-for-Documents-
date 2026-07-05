@@ -1,4 +1,4 @@
-import { Check, FileText, Loader2, Trash2 } from "lucide-react";
+import { Check, FileText, GraduationCap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentSummary } from "@/types";
@@ -17,7 +17,7 @@ export function DocumentRow({
   isActive,
   isDeleting,
   onSelect,
-  onRequestDelete
+  // onRequestDelete
 }: DocumentRowProps) {
   const { t } = useTranslation();
   const label = doc.title || doc.fileName || t("library.untitled");
@@ -66,6 +66,27 @@ export function DocumentRow({
           ) : null}
         </button>
 
+        <button
+          type="button"
+          aria-label={t("library.startLessonAria", { name: label })}
+          disabled={isDeleting}
+          onClick={() => onSelect(doc.id)}
+          className={cx(
+            "my-1.5 me-1.5 inline-flex min-h-11 min-w-11 flex-none items-center justify-center gap-1.5 self-center rounded-md border border-accent bg-accent px-3 text-[0.82rem] font-[650] text-[oklch(0.98_0.01_138)] transition-[transform,filter] duration-140 ease-out",
+            "[&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105",
+            "max-sm:px-0",
+            ui.focusAccent,
+            "disabled:cursor-not-allowed disabled:opacity-60"
+          )}
+        >
+          <GraduationCap size={16} aria-hidden />
+          <span className="max-sm:sr-only">
+            {isActive ? t("library.resumeLesson") : t("library.startLesson")}
+          </span>
+        </button>
+
+        {/* Delete document button — hidden for now, keep for later.
+            To re-enable: import { Loader2, Trash2 } from "lucide-react".
         {onRequestDelete ? (
           <button
             type="button"
@@ -86,6 +107,7 @@ export function DocumentRow({
             )}
           </button>
         ) : null}
+        */}
       </div>
     </li>
   );

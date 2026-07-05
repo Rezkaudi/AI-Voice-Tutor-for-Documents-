@@ -1,13 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { useDocumentStore } from "@/store/documentStore";
-import { useAuthStore } from "@/store/authStore";
-import { UserMenu } from "@/components/common/UserMenu";
+// import { useAuthStore } from "@/store/authStore";
+// import { UserMenu } from "@/components/common/UserMenu";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 
 export function AppHeader() {
   const loadedDocument = useDocumentStore((s) => s.loadedDocument);
 
-  const user = useAuthStore((s) => s.user);
+  // const user = useAuthStore((s) => s.user);
   const { t } = useTranslation();
 
   return (
@@ -24,7 +24,7 @@ export function AppHeader() {
       </div>
       <div className="flex flex-none items-center justify-end gap-2">
         <LanguageSwitcher />
-        {user && <UserMenu user={user} />}
+        {/* {user && <UserMenu user={user} />} */}
       </div>
     </header>
   );

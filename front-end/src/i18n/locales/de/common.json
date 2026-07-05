@@ -1,0 +1,207 @@
+{
+  "common": {
+    "cancel": "Abbrechen",
+    "on": "AN",
+    "off": "AUS",
+    "fullscreen": "Vollbild",
+    "exitFullscreen": "Vollbild beenden",
+    "transcript": "Transkript",
+    "teachingPages": "Unterrichtsseiten",
+    "restartLesson": "Lektion neu starten",
+    "loading": "Wird geladen"
+  },
+  "language": {
+    "switch": "Sprache ändern",
+    "label": "Sprache"
+  },
+  "login": {
+    "brand": "KI-Sprachtutor",
+    "headlineLead": "Deine Dokumente,",
+    "headlineAccent": "laut erklärt.",
+    "subtitle": "Ein menschenähnlicher KI-Lehrer, der dir jedes Konzept aus einem textbasierten PDF-Dokument beibringt",
+    "benefitLearn": "Lernen",
+    "benefitPractice": "Üben",
+    "benefitGrow": "Wachsen",
+    "cta": "Mit Google fortfahren",
+    "signinError": "Die Anmeldung wurde nicht abgeschlossen. Bitte versuche es erneut.",
+    "freeStart": "Kostenlos starten · Keine Kreditkarte erforderlich",
+    "privacy": "Deine Daten sind privat und sicher – wir trainieren niemals mit deinen Dokumenten.",
+    "avatarAlt": "Freundlicher KI-Lehrer mit einem Notizbuch voller Lektionen, bereit zu beginnen",
+    "footer": "© 2026 KI-Sprachtutor für Dokumente · Klüger lernen, per Stimme."
+  },
+  "header": {
+    "title": "KI-Sprachtutor für Dokumente",
+    "subtitle": "Dokument-Lernboard"
+  },
+  "upload": {
+    "yourDocuments": "Deine Dokumente",
+    "orUploadNew": "Oder lade eine neue Datei hoch",
+    "uploadTitle": "Lektionsquelle hochladen",
+    "pdfLimit": "PDF-Dateien bis zu 25 MB.",
+    "dropHint": "Lege eine Datei hier ab oder <choose>wähle eine Datei</choose>",
+    "pdfHint": "Verwende ein textbasiertes PDF. Reine Bild- oder gescannte Dokumente können nicht gelesen werden und funktionieren nicht.",
+    "processingTitle": "Dein Dokument wird vorbereitet",
+    "processingBody": "Seiten werden extrahiert, Lektionsabschnitte erstellt und der Lehrer wird vorbereitet.",
+    "loadingLibrary": "Deine Bibliothek wird geladen …",
+    "errorType": "Diese Datei ist kein PDF. Bitte wähle ein PDF-Dokument.",
+    "errorSize": "Diese Datei ist zu groß. Bitte wähle ein PDF unter 25 MB.",
+    "dropActive": "Loslassen, um dein PDF hochzuladen",
+    "dropAria": "Ein PDF hochladen — Datei hier ablegen oder eine auswählen"
+  },
+  "library": {
+    "listAria": "Deine Dokumente",
+    "emptyHint": "Noch keine Dokumente – lade dein erstes hoch, um zu beginnen.",
+    "untitled": "Unbenanntes Dokument",
+    "thisDocument": "dieses Dokument",
+    "currentlyOpen": "Aktuell geöffnet",
+    "deleteDocument": "Dokument löschen",
+    "deleteAria": "{{name}} löschen",
+    "page_one": "{{count}} Seite",
+    "page_other": "{{count}} Seiten",
+    "justNow": "gerade eben",
+    "minutesAgo": "vor {{count}} Min.",
+    "hoursAgo": "vor {{count}} Std.",
+    "daysAgo": "vor {{count}} T.",
+    "startLesson": "Lektion starten",
+    "resumeLesson": "Lektion fortsetzen",
+    "startLessonAria": "Lektion für {{name}} starten"
+  },
+  "dialogs": {
+    "delete": {
+      "title": "Dokument löschen?",
+      "body": "Dadurch wird „{{name}}“ dauerhaft aus deiner Bibliothek entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirm": "Löschen"
+    },
+    "restart": {
+      "title": "Lektion neu starten?",
+      "body": "Dies löscht den aktuellen Chat und beginnt eine neue Sitzung von vorne. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirm": "Löschen & neu starten"
+    },
+    "mic": {
+      "title": "Schalte dein Mikrofon ein",
+      "body": "Dein Browser blockiert den Mikrofonzugriff, sodass die Sprachlektion dich nicht hören kann. Der Browser fragt nicht automatisch erneut – bitte aktiviere es in deinen Browsereinstellungen erneut:",
+      "step1": "Klicke auf das Symbol links in der Adressleiste (ein Schloss-, Regler- oder Mikrofonsymbol).",
+      "step2": "Suche „Mikrofon“ und stelle es auf Zulassen – oder klicke auf „Berechtigung zurücksetzen“.",
+      "step3": "Lade die Seite neu.",
+      "step4": "Drücke erneut auf Anrufen und wähle bei Nachfrage Zulassen.",
+      "note": "Sobald du es auf <strong>Zulassen</strong> stellst, wird die Lektion automatisch fortgesetzt – oder drücke einfach erneut auf <strong>Anrufen</strong>.",
+      "gotIt": "Verstanden"
+    },
+    "pages": {
+      "title": "Wähle deine Lektionsseiten",
+      "body": "Wähle bis zu {{max}} Seiten. Dein Lehrer erklärt sie eine nach der anderen, beginnend mit der ersten Seite, und prüft, ob du jede Idee verstanden hast, bevor es weitergeht.",
+      "selected": "{{count}} / {{max}} ausgewählt",
+      "teaching": "Unterrichtsseiten {{pages}}",
+      "pageLabel": "Seite {{page}}",
+      "pageAtMost": "Du kannst höchstens {{max}} Seiten auswählen",
+      "updatePages": "Seiten aktualisieren",
+      "startLesson": "Lektion starten"
+    }
+  },
+  "controls": {
+    "callControls": "Anrufsteuerung",
+    "mic": {
+      "sending": "Wird gesendet …",
+      "mute": "Stummschalten",
+      "thinking": "Denkt nach …",
+      "interrupt": "Unterbrechen",
+      "speak": "Sprechen",
+      "muteAria": "Mikrofon stummschalten",
+      "thinkingAria": "Der Tutor denkt nach, bitte warten",
+      "interruptAria": "Unterbrechen und sprechen",
+      "speakAria": "Jetzt sprechen"
+    },
+    "call": {
+      "start": "Anrufen",
+      "end": "Beenden",
+      "startAria": "Sprachanruf starten",
+      "endAria": "Sprachanruf beenden"
+    },
+    "more": {
+      "show": "Weitere Steuerelemente anzeigen",
+      "hide": "Weitere Steuerelemente ausblenden",
+      "title": "Weitere Steuerelemente",
+      "hideTitle": "Steuerelemente ausblenden",
+      "menuAria": "Weitere Steuerelemente"
+    },
+    "session": {
+      "start": "Sitzung starten",
+      "end": "Sitzung beenden",
+      "startAria": "Sprachsitzung starten",
+      "endAria": "Sprachsitzung beenden"
+    },
+    "micMute": {
+      "on": "Mikrofon stummschalten",
+      "off": "Stummschaltung aufheben",
+      "muteAria": "Mikrofon stummschalten",
+      "unmuteAria": "Stummschaltung des Mikrofons aufheben"
+    },
+    "voice": {
+      "pauseAria": "Tutorstimme pausieren",
+      "resumeAria": "Tutorstimme fortsetzen"
+    },
+    "settings": {
+      "open": "Sitzungseinstellungen",
+      "close": "Einstellungen schließen"
+    },
+    "liveCaptions": "Live-Untertitel"
+  },
+  "workspaceMenu": {
+    "menu": "Menü",
+    "lessonControls": "Lektionssteuerung",
+    "lessonControlsMenu": "Menü der Lektionssteuerung",
+    "captions": "Untertitel",
+    "menuAria": "Lektionssteuerung"
+  },
+  "teacher": {
+    "title": "KI-Lehrer",
+    "transcriptEmpty": "Noch kein Gespräch – dein Lektionstranskript erscheint hier.",
+    "thinking": "Denkt nach",
+    "micUnsupported": "Das Mikrofon wird in diesem Browser nicht unterstützt.",
+    "micBlocked": "Das Mikrofon ist <strong>blockiert</strong>. Tippe hier für Schritte, um es wieder einzuschalten.",
+    "avatarLabel": "KI-Lehrer – zum Verschieben ziehen",
+    "dragTitle": "Ziehen, um den Lehrer zu verschieben",
+    "status": {
+      "paused": "Pausiert",
+      "listeningNow": "Hört zu – sprich jetzt",
+      "transcribing": "Wird transkribiert …",
+      "thinkingDoc": "Denkt anhand des Dokuments nach …",
+      "speaking": "Spricht",
+      "onCall": "Im Gespräch",
+      "tapStart": "Tippe auf Anrufen, um deine Lektion zu starten",
+      "tapContinue": "Tippe auf Anrufen, um fortzufahren"
+    },
+    "unavailable": {
+      "status": "Vorübergehendes Problem",
+      "message": "Auf unserer Seite ist etwas schiefgelaufen – nicht auf deiner. Bitte versuche es in einigen Minuten erneut.",
+      "contact": "Funktioniert immer noch nicht? Kontaktiere den Support"
+    }
+  },
+  "question": {
+    "title": "Du bist dran",
+    "badge": "Frage",
+    "listening": "Hört zu – antworte laut",
+    "getReady": "Nimm dir einen Moment und antworte dann laut",
+    "transcribing": "Verstanden – einen Moment …",
+    "hint": "Sprich deine Antwort. Dies schließt sich von selbst.",
+    "dismiss": "Schließen"
+  },
+  "transcriptDrawer": {
+    "title": "Transkript",
+    "close": "Transkript schließen",
+    "aria": "Lektionstranskript"
+  },
+  "workspace": {
+    "backToDocuments": "Zurück zu den Dokumenten",
+    "documentBoard": "Dokument-Board",
+    "teacherCall": "Sprachanruf mit dem Lehrer",
+    "switchView": "Ansicht wechseln",
+    "tabDocument": "Dokument",
+    "tabTeacher": "Lehrer",
+    "loadingDocument": "Dokument wird geladen",
+    "loadingHint": "Seiten werden abgerufen und das Board vorbereitet …",
+    "openingDocument": "Dokument wird geöffnet",
+    "loadingPdf": "PDF wird geladen …",
+    "page": "Seite {{page}}"
+  }
+}

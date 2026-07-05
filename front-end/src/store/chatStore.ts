@@ -66,6 +66,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
       const session = useSessionStore.getState();
       session.setError(null);
       session.setPendingQuestion(null);
+      useSpeechStore.getState().resumeThinkingCue();
       set({ isStreaming: true });
 
       const userMessage: ChatMessage = {
