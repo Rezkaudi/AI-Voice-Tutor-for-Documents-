@@ -42,7 +42,11 @@
     "pdfHint": "Verwende ein textbasiertes PDF. Reine Bild- oder gescannte Dokumente können nicht gelesen werden und funktionieren nicht.",
     "processingTitle": "Dein Dokument wird vorbereitet",
     "processingBody": "Seiten werden extrahiert, Lektionsabschnitte erstellt und der Lehrer wird vorbereitet.",
-    "loadingLibrary": "Deine Bibliothek wird geladen …"
+    "loadingLibrary": "Deine Bibliothek wird geladen …",
+    "errorType": "Diese Datei ist kein PDF. Bitte wähle ein PDF-Dokument.",
+    "errorSize": "Diese Datei ist zu groß. Bitte wähle ein PDF unter 25 MB.",
+    "dropActive": "Loslassen, um dein PDF hochzuladen",
+    "dropAria": "Ein PDF hochladen — Datei hier ablegen oder eine auswählen"
   },
   "library": {
     "listAria": "Deine Dokumente",
