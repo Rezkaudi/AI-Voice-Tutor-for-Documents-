@@ -65,8 +65,10 @@ export const createCallSlice: StateCreator<SessionStore, [], [], CallSlice> = (s
   },
 
   openPageDialog: () => {
-    useChatStore.getState().abort();
-    useSpeechStore.getState().stopSpeaking();
+    if (!get().callMode) {
+      useChatStore.getState().abort();
+      useSpeechStore.getState().stopSpeaking();
+    }
     set({ pageDialogOpen: true });
     void useVoiceStore.getState().prewarm();
   },
@@ -74,12 +76,15 @@ export const createCallSlice: StateCreator<SessionStore, [], [], CallSlice> = (s
   closePageDialog: () => set({ pageDialogOpen: false }),
 
   submitPageSelection: async (pages) => {
-    useSpeechStore.getState().unlockAudio();
-
     const cleaned = pages.length > 0 ? pages : [1];
     set({ selectedPages: cleaned, pageDialogOpen: false });
 
-    if (get().callMode) return;
+    if (get().callMode) {
+
+      useSpeechStore.getState().resumeThinkingCue();
+      return;
+    }
+    useSpeechStore.getState().unlockAudio();
 
     const voice = useVoiceStore.getState();
 

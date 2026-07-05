@@ -7,6 +7,7 @@ const LOOKAHEAD_SECONDS = 3.7;
 const BODY_RELEASE_SECONDS = 0.085;
 const CLICK_RELEASE_SECONDS = 0.026;
 const NOISE_RELEASE_SECONDS = 0.045;
+const RESUME_RETRY_MS = 150;
 
 const POP_PATTERN = [
   { at: 0, freq: 975, velocity: 0.22 },
@@ -37,6 +38,8 @@ class ThinkingSound {
   private active = false;
   private enabled = true;
   private startToken = 0;
+  private resumeHooksInstalled = false;
+  private keepAlive: AudioBufferSourceNode | null = null;
 
   setEnabled(value: boolean): void {
     this.enabled = value;
@@ -47,7 +50,12 @@ class ThinkingSound {
   unlock(): void {
     if (!this.enabled) return;
     const ctx = this.ensureContext();
-    if (ctx && ctx.state !== "running") void ctx.resume().catch(() => { });
+    if (!ctx) return;
+    if (ctx.state === "running") {
+      this.ensureKeepAlive();
+    } else {
+      void ctx.resume().then(() => this.ensureKeepAlive()).catch(() => { });
+    }
   }
 
   private ensureContext(): AudioContext | null {
@@ -55,13 +63,57 @@ class ThinkingSound {
     if (this.ctx && this.ctx.state === "closed") {
       this.ctx = null;
       this.noiseBuffer = null;
+      this.keepAlive = null;
     }
     if (!this.ctx) {
       const Ctor = resolveAudioContext();
       if (!Ctor) return null;
       this.ctx = new Ctor();
+      this.installResumeHooks();
     }
     return this.ctx;
+  }
+
+  private ensureKeepAlive(): void {
+    const ctx = this.ctx;
+    if (!ctx || this.keepAlive || ctx.state !== "running") return;
+    try {
+      const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      source.start();
+      this.keepAlive = source;
+    } catch {
+    }
+  }
+
+  private installResumeHooks(): void {
+    if (this.resumeHooksInstalled || typeof window === "undefined") return;
+    this.resumeHooksInstalled = true;
+
+    const revive = () => {
+      const ctx = this.ctx;
+      if (!this.enabled || !ctx) return;
+      if (ctx.state === "running") {
+        this.ensureKeepAlive();
+      } else if (ctx.state !== "closed") {
+        void ctx.resume().then(() => this.ensureKeepAlive()).catch(() => { });
+      }
+    };
+
+    window.addEventListener("pointerdown", revive, { passive: true });
+    window.addEventListener("touchstart", revive, { passive: true });
+    window.addEventListener("keydown", revive);
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") revive();
+      });
+    }
   }
 
   start(): void {
@@ -72,24 +124,27 @@ class ThinkingSound {
 
     this.active = true;
     const token = ++this.startToken;
+    this.resumeAndPlay(ctx, token);
+  }
+
+  private resumeAndPlay(ctx: AudioContext, token: number): void {
+    if (token !== this.startToken || !this.active) return;
 
     if (ctx.state === "running") {
       this.beginPlayback(token);
-    } else {
-      ctx.resume()
-        .then(() => this.beginPlayback(token))
-        .catch(() => {
-          // Could not resume (no active gesture yet). Release the guard so a
-          // later start() — or an unlock() from the next tap — can retry.
-          if (token === this.startToken) this.active = false;
-        });
+      return;
     }
+
+    void ctx.resume().catch(() => { });
+    window.setTimeout(() => this.resumeAndPlay(ctx, token), RESUME_RETRY_MS);
   }
 
   private beginPlayback(token: number): void {
     // Bail if stop()/a newer start() superseded this attempt while resuming.
     if (!this.active || token !== this.startToken || !this.ctx) return;
     const ctx = this.ctx;
+
+    this.ensureKeepAlive();
 
     const now = ctx.currentTime;
     const master = ctx.createGain();
