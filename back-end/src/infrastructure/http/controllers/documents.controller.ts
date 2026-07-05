@@ -5,6 +5,7 @@ import type { GetDocumentUseCase } from "@/application/use-cases/documents/get-d
 import type { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";
 import type { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
 import type { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
+import type { EndLessonSessionUseCase } from "@/application/use-cases/documents/end-lesson-session.use-case";
 
 export class DocumentsController {
   constructor(
@@ -12,8 +13,15 @@ export class DocumentsController {
     private readonly getDocument: GetDocumentUseCase,
     private readonly getDocumentFile: GetDocumentFileUseCase,
     private readonly listDocuments: ListDocumentsUseCase,
-    private readonly deleteDocument: DeleteDocumentUseCase
+    private readonly deleteDocument: DeleteDocumentUseCase,
+    private readonly endLessonSession: EndLessonSessionUseCase
   ) { }
+
+  /** POST /api/documents/session/end — releases the user's cached lesson pages. */
+  endSession = async (req: Request, res: Response): Promise<void> => {
+    await this.endLessonSession.execute(req.auth!.userId);
+    res.status(204).end();
+  };
 
   list = async (req: Request, res: Response): Promise<void> => {
     res.json({ documents: await this.listDocuments.execute(req.auth!.userId) });

@@ -1,6 +1,13 @@
 import type { DocumentSummary, LoadedDocument } from "@/types";
 import { api, extractErrorMessage, resolveApiUrl } from "@/services/apiBase";
 
+export async function endLessonSession(): Promise<void> {
+  try {
+    await api.post("/api/documents/session/end");
+  } catch {
+  }
+}
+
 export async function deleteDocument(documentId: string): Promise<void> {
   try {
     await api.delete(`/api/documents/${documentId}`);

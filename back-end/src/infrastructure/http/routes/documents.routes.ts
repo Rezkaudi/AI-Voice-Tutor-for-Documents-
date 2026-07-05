@@ -9,6 +9,7 @@ export function buildDocumentRoutes(controller: DocumentsController): Router {
   const router = Router();
 
   router.get("/documents", asyncHandler(controller.list));
+  router.post("/documents/session/end", asyncHandler(controller.endSession));
   router.post(
     "/documents",
     documentUpload.single("file"),

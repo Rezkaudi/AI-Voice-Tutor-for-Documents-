@@ -8,6 +8,15 @@ import { HeaderFooterRemover } from "@/domain/logic/pdf/header-footer-remover";
 import { ScriptDirection } from "@/domain/logic/pdf/script-direction";
 import { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
 
+interface PdfPage {
+  getTextContent(): Promise<{ items: readonly unknown[] }>;
+}
+
+interface PdfDocument {
+  numPages: number;
+  getPage(pageNumber: number): Promise<PdfPage>;
+}
+
 export class PdfJsTextExtractor implements DocumentTextExtractor {
   constructor(
     private readonly layoutTextBuilder: LayoutTextBuilder,
@@ -24,23 +33,11 @@ export class PdfJsTextExtractor implements DocumentTextExtractor {
   }
 
   async extract(buffer: Buffer, _kind: UploadKind): Promise<DocumentPage[]> {
-    installPdfJsNodePolyfills();
-
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const loadingTask = pdfjs.getDocument({
-      data: new Uint8Array(buffer),
-      disableFontFace: true,
-      useSystemFonts: true
-    });
-
-    const pdf = await loadingTask.promise;
+    const pdf = await this.load(buffer);
 
     const pages: DocumentPage[] = [];
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-      const page = await pdf.getPage(pageNumber);
-      const content = await page.getTextContent();
-      const items = this.toPositionedItems(content.items);
-      pages.push({ pageNumber, text: this.layoutTextBuilder.build(items) });
+      pages.push(await this.readPage(pdf, pageNumber));
     }
 
     const cleaned = this.headerFooterRemover.remove(pages);
@@ -51,6 +48,44 @@ export class PdfJsTextExtractor implements DocumentTextExtractor {
       );
     }
     return cleaned;
+  }
+
+  async countPages(buffer: Buffer): Promise<number> {
+    const pdf = await this.load(buffer);
+    return pdf.numPages;
+  }
+
+  async extractPages(buffer: Buffer, pageNumbers: number[]): Promise<DocumentPage[]> {
+    const pdf = await this.load(buffer);
+
+    const wanted = Array.from(new Set(pageNumbers))
+      .filter((pageNumber) => pageNumber >= 1 && pageNumber <= pdf.numPages)
+      .sort((a, b) => a - b);
+
+    const pages: DocumentPage[] = [];
+    for (const pageNumber of wanted) {
+      pages.push(await this.readPage(pdf, pageNumber));
+    }
+    return pages;
+  }
+
+  private async load(buffer: Buffer): Promise<PdfDocument> {
+    installPdfJsNodePolyfills();
+
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const loadingTask = pdfjs.getDocument({
+      data: new Uint8Array(buffer),
+      disableFontFace: true,
+      useSystemFonts: true
+    });
+    return loadingTask.promise as unknown as PdfDocument;
+  }
+
+  private async readPage(pdf: PdfDocument, pageNumber: number): Promise<DocumentPage> {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    const items = this.toPositionedItems(content.items);
+    return { pageNumber, text: this.layoutTextBuilder.build(items) };
   }
 
   private toPositionedItems(items: readonly unknown[]): PositionedTextItem[] {
