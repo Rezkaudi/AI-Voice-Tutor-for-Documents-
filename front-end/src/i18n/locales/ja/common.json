@@ -56,7 +56,10 @@
     "justNow": "たった今",
     "minutesAgo": "{{count}}分前",
     "hoursAgo": "{{count}}時間前",
-    "daysAgo": "{{count}}日前"
+    "daysAgo": "{{count}}日前",
+    "startLesson": "レッスンを開始",
+    "resumeLesson": "レッスンを再開",
+    "startLessonAria": "{{name}} のレッスンを開始"
   },
   "dialogs": {
     "delete": {

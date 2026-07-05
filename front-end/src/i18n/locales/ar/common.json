@@ -61,7 +61,10 @@
     "justNow": "الآن",
     "minutesAgo": "قبل {{count}} د",
     "hoursAgo": "قبل {{count}} س",
-    "daysAgo": "قبل {{count}} ي"
+    "daysAgo": "قبل {{count}} ي",
+    "startLesson": "ابدأ الدرس",
+    "resumeLesson": "استئناف الدرس",
+    "startLessonAria": "ابدأ درس {{name}}"
   },
   "dialogs": {
     "delete": {

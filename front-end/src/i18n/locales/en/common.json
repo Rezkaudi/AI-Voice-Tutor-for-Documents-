@@ -57,7 +57,10 @@
     "justNow": "just now",
     "minutesAgo": "{{count}}m ago",
     "hoursAgo": "{{count}}h ago",
-    "daysAgo": "{{count}}d ago"
+    "daysAgo": "{{count}}d ago",
+    "startLesson": "Start lesson",
+    "resumeLesson": "Resume lesson",
+    "startLessonAria": "Start lesson for {{name}}"
   },
   "dialogs": {
     "delete": {
