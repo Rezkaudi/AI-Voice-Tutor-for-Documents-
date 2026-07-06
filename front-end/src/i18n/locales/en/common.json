@@ -202,6 +202,7 @@
     "tabTeacher": "Teacher",
     "loadingDocument": "Loading document",
     "loadingHint": "Fetching pages and preparing the board…",
+    "loadingDownloading": "Downloading document…",
     "openingDocument": "Opening document",
     "loadingPdf": "Loading PDF…",
     "page": "Page {{page}}"

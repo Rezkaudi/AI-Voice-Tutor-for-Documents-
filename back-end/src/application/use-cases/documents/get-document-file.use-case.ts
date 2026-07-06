@@ -1,11 +1,14 @@
+import type { Readable } from "node:stream";
 import { NotFoundError, ValidationError } from "@/domain/errors/app-error";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 import type { FileStorage } from "@/domain/services/file-storage";
 
 export interface DocumentFileResult {
-  body: Buffer;
+  body: Readable;
   contentType: string;
   fileName: string;
+  contentLength?: number;
+  eTag?: string;
 }
 
 export class GetDocumentFileUseCase {
@@ -24,7 +27,7 @@ export class GetDocumentFileUseCase {
       throw new NotFoundError("File not found.");
     }
 
-    const file = await this.storage.get(document.storagePath);
+    const file = await this.storage.getStream(document.storagePath);
     if (!file) {
       throw new NotFoundError("File not found.");
     }
@@ -32,7 +35,9 @@ export class GetDocumentFileUseCase {
     return {
       body: file.body,
       contentType: file.contentType || document.mimeType,
-      fileName: document.fileName
+      fileName: document.fileName,
+      contentLength: file.contentLength,
+      eTag: file.eTag
     };
   }
 }

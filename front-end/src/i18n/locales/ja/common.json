@@ -201,6 +201,7 @@
     "tabTeacher": "講師",
     "loadingDocument": "資料を読み込み中",
     "loadingHint": "ページを取得してボードを準備しています…",
+    "loadingDownloading": "ドキュメントをダウンロードしています…",
     "openingDocument": "資料を開いています",
     "loadingPdf": "PDFを読み込み中…",
     "page": "{{page}} ページ"

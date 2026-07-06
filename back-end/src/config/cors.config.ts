@@ -22,5 +22,6 @@ export const corsOptions: CorsOptions = {
 
     callback(new Error("Not allowed by CORS"));
   },
-  credentials: true
+  credentials: true,
+  exposedHeaders: ["Content-Length", "Content-Range", "Accept-Ranges"]
 };
