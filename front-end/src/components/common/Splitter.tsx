@@ -1,11 +1,12 @@
 import { memo, useEffect, useState, type KeyboardEvent } from "react";
 import { cx } from "@/lib/uiClasses";
 
-const MIN_SPLIT = 25;
+const MIN_SPLIT = 0;
 const MAX_SPLIT = 85;
 const DEFAULT_SPLIT = 60;
 const KEYBOARD_STEP = 2;
 const MIN_CHAT_WIDTH = 400;
+const SPLITTER_WIDTH = 0;
 
 function workspaceEl(): HTMLElement | null {
   return document.querySelector<HTMLElement>("[data-workspace]");
@@ -17,7 +18,9 @@ function applySplit(percent: number): void {
   const width = workspace.getBoundingClientRect().width;
   const maxSplit =
     width > 0 ? Math.min(MAX_SPLIT, (1 - MIN_CHAT_WIDTH / width) * 100) : MAX_SPLIT;
-  const clamped = Math.min(maxSplit, Math.max(MIN_SPLIT, percent));
+  const minSplit =
+    width > 0 ? Math.max(MIN_SPLIT, (SPLITTER_WIDTH / width) * 100) : MIN_SPLIT;
+  const clamped = Math.min(maxSplit, Math.max(minSplit, percent));
   workspace.style.setProperty("--split", `${clamped.toFixed(2)}%`);
 }
 
@@ -83,7 +86,7 @@ function SplitterComponent() {
       role="separator"
       aria-orientation="vertical"
       aria-label="Resize document and chat panes"
-      aria-valuemin={MIN_SPLIT}
+      aria-valuemin={0}
       aria-valuemax={MAX_SPLIT}
       tabIndex={0}
       onMouseDown={() => setDragging(true)}
