@@ -13,6 +13,7 @@ interface SendMessageOptions {
 interface ChatStore {
   messages: ChatMessage[];
   isStreaming: boolean;
+  turnId: number;
   abort: () => void;
   resetMessages: () => void;
   sendMessage: (content: string, options?: SendMessageOptions) => Promise<void>;
@@ -44,6 +45,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
   return {
     messages: [],
     isStreaming: false,
+    turnId: 0,
 
     abort: () => {
       abortController?.abort();
@@ -67,7 +69,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
       session.setError(null);
       session.setPendingQuestion(null);
       useSpeechStore.getState().resumeThinkingCue();
-      set({ isStreaming: true });
+      set({ isStreaming: true, turnId: get().turnId + 1 });
 
       const userMessage: ChatMessage = {
         id: crypto.randomUUID(),
