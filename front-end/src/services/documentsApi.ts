@@ -1,5 +1,7 @@
+import axios from "axios";
 import type { DocumentSummary, LoadedDocument } from "@/types";
 import { api, extractErrorMessage, resolveApiUrl } from "@/services/apiBase";
+import { countPdfPages } from "@/lib/pdfPageCount";
 
 export async function endLessonSession(): Promise<void> {
   try {
@@ -29,12 +31,47 @@ export async function listDocuments(): Promise<DocumentSummary[]> {
   }
 }
 
-export async function uploadDocument(file: File): Promise<{ documentId: string }> {
-  const formData = new FormData();
-  formData.append("file", file);
+export async function uploadDocument(
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<{ documentId: string }> {
+  const mimeType = file.type || "application/pdf";
 
   try {
-    const { data } = await api.post<{ documentId?: string }>("/api/documents", formData);
+    // 1) Ask our API for a short-lived presigned PUT URL (instant).
+    const { data: presign } = await api.post<{
+      documentId?: string;
+      url?: string;
+      contentType?: string;
+    }>("/api/documents/upload-url", {
+      filename: file.name,
+      mimeType,
+      size: file.size
+    });
+    if (!presign.documentId || !presign.url) {
+      throw new Error("The file could not be uploaded.");
+    }
+
+    // 2) PUT the bytes directly to S3 — this is the real upload the bar tracks.
+    //    Use a bare axios call (no credentials/baseURL) so nothing extra is sent.
+    await axios.put(presign.url, file, {
+      headers: { "Content-Type": presign.contentType || mimeType },
+      onUploadProgress: (event) => {
+        if (!onProgress) return;
+        const total = event.total ?? file.size;
+        if (!total) return;
+        onProgress(Math.min(100, Math.round((event.loaded / total) * 100)));
+      }
+    });
+
+    // 3) Count pages in the browser and register the document (fast, no transfer).
+    const pageCount = await countPdfPages(file);
+    const { data } = await api.post<{ documentId?: string }>("/api/documents/register", {
+      documentId: presign.documentId,
+      filename: file.name,
+      mimeType,
+      pageCount
+    });
     if (!data.documentId) {
       throw new Error("The file could not be uploaded.");
     }

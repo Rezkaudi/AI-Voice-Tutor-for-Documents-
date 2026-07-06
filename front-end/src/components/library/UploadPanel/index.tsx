@@ -9,6 +9,8 @@ import { ProcessingState } from "./ProcessingState";
 
 interface UploadPanelProps {
   uploadState: UploadState;
+  uploadProgress: number;
+  uploadPhase: "uploading" | "processing";
   error: string | null;
   library: DocumentSummary[];
   libraryLoading: boolean;
@@ -26,6 +28,8 @@ const surface = cx(
 
 export function UploadPanel({
   uploadState,
+  uploadProgress,
+  uploadPhase,
   error,
   library,
   libraryLoading,
@@ -37,7 +41,9 @@ export function UploadPanel({
 }: UploadPanelProps) {
   const { t } = useTranslation();
   if (uploadState === "processing") {
-    return <ProcessingState surfaceClass={surface} />;
+    return (
+      <ProcessingState surfaceClass={surface} progress={uploadProgress} phase={uploadPhase} />
+    );
   }
 
   if (libraryLoading && library.length === 0) {

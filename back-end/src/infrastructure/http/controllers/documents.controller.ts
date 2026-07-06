@@ -5,11 +5,15 @@ import type { GetDocumentUseCase } from "@/application/use-cases/documents/get-d
 import type { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";
 import type { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
 import type { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
+import type { CreateUploadUrlUseCase } from "@/application/use-cases/documents/create-upload-url.use-case";
+import type { RegisterUploadUseCase } from "@/application/use-cases/documents/register-upload.use-case";
 import type { EndLessonSessionUseCase } from "@/application/use-cases/documents/end-lesson-session.use-case";
 
 export class DocumentsController {
   constructor(
     private readonly uploadDocument: UploadDocumentUseCase,
+    private readonly createUploadUrl: CreateUploadUrlUseCase,
+    private readonly registerUpload: RegisterUploadUseCase,
     private readonly getDocument: GetDocumentUseCase,
     private readonly getDocumentFile: GetDocumentFileUseCase,
     private readonly listDocuments: ListDocumentsUseCase,
@@ -42,6 +46,31 @@ export class DocumentsController {
       filename: file.originalname,
       mimeType: file.mimetype,
       size: file.size
+    });
+    res.json(result);
+  };
+
+  /**
+   * POST /api/documents/upload-url — validates a would-be upload and returns a
+   * presigned URL the browser PUTs the file to directly (no bytes touch us).
+   */
+  uploadUrl = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.createUploadUrl.execute({
+      userId: req.auth!.userId,
+      filename: String(req.body.filename),
+      mimeType: String(req.body.mimeType || "application/pdf"),
+      size: Number(req.body.size)
+    });
+    res.json({ documentId: result.documentId, url: result.url, contentType: result.contentType });
+  };
+
+  register = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.registerUpload.execute({
+      userId: req.auth!.userId,
+      documentId: String(req.body.documentId),
+      filename: String(req.body.filename),
+      mimeType: String(req.body.mimeType || "application/pdf"),
+      pageCount: Number(req.body.pageCount)
     });
     res.json(result);
   };

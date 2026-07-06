@@ -8,6 +8,8 @@ import { UploadPanel } from "./UploadPanel";
 export function UploadView() {
   const uploadError = useDocumentStore((s) => s.uploadError);
   const uploadState = useDocumentStore((s) => s.uploadState);
+  const uploadProgress = useDocumentStore((s) => s.uploadProgress);
+  const uploadPhase = useDocumentStore((s) => s.uploadPhase);
   const library = useDocumentStore((s) => s.library);
   const libraryLoading = useDocumentStore((s) => s.libraryLoading);
   const deletingId = useDocumentStore((s) => s.deletingId);
@@ -32,6 +34,8 @@ export function UploadView() {
     >
       <UploadPanel
         uploadState={uploadState}
+        uploadProgress={uploadProgress}
+        uploadPhase={uploadPhase}
         error={uploadError}
         library={library}
         libraryLoading={libraryLoading}
