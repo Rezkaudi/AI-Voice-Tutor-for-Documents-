@@ -7,6 +7,7 @@ import { useSessionStore } from "@/store/sessionStore";
 import { useSpeechStore } from "@/store/speechStore";
 import { useVoiceStore } from "@/store/voiceStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import type { PdfLoadProgress } from "@/hooks/pdf-viewer/usePdfDocument";
 
 export const DESKTOP_QUERY = "(min-width: 920px)";
 
@@ -42,10 +43,16 @@ export function useWorkspaceState() {
 
   const documentId = loadedDocument?.document.id;
   const [boardReady, setBoardReady] = useState(false);
+  const [loadProgress, setLoadProgress] = useState<PdfLoadProgress | null>(null);
   useEffect(() => {
     setBoardReady(false);
+    setLoadProgress(null);
   }, [documentId]);
   const handleBoardReady = useCallback(() => setBoardReady(true), []);
+  const handleLoadProgress = useCallback(
+    (progress: PdfLoadProgress) => setLoadProgress(progress),
+    []
+  );
 
   const session = useSessionStore.getState();
   const documentStore = useDocumentStore.getState();
@@ -79,9 +86,11 @@ export function useWorkspaceState() {
     micBlocked: micPermission === "denied",
     restartDisabled: messages.length === 0 && !callMode,
     showLoadingCover: !boardReady || uploadState === "processing",
+    loadProgress: uploadState === "processing" ? null : loadProgress,
     pageCount: loadedDocument?.document.pageCount ?? 0,
     handleBack,
     handleBoardReady,
+    handleLoadProgress,
     session,
     documentStore
   };

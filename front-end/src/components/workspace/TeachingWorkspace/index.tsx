@@ -23,12 +23,13 @@ export function TeachingWorkspace() {
       onPageChange={documentStore.setActivePage}
       onFocusCitation={documentStore.focusCitation}
       onReady={vm.handleBoardReady}
+      onProgress={vm.handleLoadProgress}
     />
   );
 
   const loadingCover = vm.showLoadingCover ? (
     <div className="absolute inset-0 z-60 bg-paper">
-      <DocumentLoadingOverlay />
+      <DocumentLoadingOverlay progress={vm.loadProgress} />
     </div>
   ) : null;
 

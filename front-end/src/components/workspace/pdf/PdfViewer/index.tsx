@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { DocumentCitation } from "@/types";
 import { PdfPage } from "./PdfPage";
-import { usePdfDocument } from "@/hooks/pdf-viewer/usePdfDocument";
+import { usePdfDocument, type PdfLoadProgress } from "@/hooks/pdf-viewer/usePdfDocument";
 import { FALLBACK_ASPECT, usePageAspects } from "@/hooks/pdf-viewer/usePageAspects";
 import { usePageWindowing } from "@/hooks/pdf-viewer/usePageWindowing";
 import { useScrollSync } from "@/hooks/pdf-viewer/useScrollSync";
@@ -12,6 +12,7 @@ interface PdfViewerProps {
   citations: DocumentCitation[];
   focusCitationKey: string | null;
   onLoaded?: () => void;
+  onProgress?: (progress: PdfLoadProgress) => void;
   onVisiblePageChange?: (page: number) => void;
 }
 
@@ -21,13 +22,14 @@ export function PdfViewer({
   citations,
   focusCitationKey,
   onLoaded,
+  onProgress,
   onVisiblePageChange
 }: PdfViewerProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [fitWidth, setFitWidth] = useState(0);
 
-  const { pdf, error } = usePdfDocument(fileUrl, onLoaded);
+  const { pdf, error } = usePdfDocument(fileUrl, onLoaded, onProgress);
   const aspects = usePageAspects(pdf);
 
   const numPages = pdf?.numPages ?? 0;

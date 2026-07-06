@@ -6,10 +6,12 @@ import {
   S3Client
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import type { Readable } from "node:stream";
 import { UpstreamError } from "@/domain/errors/app-error";
 import type {
   FileStorage,
   RetrievedFile,
+  RetrievedFileStream,
   StoredFileInput,
   StoredFileMetadata
 } from "@/domain/services/file-storage";
@@ -113,6 +115,30 @@ export class S3FileStorage implements FileStorage {
       return {
         body,
         contentType: response.ContentType ?? "application/octet-stream"
+      };
+    } catch (error) {
+      if (isNotFound(error)) {
+        return null;
+      }
+      throw new UpstreamError(
+        `Failed to read the document file: ${describe(error)}`
+      );
+    }
+  }
+
+  async getStream(key: string): Promise<RetrievedFileStream | null> {
+    try {
+      const response = await this.client.send(
+        new GetObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key })
+      );
+      if (!response.Body) {
+        return null;
+      }
+      return {
+        body: response.Body as Readable,
+        contentType: response.ContentType ?? "application/octet-stream",
+        contentLength: response.ContentLength,
+        eTag: response.ETag
       };
     } catch (error) {
       if (isNotFound(error)) {

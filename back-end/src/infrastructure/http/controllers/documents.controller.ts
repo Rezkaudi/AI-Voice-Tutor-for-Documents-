@@ -85,8 +85,24 @@ export class DocumentsController {
     const result = await this.getDocumentFile.execute(req.params.id, req.auth!.userId);
     res.setHeader("Content-Type", result.contentType);
     res.setHeader("Content-Disposition", contentDisposition(result.fileName));
-    res.setHeader("Content-Length", result.body.length);
-    res.send(result.body);
+    res.setHeader("Cache-Control", "private, max-age=31536000, immutable");
+    if (result.eTag) res.setHeader("ETag", result.eTag);
+    if (typeof result.contentLength === "number") {
+      res.setHeader("Content-Length", result.contentLength);
+    }
+
+    const source = result.body;
+    res.on("close", () => {
+      if (!source.destroyed) source.destroy();
+    });
+    source.on("error", (error: Error) => {
+      if (!res.headersSent) {
+        res.status(502).json({ message: "Failed to stream the document file." });
+      } else {
+        res.destroy(error);
+      }
+    });
+    source.pipe(res);
   };
 }
 

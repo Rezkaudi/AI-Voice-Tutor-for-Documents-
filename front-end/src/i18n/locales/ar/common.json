@@ -206,6 +206,7 @@
     "tabTeacher": "المعلّم",
     "loadingDocument": "جارٍ تحميل المستند",
     "loadingHint": "جارٍ جلب الصفحات وتجهيز اللوحة…",
+    "loadingDownloading": "جارٍ تنزيل المستند…",
     "openingDocument": "جارٍ فتح المستند",
     "loadingPdf": "جارٍ تحميل PDF…",
     "page": "صفحة {{page}}"

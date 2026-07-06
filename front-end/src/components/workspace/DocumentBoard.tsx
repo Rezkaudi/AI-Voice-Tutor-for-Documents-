@@ -5,6 +5,7 @@ import type { DocumentReference } from "@/types";
 import { citationKey } from "@/store/documentStore";
 import { CitationChips } from "@/components/workspace/pdf/CitationChips";
 import { PdfViewer } from "@/components/workspace/pdf/PdfViewer";
+import type { PdfLoadProgress } from "@/hooks/pdf-viewer/usePdfDocument";
 
 interface DocumentBoardProps {
   fileUrl: string | null;
@@ -16,6 +17,7 @@ interface DocumentBoardProps {
   onPageChange: (page: number) => void;
   onFocusCitation: (citation: DocumentReference["citations"][number]) => void;
   onReady?: () => void;
+  onProgress?: (progress: PdfLoadProgress) => void;
 }
 
 function DocumentBoardComponent({
@@ -26,7 +28,8 @@ function DocumentBoardComponent({
   highlight,
   activeCitationKey,
   onFocusCitation,
-  onReady
+  onReady,
+  onProgress
 }: DocumentBoardProps) {
   const { t } = useTranslation();
   const isPdf = mimeType === "application/pdf" && !!fileUrl;
@@ -59,6 +62,7 @@ function DocumentBoardComponent({
             citations={citations}
             focusCitationKey={activeCitationKey}
             onLoaded={() => onReady?.()}
+            onProgress={onProgress}
             onVisiblePageChange={setVisiblePage}
           />
         </div>
