@@ -40,6 +40,8 @@
     "pdfLimit": "PDF files up to 25MB.",
     "dropHint": "Drop a file here, or <choose>choose file</choose>",
     "pdfHint": "Use a text-based PDF. Image-only or scanned documents can't be read and won't work.",
+    "uploadingTitle": "Uploading your document",
+    "uploadingBody": "Sending your file — please keep this tab open.",
     "processingTitle": "Preparing your document",
     "processingBody": "Extracting pages, building lesson passages, and warming up the teacher.",
     "loadingLibrary": "Loading your library…",

@@ -6,6 +6,8 @@ import { GetDocumentUseCase } from "@/application/use-cases/documents/get-docume
 import { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";
 import { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
 import { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
+import { CreateUploadUrlUseCase } from "@/application/use-cases/documents/create-upload-url.use-case";
+import { RegisterUploadUseCase } from "@/application/use-cases/documents/register-upload.use-case";
 import { LoadLessonPagesUseCase } from "@/application/use-cases/documents/load-lesson-pages.use-case";
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
 import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
@@ -124,6 +126,20 @@ export async function buildContainer(): Promise<Container> {
     idGenerator,
     logger
   );
+  const createUploadUrl = new CreateUploadUrlUseCase(
+    fileStorage,
+    uploadValidator,
+    fileNaming,
+    idGenerator,
+    logger
+  );
+  const registerUpload = new RegisterUploadUseCase(
+    documentRepository,
+    fileStorage,
+    uploadValidator,
+    fileNaming,
+    logger
+  );
   const loadLessonPages = new LoadLessonPagesUseCase(
     fileStorage,
     textExtractor,
@@ -173,6 +189,8 @@ export async function buildContainer(): Promise<Container> {
   const deps: ServerDependencies = {
     documents: new DocumentsController(
       uploadDocument,
+      createUploadUrl,
+      registerUpload,
       getDocument,
       getDocumentFile,
       listDocuments,

@@ -3,7 +3,7 @@ import { Router } from "express";
 import { asyncHandler } from "@/infrastructure/http/middleware/async-handler";
 import { documentUpload } from "@/infrastructure/http/middleware/document-upload";
 import type { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
-import { documentIdParamValidation, uploadDocumentValidation } from "@/infrastructure/http/validations/document.validation";
+import { documentIdParamValidation, registerUploadValidation, uploadDocumentValidation, uploadUrlValidation } from "@/infrastructure/http/validations/document.validation";
 
 export function buildDocumentRoutes(controller: DocumentsController): Router {
   const router = Router();
@@ -15,6 +15,16 @@ export function buildDocumentRoutes(controller: DocumentsController): Router {
     documentUpload.single("file"),
     uploadDocumentValidation,
     asyncHandler(controller.upload)
+  );
+  router.post(
+    "/documents/upload-url",
+    uploadUrlValidation,
+    asyncHandler(controller.uploadUrl)
+  );
+  router.post(
+    "/documents/register",
+    registerUploadValidation,
+    asyncHandler(controller.register)
   );
   router.get(
     "/documents/:id",

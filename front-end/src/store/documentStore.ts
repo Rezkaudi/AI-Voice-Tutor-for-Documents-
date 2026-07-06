@@ -20,6 +20,8 @@ const LAST_DOC_KEY = "lastDocumentId";
 interface DocumentStore {
   loadedDocument: LoadedDocument | null;
   uploadState: UploadState;
+  uploadProgress: number;
+  uploadPhase: "uploading" | "processing";
   activePage: number;
   highlight: DocumentReference | null;
 
@@ -44,6 +46,8 @@ interface DocumentStore {
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
   loadedDocument: null,
   uploadState: "idle",
+  uploadProgress: 0,
+  uploadPhase: "uploading",
   activePage: 1,
   highlight: null,
   activeCitationKey: null,
@@ -115,11 +119,26 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       return null;
     }
 
-    set({ uploadState: "processing", highlight: null, activeCitationKey: null, uploadError: null });
+    set({
+      uploadState: "processing",
+      uploadProgress: 0,
+      uploadPhase: "uploading",
+      highlight: null,
+      activeCitationKey: null,
+      uploadError: null
+    });
     useSessionStore.getState().setError(null);
 
     try {
-      const { documentId } = await uploadDocument(file);
+      // Real byte-transfer progress from the direct-to-S3 upload — no simulation.
+      const { documentId } = await uploadDocument(file, (percent) => {
+        set({ uploadProgress: percent });
+      });
+
+      // Bytes are in S3; the remaining register + page fetch have no measurable
+      // progress, so we show the spinner instead of a stalled bar.
+      set({ uploadPhase: "processing", uploadProgress: 100 });
+
       const data = await fetchDocument(documentId);
       set({ loadedDocument: data, activePage: data.pages[0]?.pageNumber ?? 1 });
       window.localStorage.setItem(LAST_DOC_KEY, documentId);
@@ -129,7 +148,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       set({ uploadError: error instanceof Error ? error.message : "Upload failed." });
       return null;
     } finally {
-      set({ uploadState: "idle" });
+      set({ uploadState: "idle", uploadProgress: 0, uploadPhase: "uploading" });
     }
   },
 

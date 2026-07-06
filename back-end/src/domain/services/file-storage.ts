@@ -9,8 +9,15 @@ export interface RetrievedFile {
   readonly contentType: string;
 }
 
+export interface StoredFileMetadata {
+  readonly size: number;
+  readonly contentType: string;
+}
+
 export interface FileStorage {
   put(input: StoredFileInput): Promise<void>;
   get(key: string): Promise<RetrievedFile | null>;
   delete(key: string): Promise<void>;
+  presignPut(key: string, contentType: string, expiresInSeconds?: number): Promise<string>;
+  head(key: string): Promise<StoredFileMetadata | null>;
 }
