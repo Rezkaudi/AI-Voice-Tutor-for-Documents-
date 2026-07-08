@@ -1,3 +1,5 @@
+import type { TutorStreamEvent } from "@/domain/services/tutor-service";
+
 export interface PendingToolCall {
   callId: string;
   name: string;
@@ -17,9 +19,15 @@ export interface StreamStep {
   usage?: StepUsage;
 }
 
+export interface StreamDelta {
+  type: "delta";
+  text: string;
+}
 
 export class OpenAiResponseStreamReader {
-  async read(stream: AsyncIterable<Record<string, unknown>>): Promise<StreamStep> {
+  async *read(
+    stream: AsyncIterable<Record<string, unknown>>
+  ): AsyncGenerator<TutorStreamEvent, StreamStep> {
     const toolCalls: PendingToolCall[] = [];
     const textByOutputIndex = new Map<number, string>();
     let responseId: string | undefined;
@@ -32,6 +40,7 @@ export class OpenAiResponseStreamReader {
       ) {
         const index = typeof event.output_index === "number" ? event.output_index : 0;
         textByOutputIndex.set(index, (textByOutputIndex.get(index) ?? "") + event.delta);
+        yield { type: "delta", text: event.delta };
       } else if (event.type === "response.output_item.done") {
         const item = event.item as Record<string, unknown> | undefined;
         if (item?.type === "function_call") {
@@ -51,8 +60,7 @@ export class OpenAiResponseStreamReader {
     }
 
     const lastIndex = [...textByOutputIndex.keys()].sort((a, b) => a - b).pop();
-    const stepText =
-      lastIndex === undefined ? "" : (textByOutputIndex.get(lastIndex) ?? "");
+    const stepText = lastIndex === undefined ? "" : (textByOutputIndex.get(lastIndex) ?? "");
 
     return { toolCalls, stepText, responseId, usage };
   }

@@ -1,4 +1,4 @@
-import { extractSentences } from "@/lib/sentences";
+import { extractSpeechSegments } from "@/lib/sentences";
 import { readEventStream } from "@/lib/sse";
 import type { DocumentCitation, DocumentReference, SpeechSession } from "@/types";
 
@@ -28,8 +28,16 @@ export async function runChatStream({
   const refBox: { current: DocumentReference | null } = { current: null };
 
   const pendingTimers: { current: number[] } = { current: [] };
+  let speechStopped = false;
 
   const pushSentence = (sentence: string) => {
+    const trimmed = sentence.trim();
+    const upper = trimmed.toUpperCase();
+
+    if (upper === "CITATIONS" || upper.startsWith("CITATIONS:") || /^\s*\[\[\d+\]\]\s*page\s*[=:]?\s*\d+/i.test(trimmed)) {
+      return;
+    }
+
     const spoken = stripCitationMarkers(sentence);
     if (!spoken) return;
     const indices = uniqueMarkerIndices(sentence);
@@ -64,12 +72,21 @@ export async function runChatStream({
 
     if (event.event === "delta") {
       assistantText += event.data.text;
-      onText(assistantText);
+      const trailer = citationTrailerStart(assistantText);
+      if (trailer !== null) {
+        speechStopped = true;
+        assistantText = assistantText.slice(0, trailer).trimEnd();
+      }
+      onText(stripAskDelimiters(assistantText));
 
-      const { sentences, consumed } = extractSentences(assistantText.slice(spokenChars));
-      if (consumed > 0) {
-        spokenChars += consumed;
-        sentences.forEach(pushSentence);
+      if (!speechStopped) {
+        const { sentences, consumed } = extractSpeechSegments(assistantText.slice(spokenChars), {
+          allowEarlySegment: spokenChars === 0
+        });
+        if (consumed > 0) {
+          spokenChars += consumed;
+          sentences.forEach(pushSentence);
+        }
       }
       return;
     }
@@ -88,6 +105,8 @@ export async function runChatStream({
   if (tail) pushSentence(tail);
   await speechSession.finished();
   pendingTimers.current.forEach((id) => window.clearTimeout(id));
+  assistantText = stripAskDelimiters(assistantText);
+  onText(assistantText);
 
   if (signal.aborted) return assistantText;
 
@@ -107,7 +126,18 @@ export async function runChatStream({
 }
 
 function stripCitationMarkers(text: string): string {
-  return text.replace(/\[\[\d+\]\]/g, "").replace(/[ \t]{2,}/g, " ");
+  return stripAskDelimiters(text)
+    .replace(/\[\[\d+\]\]/g, "")
+    .replace(/[ \t]{2,}/g, " ");
+}
+
+function stripAskDelimiters(text: string): string {
+  return text.replace(/\[\[\/?ASK\]\]/g, "");
+}
+
+function citationTrailerStart(text: string): number | null {
+  const match = /^[ \t]*CITATIONS:?[ \t]*$/im.exec(text);
+  return match?.index ?? null;
 }
 
 function uniqueMarkerIndices(sentence: string): number[] {
