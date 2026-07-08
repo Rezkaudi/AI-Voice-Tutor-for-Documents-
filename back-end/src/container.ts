@@ -25,7 +25,6 @@ import { TokenSimilarity } from "@/domain/logic/citation/token-similarity";
 import { QuoteLocator } from "@/domain/logic/citation/quote-locator";
 import { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
 import { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
-import { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
 import { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
 import { DocumentChunker } from "@/domain/logic/retrieval/document-chunker";
 import { UploadValidator } from "@/domain/logic/upload-validator";
@@ -83,7 +82,6 @@ export async function buildContainer(): Promise<Container> {
   const citationResolver = new CitationResolver(quoteLocator, textNormalizer);
   const referenceFactory = new DocumentReferenceFactory();
   const referenceSelector = new ReferenceSelector(citationResolver, referenceFactory);
-  const citationMarkerReconciler = new CitationMarkerReconciler();
   const learnerQuestionExtractor = new LearnerQuestionExtractor();
   const documentChunker = new DocumentChunker(idGenerator, textNormalizer);
   const uploadValidator = new UploadValidator();
@@ -106,7 +104,6 @@ export async function buildContainer(): Promise<Container> {
     ENV_CONFIG,
     tutorToolExecutor,
     referenceSelector,
-    citationMarkerReconciler,
     learnerQuestionExtractor,
     logger
   );

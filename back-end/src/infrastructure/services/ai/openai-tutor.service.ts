@@ -2,8 +2,8 @@ import OpenAI from "openai";
 import type { Reference } from "@/domain/entities/chat";
 import type { CitationCandidate } from "@/domain/logic/citation/citation-resolver";
 import type { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
-import type { CitationMarkerReconciler } from "@/domain/logic/citation/citation-marker-reconciler";
 import type { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
+import { StreamedReplySanitizer } from "@/domain/logic/streamed-reply-sanitizer";
 import type { TutorReplyRequest, TutorService, TutorStreamEvent } from "@/domain/services/tutor-service";
 import type { EnvConfig } from "@/config/env.config";
 import type { Logger } from "@/domain/services/logger";
@@ -32,7 +32,6 @@ export class OpenAiTutorService implements TutorService {
     config: EnvConfig,
     private readonly tools: TutorToolExecutor,
     private readonly referenceSelector: ReferenceSelector,
-    private readonly markerReconciler: CitationMarkerReconciler,
     private readonly questionExtractor: LearnerQuestionExtractor,
     private readonly logger: Logger
   ) {
@@ -59,6 +58,7 @@ export class OpenAiTutorService implements TutorService {
 
     let pendingInput = this.requests.initialInput(request, settings);
     let previousResponseId: string | undefined;
+    const sanitizer = new StreamedReplySanitizer();
 
     let inputTokens = 0;
     let outputTokens = 0;
@@ -88,7 +88,13 @@ export class OpenAiTutorService implements TutorService {
       let event: IteratorResult<TutorStreamEvent, StreamStep>;
 
       while (!(event = await iterator.next()).done) {
-        yield event.value;
+        const value = event.value;
+        if (value.type === "delta") {
+          const cleaned = sanitizer.push(value.text);
+          if (cleaned) yield { type: "delta", text: cleaned };
+        } else {
+          yield value;
+        }
       }
 
       const { toolCalls, stepText, responseId, usage } = event.value;
@@ -121,19 +127,28 @@ export class OpenAiTutorService implements TutorService {
           );
           log.detail("final answer (full)", spokenText);
 
+          const leftover = sanitizer.flush();
+          if (leftover) {
+            yield { type: "delta", text: leftover };
+          }
+
+          // Citations stay in trailer-label order so the streamed [[N]]
+          // markers index them directly; the client reconciles once against
+          // the text it actually displays.
           const reference = this.referenceSelector.select({
             referencesByPage: state.referencesByPage,
             pages: request.pages,
             chunks: request.chunks,
             citedCandidates: state.citedCandidates
           });
-          const aligned = this.markerReconciler.reconcile(spokenText, reference);
-          if (aligned.reference) {
-            yield { type: "reference", reference: aligned.reference };
+          if (reference) {
+            log.info(`citation → page ${reference.pageNumber}`);
+            yield { type: "reference", reference };
           }
 
-          const { question } = this.questionExtractor.extract(aligned.text);
+          const { question } = this.questionExtractor.extract(spokenText);
           if (question) {
+            log.info(`learner question → "${this.logger.preview(question)}"`);
             yield { type: "question", text: question };
           }
         } else {
