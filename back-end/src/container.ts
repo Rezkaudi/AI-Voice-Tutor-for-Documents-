@@ -154,6 +154,7 @@ export async function buildContainer(): Promise<Container> {
   const streamChat = new StreamChatUseCase(
     documentRepository,
     tutorService,
+    speechService,
     historySanitizer,
     loadLessonPages,
     costTracker,
