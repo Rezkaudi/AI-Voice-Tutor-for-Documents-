@@ -31,6 +31,7 @@ import { UploadValidator } from "@/domain/logic/upload-validator";
 import { FileNaming } from "@/domain/logic/file-naming";
 import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
 import { CostCalculator } from "@/domain/logic/cost/cost-calculator";
+import { ReadingOrderBuilder } from "@/domain/logic/pdf/reading-order-builder";
 
 import { initializeDatabase } from "@/infrastructure/database/data-source";
 import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositories/typeorm-document.repository";
@@ -42,7 +43,10 @@ import { JwtTokenService } from "@/infrastructure/services/auth/jwt-token.servic
 import { CryptoIdGenerator } from "@/infrastructure/services/generators/crypto-id-generator";
 
 import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage";
-import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
+// import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
+import { PdfiumPageRenderer } from "@/infrastructure/services/documents/pdfium-page-renderer";
+import { PaddleOcrTextExtractor } from "@/infrastructure/services/documents/paddle-ocr-text-extractor";
+import { DocLayoutRegionDetector } from "@/infrastructure/services/documents/doclayout-region-detector";
 import { InMemoryPageCache } from "@/infrastructure/services/cache/in-memory-page-cache";
 import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.service";
 import { TutorToolExecutor } from "@/infrastructure/services/ai/tutor-tool-executor";
@@ -88,6 +92,7 @@ export async function buildContainer(): Promise<Container> {
   const fileNaming = new FileNaming();
   const historySanitizer = new ChatHistorySanitizer();
   const costCalculator = new CostCalculator(MODEL_PRICING, logger);
+  const readingOrderBuilder = new ReadingOrderBuilder();
 
   // ─── Infrastructure adapters (implement domain ports) ────────────────────
   const documentRepository = new TypeOrmDocumentRepository(dataSource, idGenerator);
@@ -96,7 +101,14 @@ export async function buildContainer(): Promise<Container> {
   const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
   const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
-  const textExtractor = PdfJsTextExtractor.createDefault();
+  const textExtractor = new PaddleOcrTextExtractor(
+    new PdfiumPageRenderer(),
+    new DocLayoutRegionDetector(logger),
+    readingOrderBuilder,
+    textNormalizer,
+    logger
+  );
+  // const textExtractor = PdfJsTextExtractor.createDefault();
   const pageCache = new InMemoryPageCache();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
   const tutorToolExecutor = new TutorToolExecutor(embeddingService, chunkRanker, referenceFactory);
