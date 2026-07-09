@@ -42,7 +42,9 @@ import { JwtTokenService } from "@/infrastructure/services/auth/jwt-token.servic
 import { CryptoIdGenerator } from "@/infrastructure/services/generators/crypto-id-generator";
 
 import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage";
-import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
+// import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
+import { PdfiumPageRenderer } from "@/infrastructure/services/documents/pdfium-page-renderer";
+import { PaddleOcrTextExtractor } from "@/infrastructure/services/documents/paddle-ocr-text-extractor";
 import { InMemoryPageCache } from "@/infrastructure/services/cache/in-memory-page-cache";
 import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.service";
 import { TutorToolExecutor } from "@/infrastructure/services/ai/tutor-tool-executor";
@@ -96,7 +98,12 @@ export async function buildContainer(): Promise<Container> {
   const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
   const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
-  const textExtractor = PdfJsTextExtractor.createDefault();
+  const textExtractor = new PaddleOcrTextExtractor(
+    new PdfiumPageRenderer(),
+    textNormalizer,
+    logger
+  );
+  // const textExtractor = PdfJsTextExtractor.createDefault();
   const pageCache = new InMemoryPageCache();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
   const tutorToolExecutor = new TutorToolExecutor(embeddingService, chunkRanker, referenceFactory);
