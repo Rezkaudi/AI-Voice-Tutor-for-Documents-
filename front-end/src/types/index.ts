@@ -76,6 +76,9 @@ export type StreamEvent =
   | { event: "meta"; data: { reference: DocumentReference | null } }
   | { event: "delta"; data: { text: string } }
   | { event: "question"; data: { text: string } }
+  | { event: "speech-start"; data: { id: number; text: string; markers: number[] } }
+  | { event: "speech-chunk"; data: { id: number; audio: string } }
+  | { event: "speech-end"; data: { id: number } }
   | { event: "done"; data: Record<string, unknown> }
   | { event: "error"; data: { error: string } };
 
@@ -100,8 +103,15 @@ export interface SpeechCaption {
   rtl: boolean;
 }
 
+export interface SpokenUtterance {
+  /** Marker-free sentence used for captions and the voice fallback. */
+  text: string;
+  /** Synthesized audio streamed from the backend; null falls back to on-device speech. */
+  clip: Blob | null;
+}
+
 export interface SpeechSession {
-  push: (sentence: string, onPlaybackStart?: (durationMs: number) => void) => void;
+  push: (utterance: SpokenUtterance, onPlaybackStart?: (durationMs: number) => void) => void;
   finished: () => Promise<void>;
 }
 

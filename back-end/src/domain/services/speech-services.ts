@@ -6,8 +6,15 @@ export interface SynthesizedSpeech {
   readonly usage: AiUsage;
 }
 
+export interface SynthesizedSpeechStream {
+  readonly audio: AsyncIterable<Buffer>;
+  readonly contentType: string;
+  readonly usage: AiUsage;
+}
+
 export interface SpeechSynthesisService {
   synthesize(text: string, signal?: AbortSignal): Promise<SynthesizedSpeech>;
+  synthesizeStream(text: string, signal?: AbortSignal): Promise<SynthesizedSpeechStream>;
 }
 
 export interface TranscriptionInput {

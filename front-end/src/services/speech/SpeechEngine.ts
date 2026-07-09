@@ -1,16 +1,14 @@
-import { fetchSpeechClip } from "../speechApi";
 import { segmentText } from "@/lib/textSegmentation";
-import type { SpeechCaption, SpeechSession } from "@/types";
+import type { SpeechCaption, SpeechSession, SpokenUtterance } from "@/types";
 import { CaptionController } from "./CaptionController";
 import { playAudioClip, revokeBlobUrl } from "./audioPlayback";
 import { unlockAudioPlayback } from "./audioUnlock";
 import { playWithSpeechSynthesis } from "./speechSynthesisPlayback";
-import { ESTIMATED_WORD_SECONDS, MAX_TTS_CHARS } from "./constants";
+import { ESTIMATED_WORD_SECONDS } from "./constants";
 
 export class SpeechEngine {
   private audio: HTMLAudioElement | null = null;
   private sessionId = 0;
-  private speakAbort: AbortController | null = null;
   private paused = false;
   private preparing = false;
 
@@ -65,8 +63,6 @@ export class SpeechEngine {
   stopSpeaking(): void {
     this.sessionId += 1;
     this.setPreparing(false);
-    this.speakAbort?.abort();
-    this.speakAbort = null;
     const audio = this.audio;
     if (audio) {
       audio.pause();
@@ -84,8 +80,6 @@ export class SpeechEngine {
   createSession(): SpeechSession {
     const sessionId = ++this.sessionId;
     const isStale = () => sessionId !== this.sessionId;
-    const controller = new AbortController();
-    this.speakAbort = controller;
     let chain: Promise<void> = Promise.resolve();
     this.setPreparing(true);
     const onSpeakingChange = (value: boolean) => {
@@ -93,19 +87,13 @@ export class SpeechEngine {
       this.onSpeakingChange(value);
     };
 
-    const push = (sentence: string, onPlaybackStart?: (durationMs: number) => void) => {
+    const push = (utterance: SpokenUtterance, onPlaybackStart?: (durationMs: number) => void) => {
 
-      const segmented = segmentText(sentence);
+      const segmented = segmentText(utterance.text);
       if (segmented.words.length === 0) return;
-      const speechText = segmented.clean.slice(0, MAX_TTS_CHARS);
-
-      const clip = isStale()
-        ? Promise.resolve(null)
-        : fetchSpeechClip(speechText, controller.signal);
+      const blob = utterance.clip;
 
       chain = chain.then(async () => {
-        if (isStale()) return;
-        const blob = await clip;
         if (isStale()) return;
 
         const onStart = onPlaybackStart

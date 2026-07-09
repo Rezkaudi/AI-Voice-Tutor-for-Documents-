@@ -2,10 +2,14 @@ import type { StreamEvent } from "@/application/dto/stream-event";
 import type { ChatMessage } from "@/domain/entities/chat";
 import { NotFoundError, ValidationError } from "@/domain/errors/app-error";
 import type { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
+import { SentenceStreamSegmenter } from "@/domain/logic/speech/sentence-stream-segmenter";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
+import type { SpeechSynthesisService } from "@/domain/services/speech-services";
 import type { TutorService } from "@/domain/services/tutor-service";
 import type { Logger } from "@/domain/services/logger";
 import type { CostTracker } from "@/application/services/cost-tracker";
+import { AsyncEventQueue } from "@/application/services/async-event-queue";
+import { ReplySpeechStreamer } from "@/application/services/reply-speech-streamer";
 import type { LoadLessonPagesUseCase } from "@/application/use-cases/documents/load-lesson-pages.use-case";
 import { MAX_LESSON_PAGES } from "@/config/constant.config";
 
@@ -23,6 +27,7 @@ export class StreamChatUseCase {
   constructor(
     private readonly repository: DocumentRepository,
     private readonly tutor: TutorService,
+    private readonly speech: SpeechSynthesisService,
     private readonly historySanitizer: ChatHistorySanitizer,
     private readonly loadLessonPages: LoadLessonPagesUseCase,
     private readonly costTracker: CostTracker,
@@ -82,55 +87,86 @@ export class StreamChatUseCase {
     }
 
     const tutor = this.tutor;
+    const speech = this.speech;
     const costTracker = this.costTracker;
     const userId = input.userId;
 
     return (async function* stream(): AsyncGenerator<StreamEvent> {
       yield { event: "meta", data: { reference: null } };
 
-      let deltaCount = 0;
-      try {
-        for await (const event of tutor.streamReply(
-          {
-            document,
-            message,
-            language: input.language,
-            history,
-            pages,
-            chunks,
-            selectedPages,
-            saveCost: input.saveCost
-          },
-          signal
-        )) {
-          if (event.type === "reference") {
-            log.info(`emitting citation → page ${event.reference.pageNumber}`);
-            console.log(`[reference] ${JSON.stringify(event.reference)}`);
-            yield { event: "meta", data: { reference: event.reference } };
-          } else if (event.type === "question") {
-            yield { event: "question", data: { text: event.text } };
-          } else if (event.type === "usage") {
-            await costTracker.track(userId, event.usage, { countAsQuestion: true });
-          } else {
-            deltaCount += 1;
-            console.log(`[text] ${event.text}`);
-            yield { event: "delta", data: { text: event.text } };
+      // Tutor deltas and synthesized audio are produced concurrently and
+      // interleaved through one queue: text is never delayed by synthesis,
+      // and each sentence's audio starts the moment the sentence completes.
+      const queue = new AsyncEventQueue<StreamEvent>();
+      const segmenter = new SentenceStreamSegmenter();
+      const speaker = new ReplySpeechStreamer(
+        speech,
+        (event) => queue.push(event),
+        signal,
+        log
+      );
+
+      const producing = (async () => {
+        let deltaCount = 0;
+        try {
+          for await (const event of tutor.streamReply(
+            {
+              document,
+              message,
+              language: input.language,
+              history,
+              pages,
+              chunks,
+              selectedPages,
+              saveCost: input.saveCost
+            },
+            signal
+          )) {
+            if (event.type === "reference") {
+              log.info(`emitting citation → page ${event.reference.pageNumber}`);
+              queue.push({ event: "meta", data: { reference: event.reference } });
+            } else if (event.type === "question") {
+              queue.push({ event: "question", data: { text: event.text } });
+            } else if (event.type === "usage") {
+              await costTracker.track(userId, event.usage, { countAsQuestion: true });
+            } else {
+              deltaCount += 1;
+              queue.push({ event: "delta", data: { text: event.text } });
+              for (const sentence of segmenter.push(event.text)) {
+                speaker.speak(sentence);
+              }
+            }
           }
+
+          const tail = segmenter.flush();
+          if (tail) speaker.speak(tail);
+
+          const ttsUsage = await speaker.finish();
+          if (ttsUsage) await costTracker.track(userId, ttsUsage);
+
+          log.info(`answer complete · ${deltaCount} delta(s) streamed`);
+          queue.push({ event: "done", data: {} });
+          queue.end();
+        } catch (error) {
+          if (signal.aborted) {
+            log.info("learner aborted mid-answer — closing stream quietly");
+            queue.end();
+            return;
+          }
+          const reason =
+            error instanceof Error
+              ? error.message
+              : "The teacher could not answer right now.";
+          log.error(`answer failed — ${reason}`);
+          queue.push({ event: "error", data: { error: reason } });
+          queue.end();
         }
-        log.info(`answer complete · ${deltaCount} delta(s) streamed`);
-        yield { event: "done", data: {} };
-      } catch (error) {
-        if (signal.aborted) {
-          log.info("learner aborted mid-answer — closing stream quietly");
-          return;
-        }
-        const reason =
-          error instanceof Error
-            ? error.message
-            : "The teacher could not answer right now.";
-        log.error(`answer failed — ${reason}`);
-        yield { event: "error", data: { error: reason } };
+      })();
+
+      for await (const event of queue) {
+        yield event;
       }
+      await producing;
     })();
   }
 }

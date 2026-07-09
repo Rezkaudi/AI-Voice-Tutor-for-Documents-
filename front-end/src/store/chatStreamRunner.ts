@@ -1,4 +1,3 @@
-import { extractSentences } from "@/lib/sentences";
 import { readEventStream } from "@/lib/sse";
 import type { DocumentCitation, DocumentReference, SpeechSession } from "@/types";
 
@@ -12,6 +11,12 @@ interface RunChatStreamDeps {
   onQuestion: (question: string | null) => void;
 }
 
+interface PendingClip {
+  text: string;
+  markers: number[];
+  parts: Uint8Array<ArrayBuffer>[];
+}
+
 export async function runChatStream({
   body,
   speechSession,
@@ -22,23 +27,21 @@ export async function runChatStream({
   onQuestion
 }: RunChatStreamDeps): Promise<string> {
   let assistantText = "";
-  let spokenChars = 0;
   let pendingQuestion: string | null = null;
 
   const refBox: { current: DocumentReference | null } = { current: null };
 
   const pendingTimers: { current: number[] } = { current: [] };
+  const pendingClips = new Map<number, PendingClip>();
 
-  const pushSentence = (sentence: string) => {
-    const spoken = stripCitationMarkers(sentence);
-    if (!spoken) return;
-    const indices = uniqueMarkerIndices(sentence);
-    if (indices.length === 0) {
-
-      speechSession.push(spoken);
+  const playClip = (clip: PendingClip) => {
+    const blob = clip.parts.length > 0 ? new Blob(clip.parts, { type: "audio/mpeg" }) : null;
+    const utterance = { text: clip.text, clip: blob };
+    if (clip.markers.length === 0) {
+      speechSession.push(utterance);
       return;
     }
-    speechSession.push(spoken, (durationMs) => {
+    speechSession.push(utterance, (durationMs) => {
       pendingTimers.current.forEach((id) => window.clearTimeout(id));
       pendingTimers.current = [];
       const citations = refBox.current?.citations ?? [];
@@ -46,10 +49,10 @@ export async function runChatStream({
         const c = citations[n - 1];
         if (c) onFocusCitation(c);
       };
-      focusAt(indices[0]!);
-      for (let i = 1; i < indices.length; i += 1) {
-        const delay = (durationMs * i) / indices.length;
-        const id = window.setTimeout(() => focusAt(indices[i]!), delay);
+      focusAt(clip.markers[0]!);
+      for (let i = 1; i < clip.markers.length; i += 1) {
+        const delay = (durationMs * i) / clip.markers.length;
+        const id = window.setTimeout(() => focusAt(clip.markers[i]!), delay);
         pendingTimers.current.push(id);
       }
     });
@@ -65,12 +68,27 @@ export async function runChatStream({
     if (event.event === "delta") {
       assistantText += event.data.text;
       onText(assistantText);
+      return;
+    }
 
-      const { sentences, consumed } = extractSentences(assistantText.slice(spokenChars));
-      if (consumed > 0) {
-        spokenChars += consumed;
-        sentences.forEach(pushSentence);
-      }
+    if (event.event === "speech-start") {
+      pendingClips.set(event.data.id, {
+        text: event.data.text,
+        markers: event.data.markers,
+        parts: []
+      });
+      return;
+    }
+
+    if (event.event === "speech-chunk") {
+      pendingClips.get(event.data.id)?.parts.push(decodeBase64(event.data.audio));
+      return;
+    }
+
+    if (event.event === "speech-end") {
+      const clip = pendingClips.get(event.data.id);
+      pendingClips.delete(event.data.id);
+      if (clip) playClip(clip);
       return;
     }
 
@@ -84,8 +102,6 @@ export async function runChatStream({
     }
   });
 
-  const tail = assistantText.slice(spokenChars).trim();
-  if (tail) pushSentence(tail);
   await speechSession.finished();
   pendingTimers.current.forEach((id) => window.clearTimeout(id));
 
@@ -106,21 +122,13 @@ export async function runChatStream({
   return assistantText;
 }
 
-function stripCitationMarkers(text: string): string {
-  return text.replace(/\[\[\d+\]\]/g, "").replace(/[ \t]{2,}/g, " ");
-}
-
-function uniqueMarkerIndices(sentence: string): number[] {
-  const seen = new Set<number>();
-  const out: number[] = [];
-  for (const m of sentence.matchAll(/\[\[(\d+)\]\]/g)) {
-    const n = Number(m[1]);
-    if (n >= 1 && !seen.has(n)) {
-      seen.add(n);
-      out.push(n);
-    }
+function decodeBase64(encoded: string): Uint8Array<ArrayBuffer> {
+  const binary = window.atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
   }
-  return out;
+  return bytes;
 }
 
 function reconcileMarkers(
