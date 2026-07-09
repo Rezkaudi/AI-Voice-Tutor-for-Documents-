@@ -13,6 +13,7 @@
     "eval:citations": "tsx scripts/eval-citations.ts",
     "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
     "start": "node dist/main.js",
+    "test:docker-runtime": "node tests/verify-docker-runtime.cjs",
     "typecheck": "tsc --noEmit",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "npm run typeorm -- migration:generate ./src/infrastructure/database/migrations/migrations -d ./src/infrastructure/database/data-source.ts",
