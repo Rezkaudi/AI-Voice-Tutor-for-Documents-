@@ -2,6 +2,7 @@ import type { MutableRefObject } from "react";
 import type { DocumentCitation } from "@/types";
 import { citationKey } from "@/store/documentStore";
 import type { PlacedTextItem } from "@/lib/pdfTextMap";
+import { relocateCitation } from "@/lib/relocateCitation";
 
 interface HighlightBox {
   key: string;
@@ -13,6 +14,7 @@ interface HighlightBox {
 
 interface HighlightLayerProps {
   placed: PlacedTextItem[];
+  pageText: string;
   highlights: DocumentCitation[];
   focusRef: MutableRefObject<HTMLDivElement | null>;
   focusCitationKey: string | null;
@@ -61,11 +63,15 @@ function clipRunToCitation(
 
 function collectBoxes(
   placed: PlacedTextItem[],
+  pageText: string,
   highlights: DocumentCitation[],
   focusCitationKey: string | null
 ): HighlightBox[] {
-  const citation = highlights.find((c) => citationKey(c) === focusCitationKey);
-  if (!citation) return [];
+  const focused = highlights.find((c) => citationKey(c) === focusCitationKey);
+  if (!focused) return [];
+  // Anchor the span on the quote within the front-end's own page text; the
+  // backend offsets were computed on OCR text whose order can diverge.
+  const citation = relocateCitation(pageText, focused);
 
   const boxes: HighlightBox[] = [];
   placed.forEach((item, i) => {
@@ -77,11 +83,12 @@ function collectBoxes(
 
 export function HighlightLayer({
   placed,
+  pageText,
   highlights,
   focusRef,
   focusCitationKey
 }: HighlightLayerProps) {
-  const boxes = collectBoxes(placed, highlights, focusCitationKey);
+  const boxes = collectBoxes(placed, pageText, highlights, focusCitationKey);
   if (!boxes.length) return null;
 
   return (

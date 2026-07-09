@@ -51,6 +51,7 @@ export function PdfPage({
       {rendered ? (
         <HighlightLayer
           placed={rendered.placed}
+          pageText={rendered.pageText}
           highlights={highlights}
           focusRef={focusRef}
           focusCitationKey={focusCitationKey ?? null}

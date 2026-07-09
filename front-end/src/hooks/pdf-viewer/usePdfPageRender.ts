@@ -6,6 +6,7 @@ import { buildTextMap, type PlacedTextItem } from "@/lib/pdfTextMap";
 
 export interface RenderedPage {
   placed: PlacedTextItem[];
+  pageText: string;
   cssWidth: number;
   cssHeight: number;
 }
@@ -59,7 +60,7 @@ export function usePdfPageRender(
       const content = await page.getTextContent();
       const items = (content.items as Array<TextItem | TextMarkedContent>)
         .filter((item): item is TextItem => "str" in item);
-      const { placed } = buildTextMap(items, {
+      const { placed, pageText } = buildTextMap(items, {
         transform: viewport.transform,
         width: viewport.width,
         height: viewport.height,
@@ -85,6 +86,7 @@ export function usePdfPageRender(
 
       setRendered({
         placed,
+        pageText,
         cssWidth: viewport.width,
         cssHeight: viewport.height
       });
