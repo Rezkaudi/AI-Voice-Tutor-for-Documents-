@@ -32,6 +32,9 @@ import { FileNaming } from "@/domain/logic/file-naming";
 import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
 import { CostCalculator } from "@/domain/logic/cost/cost-calculator";
 import { ReadingOrderBuilder } from "@/domain/logic/pdf/reading-order-builder";
+import { ScriptDirection } from "@/domain/logic/pdf/script-direction";
+import { OcrScriptDetector } from "@/domain/logic/pdf/ocr-script-detector";
+import { RtlVisualOrderConverter } from "@/domain/logic/pdf/rtl-visual-order-converter";
 
 import { initializeDatabase } from "@/infrastructure/database/data-source";
 import { TypeOrmDocumentRepository } from "@/infrastructure/database/repositories/typeorm-document.repository";
@@ -106,6 +109,9 @@ export async function buildContainer(): Promise<Container> {
     new DocLayoutRegionDetector(logger),
     readingOrderBuilder,
     textNormalizer,
+    new ScriptDirection(),
+    new RtlVisualOrderConverter(),
+    new OcrScriptDetector(),
     logger
   );
   // const textExtractor = PdfJsTextExtractor.createDefault();
