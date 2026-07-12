@@ -1,9 +1,13 @@
 # ─── Build stage ─────────────────────────────────────────────────────────────
-FROM node:22-alpine AS build
+# Debian-based (not Alpine): onnxruntime-node ships glibc-only binaries that
+# cannot load under musl (missing ld-linux-x86-64.so.2).
+FROM node:22-slim AS build
 WORKDIR /app
 
 # Build toolchain for any native deps that fall back to source build
-RUN apk add --no-cache python3 make g++
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 make g++ \
+ && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 RUN npm ci
@@ -13,7 +17,7 @@ COPY src ./src
 RUN npm run build && npm prune --omit=dev
 
 # ─── Runtime stage ───────────────────────────────────────────────────────────
-FROM node:22-alpine AS runtime
+FROM node:22-slim AS runtime
 ENV NODE_ENV=production \
     PORT=5000
 
@@ -21,16 +25,17 @@ WORKDIR /app
 
 # Runtime libs for @napi-rs/canvas + pdfjs-dist (font rendering)
 # ghostscript: PDF compression/optimization (the `gs` binary)
-RUN apk add --no-cache \
+# fonts-noto-core covers Arabic; fonts-noto-cjk covers CJK
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
       ghostscript \
       fontconfig \
-      freetype \
-      ttf-dejavu \
-      ttf-liberation \
-      font-noto \
-      font-noto-cjk \
-      font-noto-arabic \
-      font-noto-emoji
+      fonts-dejavu \
+      fonts-liberation \
+      fonts-noto-core \
+      fonts-noto-cjk \
+      fonts-noto-color-emoji \
+ && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
