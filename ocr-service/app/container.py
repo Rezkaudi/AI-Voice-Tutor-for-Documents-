@@ -60,6 +60,10 @@ def _rapidocr_options() -> dict[str, object]:
         "rec_intra_op_num_threads": settings.intra_threads,
         "rec_batch_num": settings.rec_batch_num,
         "det_limit_side_len": settings.det_limit_side_len,
+        # Recall / completeness knobs (see config.py for rationale).
+        "det_box_thresh": settings.det_box_thresh,
+        "det_unclip_ratio": settings.det_unclip_ratio,
+        "text_score": settings.text_score,
     }
 
 

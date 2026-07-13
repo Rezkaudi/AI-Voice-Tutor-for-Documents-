@@ -35,9 +35,20 @@ class Settings(BaseSettings):
     # Text crops batched per recognition inference. Higher = faster on dense
     # pages (lots of text lines), at some memory cost.
     rec_batch_num: int = 16
-    # Detection input size cap (min side). Lower = faster detection, but small
-    # text may be missed. 736 is the model default.
-    det_limit_side_len: int = 736
+    # Detection input size cap (min side). Higher = small/faint text is detected
+    # far more reliably (better completeness), at some detection-speed cost.
+    # 736 is the model default; 960 recovers noticeably more text.
+    det_limit_side_len: int = 960
+    # ─── Detection recall (completeness) ─────────────────────────────────────
+    # Min confidence for a detected text box to be kept. Lower = more boxes
+    # (fewer missed words), at the risk of some noise. Model default 0.5.
+    det_box_thresh: float = 0.4
+    # How much each detected box is expanded before cropping. Higher = fewer
+    # truncated words at line edges. Model default 1.6.
+    det_unclip_ratio: float = 1.8
+    # Min recognition score for text to be kept. Lower = keeps more low-contrast
+    # text instead of discarding it. Model default 0.5.
+    text_score: float = 0.3
     # Warm the models (run one dummy inference) at startup so the first real
     # request doesn't pay the ONNX Runtime cold-start cost.
     warmup: bool = True

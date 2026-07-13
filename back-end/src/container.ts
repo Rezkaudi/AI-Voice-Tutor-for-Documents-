@@ -114,23 +114,23 @@ export async function buildContainer(): Promise<Container> {
   //   logger
   // );
 
-  // const textExtractor = new PaddleOcrTextExtractor(
-  //   new PdfiumPageRenderer(),
-  //   new DocLayoutRegionDetector(logger),
-  //   readingOrderBuilder,
-  //   textNormalizer,
-  //   new ScriptDirection(),
-  //   new RtlVisualOrderConverter(),
-  //   new OcrScriptDetector(),
-  //   logger
-  // );
-
-  const textExtractor = new OcrServiceTextExtractor(
-    ENV_CONFIG,
+  const textExtractor = new PaddleOcrTextExtractor(
     new PdfiumPageRenderer(),
+    new DocLayoutRegionDetector(logger),
+    readingOrderBuilder,
     textNormalizer,
+    new ScriptDirection(),
+    new RtlVisualOrderConverter(),
+    new OcrScriptDetector(),
     logger
   );
+
+  // const textExtractor = new OcrServiceTextExtractor(
+  //   ENV_CONFIG,
+  //   new PdfiumPageRenderer(),
+  //   textNormalizer,
+  //   logger
+  // );
   // const textExtractor = PdfJsTextExtractor.createDefault();
   const pageCache = new InMemoryPageCache();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);

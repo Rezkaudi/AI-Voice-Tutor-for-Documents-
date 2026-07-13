@@ -31,6 +31,10 @@ class BoundingBox:
         return self.y2 - self.y
 
     @property
+    def cx(self) -> float:
+        return (self.x + self.x2) / 2
+
+    @property
     def cy(self) -> float:
         return (self.y + self.y2) / 2
 
