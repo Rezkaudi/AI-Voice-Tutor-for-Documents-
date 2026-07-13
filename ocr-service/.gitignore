@@ -1,0 +1,27 @@
+# ─── Python bytecode / caches ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ─── Virtual environments ────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ─── Downloaded / cached OCR models (can be large; not source) ───────────────
+models/
+*.onnx
+
+# ─── Environment (belt-and-suspenders; root already ignores .env*) ───────────
+.env
+.env.*
+!.env.example
+
+# ─── OS / editor ─────────────────────────────────────────────────────────────
+.DS_Store

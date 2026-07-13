@@ -28,6 +28,11 @@ export type EnvConfig = {
   HF_VL_BASE_URL: string;
   HF_VL_CONCURRENCY: number;
 
+  // ─── External OCR sidecar (ocr-service: RapidOCR/ONNX) ────────────────────
+  OCR_SERVICE_URL: string;
+  OCR_SERVICE_LANGUAGE: string;
+  OCR_SERVICE_CONCURRENCY: number;
+
   // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
@@ -93,6 +98,10 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   HF_VL_MODEL: getEnv("HF_VL_MODEL") || "Qwen/Qwen3-VL-30B-A3B-Instruct",
   HF_VL_BASE_URL: getEnv("HF_VL_BASE_URL") || "https://router.huggingface.co/v1",
   HF_VL_CONCURRENCY: Number(getEnv("HF_VL_CONCURRENCY")) || 5,
+
+  OCR_SERVICE_URL: getEnv("OCR_SERVICE_URL") || "http://localhost:8000",
+  OCR_SERVICE_LANGUAGE: getEnv("OCR_SERVICE_LANGUAGE") || "",
+  OCR_SERVICE_CONCURRENCY: Number(getEnv("OCR_SERVICE_CONCURRENCY")) || 10,
 
   // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
   GOOGLE_CLIENT_ID: requireEnv("GOOGLE_CLIENT_ID"),
