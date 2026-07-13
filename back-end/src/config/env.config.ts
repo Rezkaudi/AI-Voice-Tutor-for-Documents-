@@ -22,6 +22,12 @@ export type EnvConfig = {
   OPENAI_SPEECH_VOICE: string;
   TUTOR_LOG_VERBOSE: boolean;
 
+  // ─── Hugging Face vision-language OCR (Qwen3-VL) ──────────────────────────
+  HF_TOKEN: string;
+  HF_VL_MODEL: string;
+  HF_VL_BASE_URL: string;
+  HF_VL_CONCURRENCY: number;
+
   // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
@@ -82,6 +88,11 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
     getEnv("TUTOR_LOG_VERBOSE"),
     (getEnv("NODE_ENV") || "development") !== "production"
   ),
+
+  HF_TOKEN: getEnv("HF_TOKEN") || "",
+  HF_VL_MODEL: getEnv("HF_VL_MODEL") || "Qwen/Qwen3-VL-30B-A3B-Instruct",
+  HF_VL_BASE_URL: getEnv("HF_VL_BASE_URL") || "https://router.huggingface.co/v1",
+  HF_VL_CONCURRENCY: Number(getEnv("HF_VL_CONCURRENCY")) || 5,
 
   // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
   GOOGLE_CLIENT_ID: requireEnv("GOOGLE_CLIENT_ID"),
