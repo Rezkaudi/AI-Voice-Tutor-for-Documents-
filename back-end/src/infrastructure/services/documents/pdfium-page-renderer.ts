@@ -23,16 +23,16 @@ export class PdfiumPageRenderer {
         .sort((a, b) => a - b);
 
       const scale = PdfiumPageRenderer.DPI / 72;
-      const rendered: RenderedPage[] = [];
-      for (const pageNumber of wanted) {
-        const page = document.getPage(pageNumber - 1);
-        const bitmap = await page.render({ scale, colorSpace: "BGRA" });
-        rendered.push({
-          pageNumber,
-          png: await this.encodePng(bitmap.data, bitmap.width, bitmap.height)
-        });
-      }
-      return rendered;
+      return Promise.all(
+        wanted.map(async (pageNumber) => {
+          const page = document.getPage(pageNumber - 1);
+          const bitmap = await page.render({ scale, colorSpace: "Gray" });
+          return {
+            pageNumber,
+            png: await this.encodePng(bitmap.data, bitmap.width, bitmap.height)
+          };
+        })
+      );
     });
   }
 
@@ -60,12 +60,13 @@ export class PdfiumPageRenderer {
   }
 
   private async encodePng(data: Uint8Array, width: number, height: number): Promise<ArrayBuffer> {
-    const rgba = new Uint8ClampedArray(data.length);
-    for (let i = 0; i < data.length; i += 4) {
-      rgba[i] = data[i + 2]!;
-      rgba[i + 1] = data[i + 1]!;
-      rgba[i + 2] = data[i]!;
-      rgba[i + 3] = data[i + 3]!;
+    const rgba = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0, j = 0; i < data.length; i += 1, j += 4) {
+      const gray = data[i]!;
+      rgba[j] = gray;
+      rgba[j + 1] = gray;
+      rgba[j + 2] = gray;
+      rgba[j + 3] = 255;
     }
     const canvas = createCanvas(width, height);
     const context = canvas.getContext("2d");
