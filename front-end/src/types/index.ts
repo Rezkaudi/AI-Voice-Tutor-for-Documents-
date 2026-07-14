@@ -26,14 +26,8 @@ export interface DocumentRecord {
 
 export type DocumentSummary = DocumentRecord;
 
-export interface DocumentPage {
-  pageNumber: number;
-  text: string;
-}
-
 export interface LoadedDocument {
   document: DocumentRecord;
-  pages: DocumentPage[];
   fileUrl: string | null;
 }
 

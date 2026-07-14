@@ -86,7 +86,7 @@ export class UploadDocumentUseCase {
       error: null
     };
 
-    await this.repository.save({ record, pages: [], chunks: [] });
+    await this.repository.save(record);
     log.info(`persisted document row · status=${record.status}`);
 
     return { documentId: id, status: record.status };

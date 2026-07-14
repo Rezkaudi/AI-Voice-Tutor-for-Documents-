@@ -100,7 +100,7 @@ export async function buildContainer(): Promise<Container> {
   const readingOrderBuilder = new ReadingOrderBuilder();
 
   // ─── Infrastructure adapters (implement domain ports) ────────────────────
-  const documentRepository = new TypeOrmDocumentRepository(dataSource, idGenerator);
+  const documentRepository = new TypeOrmDocumentRepository(dataSource);
   const userRepository = new TypeOrmUserRepository(dataSource, idGenerator);
   const userCostRepository = new TypeOrmUserCostRepository(dataSource);
   const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
