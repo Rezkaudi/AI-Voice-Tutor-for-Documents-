@@ -63,7 +63,6 @@ export interface ChatPayload {
   messages: ChatHistoryMessage[];
 
   selectedPages: number[];
-  saveCost: boolean;
 }
 
 export type StreamEvent =

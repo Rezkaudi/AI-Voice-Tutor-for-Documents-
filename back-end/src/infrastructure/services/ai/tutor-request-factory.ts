@@ -1,7 +1,7 @@
 import type { TutorReplyRequest } from "@/domain/services/tutor-service";
 import type { EnvConfig } from "@/config/env.config";
 import { buildTutorInstructions } from "@/config/prompt.config";
-import { NORMAL_GENERATION, SAVE_COST_GENERATION } from "@/config/constant.config";
+import { NORMAL_GENERATION } from "@/config/constant.config";
 import { TUTOR_TOOLS } from "@/config/ai-tools.config";
 
 export interface TurnSettings {
@@ -15,12 +15,8 @@ export interface TurnSettings {
 export class TutorRequestFactory {
   constructor(private readonly config: EnvConfig) { }
 
-  settingsFor(request: TutorReplyRequest): TurnSettings {
-    const profile = request.saveCost ? SAVE_COST_GENERATION : NORMAL_GENERATION;
-    const model = request.saveCost
-      ? this.config.OPENAI_TUTOR_MODEL_SAVE_COST
-      : this.config.OPENAI_TUTOR_MODEL;
-    return { model, ...profile };
+  settingsFor(_request: TutorReplyRequest): TurnSettings {
+    return { model: this.config.OPENAI_TUTOR_MODEL, ...NORMAL_GENERATION };
   }
 
   initialInput(request: TutorReplyRequest, settings: TurnSettings): Record<string, unknown>[] {

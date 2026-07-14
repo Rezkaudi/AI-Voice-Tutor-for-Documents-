@@ -19,10 +19,3 @@ export const NORMAL_GENERATION: TutorGenerationProfile = {
     maxOutputTokens: 700,
     maxToolSteps: 8
 };
-
-export const SAVE_COST_GENERATION: TutorGenerationProfile = {
-    reasoningEffort: "minimal",
-    historyWindow: 4,
-    maxOutputTokens: 700,
-    maxToolSteps: 8
-};

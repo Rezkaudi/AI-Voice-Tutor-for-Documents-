@@ -15,7 +15,6 @@ export type EnvConfig = {
   S3_SECRET_ACCESS_KEY: string;
   OPENAI_API_KEY: string;
   OPENAI_TUTOR_MODEL: string;
-  OPENAI_TUTOR_MODEL_SAVE_COST: string;
   OPENAI_TRANSCRIBE_MODEL: string;
   OPENAI_SPEECH_MODEL: string;
   OPENAI_SPEECH_VOICE: string;
@@ -77,7 +76,6 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   OPENAI_API_KEY: requireEnv("OPENAI_API_KEY"),
 
   OPENAI_TUTOR_MODEL: getEnv("OPENAI_TUTOR_MODEL") || "gpt-5.4-mini",
-  OPENAI_TUTOR_MODEL_SAVE_COST: getEnv("OPENAI_TUTOR_MODEL_SAVE_COST") || "gpt-5-nano",
   OPENAI_TRANSCRIBE_MODEL: getEnv("OPENAI_TRANSCRIBE_MODEL") || "gpt-4o-mini-transcribe",
   OPENAI_SPEECH_MODEL: getEnv("OPENAI_SPEECH_MODEL") || "gpt-4o-mini-tts",
   OPENAI_SPEECH_VOICE: getEnv("OPENAI_SPEECH_VOICE") || "alloy",

@@ -51,7 +51,7 @@ export class OpenAiTutorService implements TutorService {
 
     log.info(
       `turn start — "${this.logger.preview(request.message)}" · model=${settings.model} ` +
-      `· saveCost=${request.saveCost} · effort=${settings.reasoningEffort} ` +
+      `· effort=${settings.reasoningEffort} ` +
       `· maxSteps=${settings.maxToolSteps} · history=${request.history.length} ` +
       `· pages=${request.pages.length}`
     );

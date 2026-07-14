@@ -5,7 +5,6 @@ export interface UiSlice {
   error: string | null;
   mobilePane: MobilePane;
   speechLanguage: SpeechLanguage;
-  saveCost: boolean;
   showTranscript: boolean;
   showCaption: boolean;
   pendingQuestion: string | null;
@@ -17,8 +16,6 @@ export interface UiSlice {
   toggleCaption: () => void;
   setMobilePane: (mobilePane: MobilePane) => void;
   setSpeechLanguage: (speechLanguage: SpeechLanguage) => void;
-  initSaveCost: () => void;
-  toggleSaveCost: () => void;
 }
 
 /** Voice-call lifecycle: mic, page selection, and call start/stop. */
