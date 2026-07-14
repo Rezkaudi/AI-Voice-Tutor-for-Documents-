@@ -49,6 +49,8 @@ import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage
 // import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
 import { PdfiumPageRenderer } from "@/infrastructure/services/documents/pdfium-page-renderer";
 import { PaddleOcrTextExtractor } from "@/infrastructure/services/documents/paddle-ocr-text-extractor";
+import { HfVlTextExtractor } from "@/infrastructure/services/documents/hf-vl-text-extractor";
+import { OcrServiceTextExtractor } from "@/infrastructure/services/documents/ocr-service-text-extractor";
 import { DocLayoutRegionDetector } from "@/infrastructure/services/documents/doclayout-region-detector";
 import { InMemoryPageCache } from "@/infrastructure/services/cache/in-memory-page-cache";
 import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.service";
@@ -104,6 +106,14 @@ export async function buildContainer(): Promise<Container> {
   const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
   const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
+
+  // const textExtractor = new HfVlTextExtractor(
+  //   ENV_CONFIG,
+  //   new PdfiumPageRenderer(),
+  //   textNormalizer,
+  //   logger
+  // );
+
   const textExtractor = new PaddleOcrTextExtractor(
     new PdfiumPageRenderer(),
     new DocLayoutRegionDetector(logger),
@@ -114,6 +124,13 @@ export async function buildContainer(): Promise<Container> {
     new OcrScriptDetector(),
     logger
   );
+
+  // const textExtractor = new OcrServiceTextExtractor(
+  //   ENV_CONFIG,
+  //   new PdfiumPageRenderer(),
+  //   textNormalizer,
+  //   logger
+  // );
   // const textExtractor = PdfJsTextExtractor.createDefault();
   const pageCache = new InMemoryPageCache();
   const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
