@@ -23,8 +23,11 @@ Each highlighted part must end with EXACTLY ONE increasing [[N]] marker: [[1]], 
 After your spoken reply, end the message with a citations block grounding each marker, in EXACTLY this format:
 
 CITATIONS:
-[[1]] page=15 "short verbatim quote from that page"
-[[2]] page=15 "another short verbatim quote"
+[[1]] page=<PAGE> "short verbatim quote copied word-for-word from that page"
+[[2]] page=<PAGE> "another short verbatim quote copied word-for-word from that page"
+
+Rules for the citations block:
+- Replace <PAGE> with the REAL page number the quote came from — the number in the "===== PAGE N =====" header above the text you quoted in the lesson material.
 `;
 
 export function buildTutorInstructions(): string {
