@@ -52,7 +52,6 @@ import { HfVlTextExtractor } from "@/infrastructure/services/documents/hf-vl-tex
 import { DocLayoutRegionDetector } from "@/infrastructure/services/documents/doclayout-region-detector";
 import { InMemoryPageCache } from "@/infrastructure/services/cache/in-memory-page-cache";
 import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.service";
-import { TutorToolExecutor } from "@/infrastructure/services/ai/tutor-tool-executor";
 import { OpenAiTextToSpeechService } from "@/infrastructure/services/ai/openai-text-to-speech.service";
 import { OpenAiSpeechToTextService } from "@/infrastructure/services/ai/openai-speech-to-text.service";
 import { ConsoleLogger } from "@/infrastructure/logging/console-logger";
@@ -122,10 +121,8 @@ export async function buildContainer(): Promise<Container> {
 
   // const textExtractor = PdfJsTextExtractor.createDefault();
   const pageCache = new InMemoryPageCache();
-  const tutorToolExecutor = new TutorToolExecutor(referenceFactory);
   const tutorService = new OpenAiTutorService(
     ENV_CONFIG,
-    tutorToolExecutor,
     referenceSelector,
     learnerQuestionExtractor,
     logger

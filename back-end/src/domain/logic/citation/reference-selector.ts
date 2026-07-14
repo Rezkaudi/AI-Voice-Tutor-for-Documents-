@@ -5,7 +5,6 @@ import type { CitationResolver } from "@/domain/logic/citation/citation-resolver
 import type { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
 
 export interface ReferenceSelection {
-  referencesByPage: Map<number, Reference>;
   pages: ReadonlyArray<DocumentPage>;
   citedCandidates: ReadonlyArray<CitationCandidate>;
 }
@@ -17,7 +16,7 @@ export class ReferenceSelector {
   ) { }
 
   select(input: ReferenceSelection): Reference | null {
-    const { referencesByPage, pages, citedCandidates } = input;
+    const { pages, citedCandidates } = input;
 
     const resolved = this.citations.resolve(citedCandidates, pages);
     if (resolved.length === 0) {
@@ -26,7 +25,6 @@ export class ReferenceSelector {
 
     const primaryPage = resolved[0]!.pageNumber;
     const base =
-      referencesByPage.get(primaryPage) ??
       this.referenceFactory.forPage(primaryPage, pages) ??
       { pageNumber: primaryPage, citations: [] };
     return { ...base, citations: resolved };
