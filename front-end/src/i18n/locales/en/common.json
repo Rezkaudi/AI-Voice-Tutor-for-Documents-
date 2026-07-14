@@ -98,6 +98,17 @@
       "pageAtMost": "You can pick at most {{max}} pages",
       "updatePages": "Update pages",
       "startLesson": "Start lesson"
+    },
+    "preparing": {
+      "startTitle": "Preparing your lesson",
+      "startBody": "We're reading the pages you picked so your teacher has them ready. This can take a minute or two for scanned documents.",
+      "updateTitle": "Updating your pages",
+      "updateBody": "We're reading the new pages you picked. This can take a minute or two for scanned documents — your lesson continues once they're ready.",
+      "status": "Reading your pages…",
+      "hint": "This usually takes 1–2 minutes. Please keep this open.",
+      "retry": "Try again",
+      "errorTitle": "We couldn't prepare your pages",
+      "errorBody": "Something went wrong while reading your pages. Please try again."
     }
   },
   "controls": {

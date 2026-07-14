@@ -9,6 +9,7 @@ import { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-
 import { CreateUploadUrlUseCase } from "@/application/use-cases/documents/create-upload-url.use-case";
 import { RegisterUploadUseCase } from "@/application/use-cases/documents/register-upload.use-case";
 import { LoadLessonPagesUseCase } from "@/application/use-cases/documents/load-lesson-pages.use-case";
+import { PrepareLessonPagesUseCase } from "@/application/use-cases/documents/prepare-lesson-pages.use-case";
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
 import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
 import { TranscribeAudioUseCase } from "@/application/use-cases/transcription/transcribe-audio.use-case";
@@ -178,6 +179,11 @@ export async function buildContainer(): Promise<Container> {
     pageCache,
     logger
   );
+  const prepareLessonPages = new PrepareLessonPagesUseCase(
+    documentRepository,
+    loadLessonPages,
+    logger
+  );
   const getDocument = new GetDocumentUseCase(documentRepository);
   const getDocumentFile = new GetDocumentFileUseCase(
     documentRepository,
@@ -228,7 +234,8 @@ export async function buildContainer(): Promise<Container> {
       getDocumentFile,
       listDocuments,
       deleteDocument,
-      endLessonSession
+      endLessonSession,
+      prepareLessonPages
     ),
     chat: new ChatController(streamChat),
     speech: new SpeechController(synthesizeSpeech),

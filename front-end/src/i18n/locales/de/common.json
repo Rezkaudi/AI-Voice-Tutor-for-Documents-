@@ -98,6 +98,17 @@
       "pageAtMost": "Du kannst höchstens {{max}} Seiten auswählen",
       "updatePages": "Seiten aktualisieren",
       "startLesson": "Lektion starten"
+    },
+    "preparing": {
+      "startTitle": "Deine Lektion wird vorbereitet",
+      "startBody": "Wir lesen die von dir gewählten Seiten ein, damit dein Lehrer sie bereit hat. Bei gescannten Dokumenten kann das ein bis zwei Minuten dauern.",
+      "updateTitle": "Deine Seiten werden aktualisiert",
+      "updateBody": "Wir lesen die neu gewählten Seiten ein. Bei gescannten Dokumenten kann das ein bis zwei Minuten dauern – deine Lektion wird fortgesetzt, sobald sie bereit sind.",
+      "status": "Deine Seiten werden gelesen…",
+      "hint": "Das dauert in der Regel 1–2 Minuten. Bitte lass dieses Fenster geöffnet.",
+      "retry": "Erneut versuchen",
+      "errorTitle": "Deine Seiten konnten nicht vorbereitet werden",
+      "errorBody": "Beim Lesen deiner Seiten ist etwas schiefgelaufen. Bitte versuche es erneut."
     }
   },
   "controls": {

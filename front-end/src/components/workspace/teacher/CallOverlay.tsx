@@ -2,6 +2,7 @@ import type { ChatMessage, SpeechCaption } from "@/types";
 import { SessionControlBar } from "@/components/workspace/controls/SessionControlBar";
 import { FloatingTutor } from "./FloatingTutor";
 import { MicPermissionDialog } from "./MicPermissionDialog";
+import { PagePreparingDialog } from "./PagePreparingDialog";
 import { PageSelectionDialog } from "./PageSelectionDialog";
 import { TranscriptDrawer } from "./TranscriptDrawer";
 import { TutorRestingState } from "./TutorRestingState";
@@ -115,6 +116,8 @@ export function CallOverlay({
       />
 
       <MicPermissionDialog open={micDialog.open} onClose={() => micDialog.setOpen(false)} />
+
+      <PagePreparingDialog />
 
       {pageDialogOpen ? (
         <PageSelectionDialog
