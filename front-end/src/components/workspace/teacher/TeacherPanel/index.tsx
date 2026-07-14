@@ -1,5 +1,6 @@
 import type { ChatMessage, SpeechCaption, SpeechLanguage } from "@/types";
 import { MicPermissionDialog } from "../MicPermissionDialog";
+import { PagePreparingDialog } from "../PagePreparingDialog";
 import { PageSelectionDialog } from "../PageSelectionDialog";
 import { TeacherAvatar } from "../TeacherAvatar";
 import { SessionControlBar } from "@/components/workspace/controls/SessionControlBar";
@@ -103,6 +104,8 @@ export function TeacherPanel({
       />
 
       <MicPermissionDialog open={micDialog.open} onClose={() => micDialog.setOpen(false)} />
+
+      <PagePreparingDialog />
 
       {pageDialogOpen ? (
         <PageSelectionDialog

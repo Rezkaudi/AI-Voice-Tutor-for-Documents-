@@ -8,6 +8,7 @@ import type { UploadDocumentUseCase } from "@/application/use-cases/documents/up
 import type { CreateUploadUrlUseCase } from "@/application/use-cases/documents/create-upload-url.use-case";
 import type { RegisterUploadUseCase } from "@/application/use-cases/documents/register-upload.use-case";
 import type { EndLessonSessionUseCase } from "@/application/use-cases/documents/end-lesson-session.use-case";
+import type { PrepareLessonPagesUseCase } from "@/application/use-cases/documents/prepare-lesson-pages.use-case";
 
 export class DocumentsController {
   constructor(
@@ -18,13 +19,23 @@ export class DocumentsController {
     private readonly getDocumentFile: GetDocumentFileUseCase,
     private readonly listDocuments: ListDocumentsUseCase,
     private readonly deleteDocument: DeleteDocumentUseCase,
-    private readonly endLessonSession: EndLessonSessionUseCase
+    private readonly endLessonSession: EndLessonSessionUseCase,
+    private readonly prepareLessonPages: PrepareLessonPagesUseCase
   ) { }
 
   /** POST /api/documents/session/end — releases the user's cached lesson pages. */
   endSession = async (req: Request, res: Response): Promise<void> => {
     await this.endLessonSession.execute(req.auth!.userId);
     res.status(204).end();
+  };
+
+  preparePages = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.prepareLessonPages.execute({
+      userId: req.auth!.userId,
+      documentId: String(req.params.id),
+      pageNumbers: (req.body.pageNumbers ?? []) as number[]
+    });
+    res.json(result);
   };
 
   list = async (req: Request, res: Response): Promise<void> => {

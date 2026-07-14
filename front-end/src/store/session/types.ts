@@ -27,6 +27,8 @@ export interface CallSlice {
   hasIntroduced: boolean;
   selectedPages: number[];
   pageDialogOpen: boolean;
+  preparingPages: boolean;
+  prepareError: string | null;
   handleVoiceTranscript: (transcript: string) => void;
   maybeContinueCall: () => void;
   handleMicToggle: () => void;
@@ -34,6 +36,8 @@ export interface CallSlice {
   openPageDialog: () => void;
   closePageDialog: () => void;
   submitPageSelection: (pages: number[]) => Promise<void>;
+  retryPreparePages: () => Promise<void>;
+  cancelPreparePages: () => void;
 }
 
 /** Document-session lifecycle: reset, upload, switch, and close. */

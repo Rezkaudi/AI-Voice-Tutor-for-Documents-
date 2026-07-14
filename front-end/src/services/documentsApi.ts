@@ -10,6 +10,24 @@ export async function endLessonSession(): Promise<void> {
   }
 }
 
+export async function prepareLessonPages(
+  documentId: string,
+  pageNumbers: number[]
+): Promise<number[]> {
+  try {
+    const { data } = await api.post<{ pages?: number[] }>(
+      `/api/documents/${documentId}/pages/prepare`,
+      { pageNumbers }
+    );
+    return data.pages ?? [];
+  } catch (error) {
+    throw new Error(
+      extractErrorMessage(error, "Your pages could not be prepared. Please try again."),
+      { cause: error }
+    );
+  }
+}
+
 export async function deleteDocument(documentId: string): Promise<void> {
   try {
     await api.delete(`/api/documents/${documentId}`);
