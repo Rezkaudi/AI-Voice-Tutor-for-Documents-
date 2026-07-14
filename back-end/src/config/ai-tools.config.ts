@@ -15,22 +15,5 @@ export const TUTOR_TOOLS = [
       additionalProperties: false
     },
     strict: true
-  },
-  {
-    type: "function",
-    name: "search_document",
-    description:
-      "Search the whole document for passages relevant to a topic or question. " +
-      "Returns the best-matching passages with their page numbers. Use it whenever " +
-      "the student asks about a concept and you do not already know which page covers it.",
-    parameters: {
-      type: "object",
-      properties: {
-        query: { type: "string", description: "What to search for, in a few words." }
-      },
-      required: ["query"],
-      additionalProperties: false
-    },
-    strict: true
   }
 ] as const;

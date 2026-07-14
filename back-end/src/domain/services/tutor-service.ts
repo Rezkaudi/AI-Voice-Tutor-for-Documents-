@@ -1,4 +1,4 @@
-import type { DocumentChunk, DocumentPage, DocumentRecord } from "@/domain/entities/document";
+import type { DocumentPage, DocumentRecord } from "@/domain/entities/document";
 import type { ChatMessage, Reference } from "@/domain/entities/chat";
 import type { AiUsage } from "@/domain/services/ai-usage";
 
@@ -14,7 +14,6 @@ export interface TutorReplyRequest {
   readonly language: string;
   readonly history: ReadonlyArray<ChatMessage>;
   readonly pages: DocumentPage[];
-  readonly chunks: DocumentChunk[];
   readonly selectedPages: number[];
   readonly saveCost: boolean;
 }

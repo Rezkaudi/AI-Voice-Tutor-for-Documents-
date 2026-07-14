@@ -70,11 +70,9 @@ export class StreamChatUseCase {
       pageNumbers: selectedPages
     });
 
-    const chunks: never[] = [];
-
     log.info(
       `loaded document "${document.title}" · ${pages.length} lesson page(s) · ` +
-      `chunks disabled · ${history.length} history turn(s) · ` +
+      `${history.length} history turn(s) · ` +
       `lesson pages=[${selectedPages.join(", ")}] → streaming answer`
     );
 
@@ -116,7 +114,6 @@ export class StreamChatUseCase {
               language: input.language,
               history,
               pages,
-              chunks,
               selectedPages,
               saveCost: input.saveCost
             },

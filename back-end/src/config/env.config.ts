@@ -16,7 +16,6 @@ export type EnvConfig = {
   OPENAI_API_KEY: string;
   OPENAI_TUTOR_MODEL: string;
   OPENAI_TUTOR_MODEL_SAVE_COST: string;
-  OPENAI_EMBEDDING_MODEL: string;
   OPENAI_TRANSCRIBE_MODEL: string;
   OPENAI_SPEECH_MODEL: string;
   OPENAI_SPEECH_VOICE: string;
@@ -79,7 +78,6 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
 
   OPENAI_TUTOR_MODEL: getEnv("OPENAI_TUTOR_MODEL") || "gpt-5.4-mini",
   OPENAI_TUTOR_MODEL_SAVE_COST: getEnv("OPENAI_TUTOR_MODEL_SAVE_COST") || "gpt-5-nano",
-  OPENAI_EMBEDDING_MODEL: getEnv("OPENAI_EMBEDDING_MODEL") || "text-embedding-3-small",
   OPENAI_TRANSCRIBE_MODEL: getEnv("OPENAI_TRANSCRIBE_MODEL") || "gpt-4o-mini-transcribe",
   OPENAI_SPEECH_MODEL: getEnv("OPENAI_SPEECH_MODEL") || "gpt-4o-mini-tts",
   OPENAI_SPEECH_VOICE: getEnv("OPENAI_SPEECH_VOICE") || "alloy",

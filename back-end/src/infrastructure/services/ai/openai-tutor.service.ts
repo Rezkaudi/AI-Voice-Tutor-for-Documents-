@@ -53,7 +53,7 @@ export class OpenAiTutorService implements TutorService {
       `turn start — "${this.logger.preview(request.message)}" · model=${settings.model} ` +
       `· saveCost=${request.saveCost} · effort=${settings.reasoningEffort} ` +
       `· maxSteps=${settings.maxToolSteps} · history=${request.history.length} ` +
-      `· pages=${request.pages.length} · chunks=${request.chunks.length}`
+      `· pages=${request.pages.length}`
     );
 
     let pendingInput = this.requests.initialInput(request, settings);
@@ -138,7 +138,6 @@ export class OpenAiTutorService implements TutorService {
           const reference = this.referenceSelector.select({
             referencesByPage: state.referencesByPage,
             pages: request.pages,
-            chunks: request.chunks,
             citedCandidates: state.citedCandidates
           });
           if (reference) {

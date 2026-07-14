@@ -24,12 +24,3 @@ export interface DocumentPage {
   pageNumber: number;
   text: string;
 }
-
-export interface DocumentChunk {
-  id: string;
-  documentId: string;
-  pageNumber: number;
-  chunkIndex: number;
-  text: string;
-  embedding?: number[] | null;
-}
