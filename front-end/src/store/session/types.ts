@@ -26,6 +26,10 @@ export interface CallSlice {
   pageDialogOpen: boolean;
   preparingPages: boolean;
   prepareError: string | null;
+  teacherAsks: boolean;
+  silentRounds: number;
+  awaitingPresence: boolean;
+  toggleTeacherAsks: () => void;
   handleVoiceTranscript: (transcript: string) => void;
   maybeContinueCall: () => void;
   handleMicToggle: () => void;

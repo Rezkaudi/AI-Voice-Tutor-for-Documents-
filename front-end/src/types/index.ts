@@ -61,8 +61,8 @@ export interface ChatPayload {
   message: string;
   language: SpeechLanguage;
   messages: ChatHistoryMessage[];
-
   selectedPages: number[];
+  teacherAsks: boolean;
 }
 
 export type StreamEvent =

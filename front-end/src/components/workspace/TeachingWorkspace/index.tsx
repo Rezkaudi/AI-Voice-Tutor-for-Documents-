@@ -5,10 +5,13 @@ import { QuestionPopup } from "../teacher/QuestionPopup";
 import { DesktopLayout } from "./DesktopLayout";
 import { MobileLayout } from "./MobileLayout";
 import { useWorkspaceState } from "@/hooks/workspace/useWorkspaceState";
+import { useSpacebarPause } from "@/hooks/workspace/useSpacebarPause";
 
 export function TeachingWorkspace() {
   const vm = useWorkspaceState();
   const { loadedDocument, session, documentStore } = vm;
+
+  useSpacebarPause();
 
   if (!loadedDocument) return null;
 
@@ -37,10 +40,13 @@ export function TeachingWorkspace() {
     <WorkspaceMenu
       showTranscript={vm.showTranscript}
       showCaption={vm.showCaption}
+      teacherAsks={vm.teacherAsks}
+      teacherAsksDisabled={vm.callMode}
       restartDisabled={vm.restartDisabled}
       onEditPages={session.openPageDialog}
       onToggleTranscript={session.toggleTranscript}
       onToggleCaption={session.toggleCaption}
+      onToggleTeacherAsks={session.toggleTeacherAsks}
       onRestart={session.clearChat}
     />
   );

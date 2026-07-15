@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Globe,
   Maximize2,
+  MessageCircleQuestion,
   Minimize2,
   RotateCcw,
   ScrollText,
@@ -32,20 +33,26 @@ import { useDismissable } from "@/hooks/useDismissable";
 interface WorkspaceMenuProps {
   showTranscript: boolean;
   showCaption: boolean;
+  teacherAsks: boolean;
+  teacherAsksDisabled: boolean;
   restartDisabled: boolean;
   onEditPages?: () => void;
   onToggleTranscript: () => void;
   onToggleCaption: () => void;
+  onToggleTeacherAsks: () => void;
   onRestart: () => void;
 }
 
 export function WorkspaceMenu({
   showTranscript,
   showCaption,
+  teacherAsks,
+  teacherAsksDisabled,
   restartDisabled,
   onEditPages,
   onToggleTranscript,
   onToggleCaption,
+  onToggleTeacherAsks,
   onRestart
 }: WorkspaceMenuProps) {
   const { t, i18n } = useTranslation();
@@ -94,6 +101,14 @@ export function WorkspaceMenu({
             active={showCaption}
             trailing={<StateChip on={showCaption} />}
             onClick={() => run(onToggleCaption)}
+          />
+          <MenuItem
+            icon={MessageCircleQuestion}
+            label={t("controls.teacherAsks")}
+            active={teacherAsks}
+            disabled={teacherAsksDisabled}
+            trailing={<StateChip on={teacherAsks} />}
+            onClick={() => run(onToggleTeacherAsks)}
           />
           <div className={divider} />
           <MenuItem

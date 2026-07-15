@@ -49,10 +49,14 @@ export class TutorRequestFactory {
     );
   }
 
-  body(settings: TurnSettings, input: Record<string, unknown>[]): Record<string, unknown> {
+  body(
+    settings: TurnSettings,
+    input: Record<string, unknown>[],
+    request: TutorReplyRequest
+  ): Record<string, unknown> {
     return {
       model: settings.model,
-      instructions: buildTutorInstructions(),
+      instructions: buildTutorInstructions({ allowAsking: request.allowAsking }),
       reasoning: { effort: settings.reasoningEffort },
       max_output_tokens: settings.maxOutputTokens,
       input,
