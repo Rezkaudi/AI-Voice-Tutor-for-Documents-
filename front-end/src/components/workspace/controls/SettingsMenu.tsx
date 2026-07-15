@@ -3,6 +3,7 @@ import {
   BookOpen,
   Captions,
   Maximize2,
+  MessageCircleQuestion,
   Minimize2,
   RotateCcw,
   ScrollText,
@@ -49,6 +50,8 @@ export function SettingsMenu({ large = false }: SettingsMenuProps) {
   const toggleTranscript = useSessionStore((s) => s.toggleTranscript);
   const showCaption = useSessionStore((s) => s.showCaption);
   const showTranscript = useSessionStore((s) => s.showTranscript);
+  const teacherAsks = useSessionStore((s) => s.teacherAsks);
+  const toggleTeacherAsks = useSessionStore((s) => s.toggleTeacherAsks);
   const clearChat = useSessionStore((s) => s.clearChat);
   const hasMessages = useChatStore((s) => s.messages.length > 0);
 
@@ -98,6 +101,13 @@ export function SettingsMenu({ large = false }: SettingsMenuProps) {
               }}
             />
             <MenuDivider />
+            <MenuItem
+              icon={MessageCircleQuestion}
+              label={t("controls.teacherAsks")}
+              active={teacherAsks}
+              onClick={toggleTeacherAsks}
+              trailing={<StateChip on={teacherAsks} />}
+            />
             <MenuItem
               icon={Captions}
               label={t("controls.liveCaptions")}

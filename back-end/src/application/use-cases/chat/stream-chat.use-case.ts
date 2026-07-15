@@ -20,6 +20,7 @@ export interface StreamChatInput {
   readonly language: string;
   readonly messages: ChatMessage[];
   readonly selectedPages: number[];
+  readonly teacherAsks?: boolean;
 }
 
 export class StreamChatUseCase {
@@ -113,7 +114,8 @@ export class StreamChatUseCase {
               language: input.language,
               history,
               pages,
-              selectedPages
+              selectedPages,
+              allowAsking: input.teacherAsks ?? true
             },
             signal
           )) {

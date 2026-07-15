@@ -37,10 +37,12 @@ export function TeachingWorkspace() {
     <WorkspaceMenu
       showTranscript={vm.showTranscript}
       showCaption={vm.showCaption}
+      teacherAsks={vm.teacherAsks}
       restartDisabled={vm.restartDisabled}
       onEditPages={session.openPageDialog}
       onToggleTranscript={session.toggleTranscript}
       onToggleCaption={session.toggleCaption}
+      onToggleTeacherAsks={session.toggleTeacherAsks}
       onRestart={session.clearChat}
     />
   );

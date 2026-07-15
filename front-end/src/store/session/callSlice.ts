@@ -1,5 +1,11 @@
 import type { StateCreator } from "zustand";
-import { CALL_RESUME_DELAY_MS, GREETING_PROMPT } from "@/lib/constants";
+import {
+  CALL_RESUME_DELAY_MS,
+  CONTINUE_PROMPT,
+  GREETING_PROMPT,
+  PRESENCE_CHECK_AFTER_ROUNDS,
+  PRESENCE_PROMPT
+} from "@/lib/constants";
 import { prepareLessonPages } from "@/services/documentsApi";
 import { useChatStore } from "../chatStore";
 import { useDocumentStore } from "../documentStore";
@@ -37,9 +43,17 @@ export const createCallSlice: StateCreator<SessionStore, [], [], CallSlice> = (s
       return;
     }
 
-    set({ callMode: true, hasIntroduced: true });
+    set({ callMode: true, hasIntroduced: true, silentRounds: 0, awaitingPresence: false });
     void useVoiceStore.getState().start();
     void useChatStore.getState().sendMessage(GREETING_PROMPT, { hidden: true });
+  };
+
+  const listenForPresence = (): void => {
+    setTimeout(() => {
+      if (get().callMode && get().awaitingPresence && !useChatStore.getState().isStreaming) {
+        void useVoiceStore.getState().start();
+      }
+    }, CALL_RESUME_DELAY_MS);
   };
 
   return {
@@ -49,10 +63,33 @@ export const createCallSlice: StateCreator<SessionStore, [], [], CallSlice> = (s
     pageDialogOpen: false,
     preparingPages: false,
     prepareError: null,
+    teacherAsks: true,
+    silentRounds: 0,
+    awaitingPresence: false,
+
+    toggleTeacherAsks: () => {
+      const next = !get().teacherAsks;
+      set({ teacherAsks: next });
+      if (!get().callMode) return;
+
+      set({ silentRounds: 0, awaitingPresence: false });
+      if (useChatStore.getState().isStreaming) return;
+
+      if (next) {
+        void useVoiceStore.getState().start();
+      } else {
+        useVoiceStore.getState().stop();
+        get().maybeContinueCall();
+      }
+    },
 
     handleVoiceTranscript: (transcript) => {
       const trimmed = transcript.trim();
       if (!trimmed) return;
+
+      if (get().silentRounds !== 0 || get().awaitingPresence) {
+        set({ silentRounds: 0, awaitingPresence: false });
+      }
 
       if (get().pendingQuestion) set({ pendingQuestion: null });
       if (get().callMode) {
@@ -65,9 +102,32 @@ export const createCallSlice: StateCreator<SessionStore, [], [], CallSlice> = (s
 
     maybeContinueCall: () => {
       if (!get().callMode) return;
+
+      if (get().awaitingPresence) {
+        listenForPresence();
+        return;
+      }
+
+      if (get().teacherAsks) {
+        setTimeout(() => {
+          if (get().callMode && !useChatStore.getState().isStreaming) {
+            void useVoiceStore.getState().start();
+          }
+        }, CALL_RESUME_DELAY_MS);
+        return;
+      }
+
+      const rounds = get().silentRounds + 1;
+      set({ silentRounds: rounds });
       setTimeout(() => {
-        if (get().callMode && !useChatStore.getState().isStreaming) {
-          useVoiceStore.getState().start();
+        if (!get().callMode || useChatStore.getState().isStreaming) return;
+        if (get().teacherAsks) return;
+
+        if (rounds >= PRESENCE_CHECK_AFTER_ROUNDS) {
+          set({ awaitingPresence: true, silentRounds: 0 });
+          void useChatStore.getState().sendMessage(PRESENCE_PROMPT, { hidden: true });
+        } else {
+          void useChatStore.getState().sendMessage(CONTINUE_PROMPT, { hidden: true });
         }
       }, CALL_RESUME_DELAY_MS);
     },
@@ -87,13 +147,13 @@ export const createCallSlice: StateCreator<SessionStore, [], [], CallSlice> = (s
 
     endCall: () => {
       if (!get().callMode) return;
-      set({ pendingQuestion: null });
+      set({ pendingQuestion: null, silentRounds: 0, awaitingPresence: false });
       haltCall(set, get);
     },
 
     handleCallToggle: async () => {
       if (get().callMode) {
-        set({ pendingQuestion: null });
+        set({ pendingQuestion: null, silentRounds: 0, awaitingPresence: false });
         useChatStore.getState().abort();
         haltCall(set, get);
         return;

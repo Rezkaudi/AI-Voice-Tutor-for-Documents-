@@ -157,7 +157,8 @@
       "open": "Session settings",
       "close": "Close settings"
     },
-    "liveCaptions": "Live captions"
+    "liveCaptions": "Live captions",
+    "teacherAsks": "Teacher asks"
   },
   "workspaceMenu": {
     "menu": "Menu",

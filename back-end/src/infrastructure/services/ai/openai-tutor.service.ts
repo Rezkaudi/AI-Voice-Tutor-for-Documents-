@@ -55,7 +55,7 @@ export class OpenAiTutorService implements TutorService {
       );
     }
 
-    const stream = await createResponse(this.requests.body(settings, input), { signal });
+    const stream = await createResponse(this.requests.body(settings, input, request), { signal });
 
     const streamReader = this.streamReader.read(stream);
     const iterator = streamReader[Symbol.asyncIterator]();

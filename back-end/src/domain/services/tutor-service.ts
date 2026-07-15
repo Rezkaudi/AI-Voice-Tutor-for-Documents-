@@ -16,6 +16,7 @@ export interface TutorReplyRequest {
   readonly history: ReadonlyArray<ChatMessage>;
   readonly pages: DocumentPage[];
   readonly selectedPages: number[];
+  readonly allowAsking: boolean;
 }
 
 export interface TutorService {

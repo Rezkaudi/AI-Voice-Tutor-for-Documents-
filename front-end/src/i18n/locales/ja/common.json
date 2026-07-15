@@ -156,7 +156,8 @@
       "open": "セッション設定",
       "close": "設定を閉じる"
     },
-    "liveCaptions": "ライブ字幕"
+    "liveCaptions": "ライブ字幕",
+    "teacherAsks": "先生が質問する"
   },
   "workspaceMenu": {
     "menu": "メニュー",
