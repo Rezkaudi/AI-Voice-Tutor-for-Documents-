@@ -85,6 +85,12 @@ export const createCallSlice: StateCreator<SessionStore, [], [], CallSlice> = (s
       }
     },
 
+    endCall: () => {
+      if (!get().callMode) return;
+      set({ pendingQuestion: null });
+      haltCall(set, get);
+    },
+
     handleCallToggle: async () => {
       if (get().callMode) {
         set({ pendingQuestion: null });

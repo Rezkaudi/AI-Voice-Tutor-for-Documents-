@@ -9,6 +9,7 @@ interface RunChatStreamDeps {
   onReference: (reference: DocumentReference | null) => void;
   onFocusCitation: (citation: DocumentCitation) => void;
   onQuestion: (question: string | null) => void;
+  onEndSession: () => void;
 }
 
 interface PendingClip {
@@ -24,10 +25,12 @@ export async function runChatStream({
   onText,
   onReference,
   onFocusCitation,
-  onQuestion
+  onQuestion,
+  onEndSession
 }: RunChatStreamDeps): Promise<string> {
   let assistantText = "";
   let pendingQuestion: string | null = null;
+  let endSession = false;
 
   const refBox: { current: DocumentReference | null } = { current: null };
 
@@ -97,6 +100,11 @@ export async function runChatStream({
       return;
     }
 
+    if (event.event === "end-session") {
+      endSession = true;
+      return;
+    }
+
     if (event.event === "error") {
       throw new Error(event.data.error);
     }
@@ -106,6 +114,11 @@ export async function runChatStream({
   pendingTimers.current.forEach((id) => window.clearTimeout(id));
 
   if (signal.aborted) return assistantText;
+
+  if (endSession) {
+    onEndSession();
+    return assistantText;
+  }
 
   onQuestion(pendingQuestion);
 

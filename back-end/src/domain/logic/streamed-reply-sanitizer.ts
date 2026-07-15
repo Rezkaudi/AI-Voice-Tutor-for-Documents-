@@ -1,8 +1,10 @@
 export class StreamedReplySanitizer {
-  private static readonly ASK_DELIMITERS = /\[\[\/?ASK\]\]/g;
+  private static readonly CONTROL_MARKERS = /\[\[\/?ASK\]\]|\[\[END\]\]/g;
   private static readonly CONFIRMED_TRAILER = /^[ \t]*CITATIONS:?[ \t]*(?=\r?\n)/im;
   private static readonly DANGLING_TRAILER = /^\s*CITATIONS:?[ \t]*$/i;
-  private static readonly LONGEST_ASK_PREFIX = "[[/ASK]]".length - 1;
+  private static readonly MARKER_PREFIXES = ["[[ASK]]", "[[/ASK]]", "[[END]]"];
+  private static readonly LONGEST_MARKER_PREFIX =
+    Math.max(...StreamedReplySanitizer.MARKER_PREFIXES.map((m) => m.length)) - 1;
 
   private text = "";
   private cursor = 0;
@@ -38,7 +40,7 @@ export class StreamedReplySanitizer {
   }
 
   private clean(chunk: string): string {
-    return chunk.replace(StreamedReplySanitizer.ASK_DELIMITERS, "");
+    return chunk.replace(StreamedReplySanitizer.CONTROL_MARKERS, "");
   }
 
   /** Holds back the current last line while it could still become "CITATIONS:". */
@@ -59,15 +61,15 @@ export class StreamedReplySanitizer {
     return "CITATIONS:".startsWith(word);
   }
 
-  /** Holds back a trailing fragment that could still become an ASK delimiter. */
+  /** Holds back a trailing fragment that could still become a control marker. */
   private askHoldback(): number {
     const max = Math.min(
-      StreamedReplySanitizer.LONGEST_ASK_PREFIX,
+      StreamedReplySanitizer.LONGEST_MARKER_PREFIX,
       this.text.length - this.cursor
     );
     for (let length = max; length >= 1; length -= 1) {
       const suffix = this.text.slice(this.text.length - length);
-      if ("[[ASK]]".startsWith(suffix) || "[[/ASK]]".startsWith(suffix)) {
+      if (StreamedReplySanitizer.MARKER_PREFIXES.some((m) => m.startsWith(suffix))) {
         return this.text.length - length;
       }
     }

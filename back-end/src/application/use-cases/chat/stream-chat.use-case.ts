@@ -122,6 +122,8 @@ export class StreamChatUseCase {
               queue.push({ event: "meta", data: { reference: event.reference } });
             } else if (event.type === "question") {
               queue.push({ event: "question", data: { text: event.text } });
+            } else if (event.type === "end") {
+              queue.push({ event: "end-session", data: {} });
             } else if (event.type === "usage") {
               await costTracker.track(userId, event.usage, { countAsQuestion: true });
             } else {
