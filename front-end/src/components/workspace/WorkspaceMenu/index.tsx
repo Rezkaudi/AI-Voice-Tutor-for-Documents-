@@ -34,6 +34,7 @@ interface WorkspaceMenuProps {
   showTranscript: boolean;
   showCaption: boolean;
   teacherAsks: boolean;
+  teacherAsksDisabled: boolean;
   restartDisabled: boolean;
   onEditPages?: () => void;
   onToggleTranscript: () => void;
@@ -46,6 +47,7 @@ export function WorkspaceMenu({
   showTranscript,
   showCaption,
   teacherAsks,
+  teacherAsksDisabled,
   restartDisabled,
   onEditPages,
   onToggleTranscript,
@@ -104,6 +106,7 @@ export function WorkspaceMenu({
             icon={MessageCircleQuestion}
             label={t("controls.teacherAsks")}
             active={teacherAsks}
+            disabled={teacherAsksDisabled}
             trailing={<StateChip on={teacherAsks} />}
             onClick={() => run(onToggleTeacherAsks)}
           />

@@ -41,6 +41,7 @@ export function TeachingWorkspace() {
       showTranscript={vm.showTranscript}
       showCaption={vm.showCaption}
       teacherAsks={vm.teacherAsks}
+      teacherAsksDisabled={vm.callMode}
       restartDisabled={vm.restartDisabled}
       onEditPages={session.openPageDialog}
       onToggleTranscript={session.toggleTranscript}

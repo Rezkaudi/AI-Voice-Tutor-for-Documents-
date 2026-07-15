@@ -105,6 +105,7 @@ export function SettingsMenu({ large = false }: SettingsMenuProps) {
               icon={MessageCircleQuestion}
               label={t("controls.teacherAsks")}
               active={teacherAsks}
+              disabled={callMode}
               onClick={toggleTeacherAsks}
               trailing={<StateChip on={teacherAsks} />}
             />
