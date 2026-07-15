@@ -5,10 +5,13 @@ import { QuestionPopup } from "../teacher/QuestionPopup";
 import { DesktopLayout } from "./DesktopLayout";
 import { MobileLayout } from "./MobileLayout";
 import { useWorkspaceState } from "@/hooks/workspace/useWorkspaceState";
+import { useSpacebarPause } from "@/hooks/workspace/useSpacebarPause";
 
 export function TeachingWorkspace() {
   const vm = useWorkspaceState();
   const { loadedDocument, session, documentStore } = vm;
+
+  useSpacebarPause();
 
   if (!loadedDocument) return null;
 
