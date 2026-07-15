@@ -105,10 +105,15 @@ export class OpenAiTutorService implements TutorService {
         yield { type: "reference", reference };
       }
 
-      const { question } = this.questionExtractor.extract(spokenText);
-      if (question) {
-        log.info(`learner question → "${this.logger.preview(question)}"`);
-        yield { type: "question", text: question };
+      if (/\[\[END\]\]/.test(stepText)) {
+        log.info("learner asked to end the session → signalling end");
+        yield { type: "end" };
+      } else {
+        const { question } = this.questionExtractor.extract(spokenText);
+        if (question) {
+          log.info(`learner question → "${this.logger.preview(question)}"`);
+          yield { type: "question", text: question };
+        }
       }
     } else {
       log.warn("model returned no text");

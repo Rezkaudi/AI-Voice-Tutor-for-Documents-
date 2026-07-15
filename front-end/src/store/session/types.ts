@@ -29,6 +29,7 @@ export interface CallSlice {
   handleVoiceTranscript: (transcript: string) => void;
   maybeContinueCall: () => void;
   handleMicToggle: () => void;
+  endCall: () => void;
   handleCallToggle: () => Promise<void>;
   openPageDialog: () => void;
   closePageDialog: () => void;

@@ -6,6 +6,7 @@ export type TutorStreamEvent =
   | { type: "delta"; text: string }
   | { type: "reference"; reference: Reference }
   | { type: "question"; text: string }
+  | { type: "end" }
   | { type: "usage"; usage: AiUsage };
 
 export interface TutorReplyRequest {

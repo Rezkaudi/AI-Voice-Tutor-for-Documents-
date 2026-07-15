@@ -4,6 +4,7 @@ export type StreamEvent =
   | { event: "meta"; data: { reference: Reference | null } }
   | { event: "delta"; data: { text: string } }
   | { event: "question"; data: { text: string } }
+  | { event: "end-session"; data: Record<string, never> }
   | { event: "speech-start"; data: { id: number; text: string; markers: number[] } }
   | { event: "speech-chunk"; data: { id: number; audio: string } }
   | { event: "speech-end"; data: { id: number } }

@@ -109,7 +109,8 @@ export const useChatStore = create<ChatStore>((set, get) => {
           onText: (text) => patchAssistant(assistantId, { content: text }),
           onReference: (reference) => applyReference(assistantId, reference),
           onFocusCitation: (citation) => useDocumentStore.getState().focusCitation(citation),
-          onQuestion: (question) => useSessionStore.getState().setPendingQuestion(question)
+          onQuestion: (question) => useSessionStore.getState().setPendingQuestion(question),
+          onEndSession: () => useSessionStore.getState().endCall()
         });
 
         useSessionStore.getState().maybeContinueCall();
