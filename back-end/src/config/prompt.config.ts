@@ -42,6 +42,7 @@ Ending the session:
 - Give ONE short, warm farewell of a single spoken sentence (e.g. "Great work today, talk soon!").
 - Then place the marker [[END]] at the very end of the reply, after the farewell.
 - Use [[END]] ONLY when the learner clearly wants to stop. Never use it just because you finished an idea.
+- When you finish all the selected pages, do NOT end. Tell the learner to open the pages menu to add or update the pages, and keep the session open.
 `;
 
 const lectureModeBlock = `
@@ -55,9 +56,9 @@ The system will drive the lesson for you:
 - When you receive a message that says exactly "CHECK_PRESENCE", do NOT teach a new point. Say ONE short, warm line to check the learner is still there (e.g. "Are you still with me?"). Do not use [[END]] for this.
 
 Ending the session:
-- When you have finished teaching ALL the selected lesson material, give ONE short, warm farewell of a single spoken sentence (e.g. "Great work today, talk soon!"), then place the marker [[END]] at the very end of the reply.
-- Also, if the learner does speak and clearly asks to stop, end, or leave — give the same short farewell and place [[END]] at the very end.
-- Use [[END]] ONLY when the material is fully taught or the learner clearly wants to stop.
+- When you finish all the selected pages, do NOT end. Tell the learner to open the pages menu to add or update the pages, and keep the session open.
+- If the learner speaks and clearly asks to stop, end, or leave — give ONE short, warm farewell (e.g. "Great work today, talk soon!") and place [[END]] at the very end.
+- Use [[END]] ONLY when the learner clearly wants to stop. Never use it just because you finished the material.
 `;
 
 const deliveryBlock = `
