@@ -1,13 +1,11 @@
 import type { Reference } from "@/domain/entities/chat";
-import type { DocumentChunk, DocumentPage } from "@/domain/entities/document";
+import type { DocumentPage } from "@/domain/entities/document";
 import type { CitationCandidate } from "@/domain/logic/citation/citation-types";
 import type { CitationResolver } from "@/domain/logic/citation/citation-resolver";
 import type { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
 
 export interface ReferenceSelection {
-  referencesByPage: Map<number, Reference>;
   pages: ReadonlyArray<DocumentPage>;
-  chunks: ReadonlyArray<DocumentChunk>;
   citedCandidates: ReadonlyArray<CitationCandidate>;
 }
 
@@ -18,7 +16,7 @@ export class ReferenceSelector {
   ) { }
 
   select(input: ReferenceSelection): Reference | null {
-    const { referencesByPage, pages, chunks, citedCandidates } = input;
+    const { pages, citedCandidates } = input;
 
     const resolved = this.citations.resolve(citedCandidates, pages);
     if (resolved.length === 0) {
@@ -27,8 +25,7 @@ export class ReferenceSelector {
 
     const primaryPage = resolved[0]!.pageNumber;
     const base =
-      referencesByPage.get(primaryPage) ??
-      this.referenceFactory.forPage(primaryPage, pages, chunks) ??
+      this.referenceFactory.forPage(primaryPage, pages) ??
       { pageNumber: primaryPage, citations: [] };
     return { ...base, citations: resolved };
   }

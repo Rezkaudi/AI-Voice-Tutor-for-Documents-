@@ -97,8 +97,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
             message: trimmed,
             language: session.speechLanguage,
             messages: history,
-            selectedPages: useSessionStore.getState().selectedPages,
-            saveCost: useSessionStore.getState().saveCost
+            selectedPages: useSessionStore.getState().selectedPages
           },
           controller.signal
         );

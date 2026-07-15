@@ -54,7 +54,7 @@ export function QuestionPopup({
 
   return (
     <>
-      <div className={backdrop} aria-hidden />
+      <div className={backdrop} aria-hidden onClick={onDismiss} />
       <div
         className={dialogWrap}
         role="dialog"

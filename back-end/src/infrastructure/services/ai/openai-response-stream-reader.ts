@@ -1,11 +1,5 @@
 import type { TutorStreamEvent } from "@/domain/services/tutor-service";
 
-export interface PendingToolCall {
-  callId: string;
-  name: string;
-  args: string;
-}
-
 export interface StepUsage {
   inputTokens: number;
   outputTokens: number;
@@ -13,24 +7,15 @@ export interface StepUsage {
 }
 
 export interface StreamStep {
-  toolCalls: PendingToolCall[];
   stepText: string;
-  responseId?: string;
   usage?: StepUsage;
-}
-
-export interface StreamDelta {
-  type: "delta";
-  text: string;
 }
 
 export class OpenAiResponseStreamReader {
   async *read(
     stream: AsyncIterable<Record<string, unknown>>
   ): AsyncGenerator<TutorStreamEvent, StreamStep> {
-    const toolCalls: PendingToolCall[] = [];
     const textByOutputIndex = new Map<number, string>();
-    let responseId: string | undefined;
     let usage: StepUsage | undefined;
 
     for await (const event of stream) {
@@ -41,20 +26,8 @@ export class OpenAiResponseStreamReader {
         const index = typeof event.output_index === "number" ? event.output_index : 0;
         textByOutputIndex.set(index, (textByOutputIndex.get(index) ?? "") + event.delta);
         yield { type: "delta", text: event.delta };
-      } else if (event.type === "response.output_item.done") {
-        const item = event.item as Record<string, unknown> | undefined;
-        if (item?.type === "function_call") {
-          toolCalls.push({
-            callId: String(item.call_id),
-            name: String(item.name),
-            args: typeof item.arguments === "string" ? item.arguments : "{}"
-          });
-        }
       } else if (event.type === "response.completed") {
         const response = event.response as Record<string, unknown> | undefined;
-        if (response?.id) {
-          responseId = String(response.id);
-        }
         usage = readUsage(response?.usage);
       }
     }
@@ -62,7 +35,7 @@ export class OpenAiResponseStreamReader {
     const lastIndex = [...textByOutputIndex.keys()].sort((a, b) => a - b).pop();
     const stepText = lastIndex === undefined ? "" : (textByOutputIndex.get(lastIndex) ?? "");
 
-    return { toolCalls, stepText, responseId, usage };
+    return { stepText, usage };
   }
 }
 

@@ -3,7 +3,6 @@ import { Navigate, Outlet } from "react-router-dom";
 import { FullScreenLoader } from "@/components/common/FullScreenLoader";
 import { useAuthStore } from "@/store/authStore";
 import { useDocumentStore } from "@/store/documentStore";
-import { useSessionStore } from "@/store/sessionStore";
 import { useVoiceStore } from "@/store/voiceStore";
 import { paths } from "./paths";
 
@@ -13,7 +12,6 @@ export function ProtectedRoute() {
   useEffect(() => {
     if (status !== "authenticated") return;
     useVoiceStore.getState().init();
-    useSessionStore.getState().initSaveCost();
     void useDocumentStore.getState().initLibrary();
   }, [status]);
 

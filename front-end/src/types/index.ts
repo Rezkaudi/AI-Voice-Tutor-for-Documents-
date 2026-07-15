@@ -26,14 +26,8 @@ export interface DocumentRecord {
 
 export type DocumentSummary = DocumentRecord;
 
-export interface DocumentPage {
-  pageNumber: number;
-  text: string;
-}
-
 export interface LoadedDocument {
   document: DocumentRecord;
-  pages: DocumentPage[];
   fileUrl: string | null;
 }
 
@@ -69,7 +63,6 @@ export interface ChatPayload {
   messages: ChatHistoryMessage[];
 
   selectedPages: number[];
-  saveCost: boolean;
 }
 
 export type StreamEvent =

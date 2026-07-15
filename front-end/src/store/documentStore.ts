@@ -8,7 +8,6 @@ import {
 import { useSessionStore } from "./sessionStore";
 import type {
   DocumentCitation,
-  DocumentPage,
   DocumentReference,
   DocumentSummary,
   LoadedDocument,
@@ -102,7 +101,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       const data = await fetchDocument(documentId);
       set({
         loadedDocument: data,
-        activePage: data.pages[0]?.pageNumber ?? 1
+        activePage: 1
       });
       window.localStorage.setItem(LAST_DOC_KEY, documentId);
     } catch (error) {
@@ -140,7 +139,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       set({ uploadPhase: "processing", uploadProgress: 100 });
 
       const data = await fetchDocument(documentId);
-      set({ loadedDocument: data, activePage: data.pages[0]?.pageNumber ?? 1 });
+      set({ loadedDocument: data, activePage: 1 });
       window.localStorage.setItem(LAST_DOC_KEY, documentId);
       void get().loadLibrary();
       return documentId;
@@ -196,16 +195,4 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
 export function citationKey(citation: DocumentCitation): string {
   return `${citation.pageNumber}:${citation.start}:${citation.end}`;
-}
-
-export function selectCurrentPage(state: DocumentStore): DocumentPage | null {
-  const { loadedDocument, activePage } = state;
-  if (!loadedDocument) {
-    return null;
-  }
-  return (
-    loadedDocument.pages.find((page) => page.pageNumber === activePage) ??
-    loadedDocument.pages[0] ??
-    null
-  );
 }

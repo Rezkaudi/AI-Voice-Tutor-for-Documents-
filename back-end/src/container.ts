@@ -19,7 +19,6 @@ import { AuthenticateWithGoogleUseCase } from "@/application/use-cases/auth/auth
 import { RefreshSessionUseCase } from "@/application/use-cases/auth/refresh-session.use-case";
 import { GetCurrentUserUseCase } from "@/application/use-cases/auth/get-current-user.use-case";
 
-import { ChunkRanker } from "@/domain/logic/retrieval/chunk-ranker";
 import { CitationResolver } from "@/domain/logic/citation/citation-resolver";
 import { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
 import { TokenSimilarity } from "@/domain/logic/citation/token-similarity";
@@ -27,7 +26,6 @@ import { QuoteLocator } from "@/domain/logic/citation/quote-locator";
 import { DocumentReferenceFactory } from "@/domain/logic/citation/document-reference-factory";
 import { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
-import { DocumentChunker } from "@/domain/logic/retrieval/document-chunker";
 import { UploadValidator } from "@/domain/logic/upload-validator";
 import { FileNaming } from "@/domain/logic/file-naming";
 import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
@@ -51,12 +49,9 @@ import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage
 import { PdfiumPageRenderer } from "@/infrastructure/services/documents/pdfium-page-renderer";
 import { PaddleOcrTextExtractor } from "@/infrastructure/services/documents/paddle-ocr-text-extractor";
 import { HfVlTextExtractor } from "@/infrastructure/services/documents/hf-vl-text-extractor";
-import { OcrServiceTextExtractor } from "@/infrastructure/services/documents/ocr-service-text-extractor";
 import { DocLayoutRegionDetector } from "@/infrastructure/services/documents/doclayout-region-detector";
 import { InMemoryPageCache } from "@/infrastructure/services/cache/in-memory-page-cache";
 import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.service";
-import { TutorToolExecutor } from "@/infrastructure/services/ai/tutor-tool-executor";
-import { OpenAiEmbeddingService } from "@/infrastructure/services/ai/openai-embedding.service";
 import { OpenAiTextToSpeechService } from "@/infrastructure/services/ai/openai-text-to-speech.service";
 import { OpenAiSpeechToTextService } from "@/infrastructure/services/ai/openai-speech-to-text.service";
 import { ConsoleLogger } from "@/infrastructure/logging/console-logger";
@@ -87,13 +82,11 @@ export async function buildContainer(): Promise<Container> {
   // ─── Domain services (pure business logic) ───────────────────────────────
   const tokenizer = new TokenSimilarity();
   const textNormalizer = new TextNormalizer();
-  const chunkRanker = new ChunkRanker(tokenizer);
   const quoteLocator = new QuoteLocator(textNormalizer, tokenizer);
   const citationResolver = new CitationResolver(quoteLocator, textNormalizer);
   const referenceFactory = new DocumentReferenceFactory();
   const referenceSelector = new ReferenceSelector(citationResolver, referenceFactory);
   const learnerQuestionExtractor = new LearnerQuestionExtractor();
-  const documentChunker = new DocumentChunker(idGenerator, textNormalizer);
   const uploadValidator = new UploadValidator();
   const fileNaming = new FileNaming();
   const historySanitizer = new ChatHistorySanitizer();
@@ -101,7 +94,7 @@ export async function buildContainer(): Promise<Container> {
   const readingOrderBuilder = new ReadingOrderBuilder();
 
   // ─── Infrastructure adapters (implement domain ports) ────────────────────
-  const documentRepository = new TypeOrmDocumentRepository(dataSource, idGenerator);
+  const documentRepository = new TypeOrmDocumentRepository(dataSource);
   const userRepository = new TypeOrmUserRepository(dataSource, idGenerator);
   const userCostRepository = new TypeOrmUserCostRepository(dataSource);
   const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
@@ -126,19 +119,10 @@ export async function buildContainer(): Promise<Container> {
     logger
   );
 
-  // const textExtractor = new OcrServiceTextExtractor(
-  //   ENV_CONFIG,
-  //   new PdfiumPageRenderer(),
-  //   textNormalizer,
-  //   logger
-  // );
   // const textExtractor = PdfJsTextExtractor.createDefault();
   const pageCache = new InMemoryPageCache();
-  const embeddingService = new OpenAiEmbeddingService(ENV_CONFIG, logger);
-  const tutorToolExecutor = new TutorToolExecutor(embeddingService, chunkRanker, referenceFactory);
   const tutorService = new OpenAiTutorService(
     ENV_CONFIG,
-    tutorToolExecutor,
     referenceSelector,
     learnerQuestionExtractor,
     logger

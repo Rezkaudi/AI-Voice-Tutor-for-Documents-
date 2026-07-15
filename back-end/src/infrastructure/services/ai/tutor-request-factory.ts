@@ -1,26 +1,20 @@
 import type { TutorReplyRequest } from "@/domain/services/tutor-service";
 import type { EnvConfig } from "@/config/env.config";
 import { buildTutorInstructions } from "@/config/prompt.config";
-import { NORMAL_GENERATION, SAVE_COST_GENERATION } from "@/config/constant.config";
-import { TUTOR_TOOLS } from "@/config/ai-tools.config";
+import { NORMAL_GENERATION } from "@/config/constant.config";
 
 export interface TurnSettings {
   model: string;
   historyWindow: number;
   reasoningEffort: string;
   maxOutputTokens: number;
-  maxToolSteps: number;
 }
 
 export class TutorRequestFactory {
   constructor(private readonly config: EnvConfig) { }
 
-  settingsFor(request: TutorReplyRequest): TurnSettings {
-    const profile = request.saveCost ? SAVE_COST_GENERATION : NORMAL_GENERATION;
-    const model = request.saveCost
-      ? this.config.OPENAI_TUTOR_MODEL_SAVE_COST
-      : this.config.OPENAI_TUTOR_MODEL;
-    return { model, ...profile };
+  settingsFor(_request: TutorReplyRequest): TurnSettings {
+    return { model: this.config.OPENAI_TUTOR_MODEL, ...NORMAL_GENERATION };
   }
 
   initialInput(request: TutorReplyRequest, settings: TurnSettings): Record<string, unknown>[] {
@@ -55,21 +49,14 @@ export class TutorRequestFactory {
     );
   }
 
-  body(request: TutorReplyRequest, settings: TurnSettings, input: Record<string, unknown>[], previousResponseId: string | undefined): Record<string, unknown> {
+  body(settings: TurnSettings, input: Record<string, unknown>[]): Record<string, unknown> {
     return {
       model: settings.model,
       instructions: buildTutorInstructions(),
       reasoning: { effort: settings.reasoningEffort },
       max_output_tokens: settings.maxOutputTokens,
-      tools: this.toolsFor(request),
       input,
-      ...(previousResponseId ? { previous_response_id: previousResponseId } : {}),
       stream: true
     };
-  }
-
-  private toolsFor(request: TutorReplyRequest): readonly unknown[] {
-    if (request.selectedPages.length === 0) return TUTOR_TOOLS;
-    return [];
   }
 }

@@ -71,7 +71,7 @@ export class RegisterUploadUseCase {
       error: null
     };
 
-    await this.repository.save({ record, pages: [], chunks: [] });
+    await this.repository.save(record);
     log.info(`registered documentId=${input.documentId} · ${pageCount} page(s) · ${meta.size} bytes`);
 
     return { documentId: input.documentId, status: record.status };

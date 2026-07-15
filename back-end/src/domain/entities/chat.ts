@@ -14,6 +14,5 @@ export interface Citation {
 
 export interface Reference {
   pageNumber: number;
-  chunkId?: string;
   citations: Citation[];
 }

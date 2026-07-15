@@ -20,7 +20,6 @@ export interface StreamChatInput {
   readonly language: string;
   readonly messages: ChatMessage[];
   readonly selectedPages: number[];
-  readonly saveCost: boolean;
 }
 
 export class StreamChatUseCase {
@@ -46,7 +45,7 @@ export class StreamChatUseCase {
 
     log.info(
       `question on document ${documentId} · lang=${input.language} · ` +
-      `saveCost=${input.saveCost} · history=${input.messages.length} msg(s)`
+      `history=${input.messages.length} msg(s)`
     );
     log.detail("student message", message);
 
@@ -70,11 +69,9 @@ export class StreamChatUseCase {
       pageNumbers: selectedPages
     });
 
-    const chunks: never[] = [];
-
     log.info(
       `loaded document "${document.title}" · ${pages.length} lesson page(s) · ` +
-      `chunks disabled · ${history.length} history turn(s) · ` +
+      `${history.length} history turn(s) · ` +
       `lesson pages=[${selectedPages.join(", ")}] → streaming answer`
     );
 
@@ -116,9 +113,7 @@ export class StreamChatUseCase {
               language: input.language,
               history,
               pages,
-              chunks,
-              selectedPages,
-              saveCost: input.saveCost
+              selectedPages
             },
             signal
           )) {

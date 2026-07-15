@@ -1,7 +1,5 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 import type { DocumentStatus, UploadKind } from "@/domain/entities/document";
-import { DocumentPageOrmEntity } from "./document-page.entity";
-import { DocumentChunkOrmEntity } from "./document-chunk.entity";
 import { UserOrmEntity } from "./user.entity";
 
 @Entity({ name: "documents" })
@@ -49,14 +47,4 @@ export class DocumentOrmEntity {
 
   @Column({ type: "text", nullable: true })
   error!: string | null;
-
-  @OneToMany(() => DocumentPageOrmEntity, (page) => page.document, {
-    cascade: true
-  })
-  pages!: DocumentPageOrmEntity[];
-
-  @OneToMany(() => DocumentChunkOrmEntity, (chunk) => chunk.document, {
-    cascade: true
-  })
-  chunks!: DocumentChunkOrmEntity[];
 }

@@ -22,10 +22,5 @@ export const MODEL_PRICING: Readonly<Record<string, ModelRate>> = Object.freeze(
 
   // ─── Voice — speech-to-text (transcription) ──────────────────────────────
   "gpt-4o-mini-transcribe": { inputPer1M: 1.25, outputPer1M: 5.0 },
-  "gpt-4o-transcribe": { inputPer1M: 2.5, outputPer1M: 10.0 },
-
-  // ─── Embeddings (billed on input only) ───────────────────────────────────
-  "text-embedding-3-small": { inputPer1M: 0.02, outputPer1M: 0 },
-  "text-embedding-3-large": { inputPer1M: 0.13, outputPer1M: 0 },
-  "text-embedding-ada-002": { inputPer1M: 0.1, outputPer1M: 0 }
+  "gpt-4o-transcribe": { inputPer1M: 2.5, outputPer1M: 10.0 }
 });

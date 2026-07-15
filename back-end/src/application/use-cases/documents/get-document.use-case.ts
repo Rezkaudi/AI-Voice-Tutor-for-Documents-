@@ -15,8 +15,6 @@ export class GetDocumentUseCase {
       throw new NotFoundError("Document not found.");
     }
 
-    const pages = await this.repository.getPages(documentId);
-
-    return { document, pages, fileUrl: `/api/documents/${documentId}/file` };
+    return { document, fileUrl: `/api/documents/${documentId}/file` };
   }
 }

@@ -1,13 +1,10 @@
 import type { StateCreator } from "zustand";
 import type { SessionStore, UiSlice } from "./types";
 
-const SAVE_COST_KEY = "saveCostMode";
-
 export const createUiSlice: StateCreator<SessionStore, [], [], UiSlice> = (set, get) => ({
   error: null,
   mobilePane: "teacher",
   speechLanguage: "",
-  saveCost: false,
   showTranscript: false,
   showCaption: true,
   pendingQuestion: null,
@@ -23,15 +20,5 @@ export const createUiSlice: StateCreator<SessionStore, [], [], UiSlice> = (set, 
   setTranscript: (showTranscript) => set({ showTranscript }),
   toggleCaption: () => set((s) => ({ showCaption: !s.showCaption })),
   setMobilePane: (mobilePane) => set({ mobilePane }),
-  setSpeechLanguage: (speechLanguage) => set({ speechLanguage }),
-
-  initSaveCost: () => {
-    set({ saveCost: window.localStorage.getItem(SAVE_COST_KEY) === "1" });
-  },
-
-  toggleSaveCost: () => {
-    const next = !get().saveCost;
-    window.localStorage.setItem(SAVE_COST_KEY, next ? "1" : "0");
-    set({ saveCost: next });
-  }
+  setSpeechLanguage: (speechLanguage) => set({ speechLanguage })
 });
