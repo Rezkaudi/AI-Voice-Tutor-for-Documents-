@@ -1,8 +1,3 @@
-/**
- * Unbounded push/pull bridge between concurrent producers and one async
- * consumer. Lets the chat stream interleave tutor events and speech audio
- * in completion order without either producer blocking the other.
- */
 export class AsyncEventQueue<T> implements AsyncIterable<T> {
   private readonly items: T[] = [];
   private waiter: (() => void) | null = null;
@@ -15,7 +10,6 @@ export class AsyncEventQueue<T> implements AsyncIterable<T> {
     this.wake();
   }
 
-  /** No more pushes; pending items still drain. A reason makes the consumer throw. */
   end(reason?: unknown): void {
     if (this.closed) return;
     this.closed = true;
@@ -24,7 +18,7 @@ export class AsyncEventQueue<T> implements AsyncIterable<T> {
   }
 
   async *[Symbol.asyncIterator](): AsyncIterator<T> {
-    for (;;) {
+    for (; ;) {
       while (this.items.length > 0) {
         yield this.items.shift()!;
       }
