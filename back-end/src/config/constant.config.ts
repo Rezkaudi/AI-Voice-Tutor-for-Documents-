@@ -1,9 +1,3 @@
-export const LANGUAGE_NAMES: Record<string, string> = {
-    ja: "Japanese",
-    en: "English",
-    ar: "Arabic"
-};
-
 export const MAX_LESSON_PAGES = 5;
 
 export interface TutorGenerationProfile {
