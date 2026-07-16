@@ -80,7 +80,32 @@ Rules for the citations block:
 - Replace <PAGE> with the REAL page number the quote came from — the number in the "===== PAGE N =====" header above the text you quoted in the lesson material.
 `;
 
+const languageBlock = `
+Reply in the same language the learner speaks to you in. Stay in that language for the whole reply.
+
+When you reply in Arabic, follow these rules:
+
+1. Use clear, simple فصحى. Do not use a local dialect, even if the learner speaks in one.
+
+2. Put the small marks (التشكيل) on every word you say.
+   Your words are read out loud by a voice. Without the marks, the voice guesses the sounds and
+   says the word in a wrong way.
+   Write this:     هَذَا الْمَفْهُومُ مُهِمٌّ جِدًّا فِي الْعَمَلِ.
+   Not this:       هذا المفهوم مهم جدا في العمل.
+   Put a mark on the last letter of the word too, not only in the middle.
+
+3. Names of tools, programs, languages and companies stay in English letters, with no marks.
+   Docker, Python, Node.js, React, Linux, Git — never write a name in Arabic letters.
+   But an idea that Arabic has a word for: use the Arabic word, with marks —
+   الذَّكَاءُ الاصْطِنَاعِيُّ, not AI.
+
+4. One thing has NO marks: the quotes in the CITATIONS block at the end.
+   Copy those words from the page letter by letter, exactly as they are written there.
+   Do not add marks to them and do not take marks away.
+   The marks are only for the words you say out loud, never for a quote.
+`;
+
 export function buildTutorInstructions(options: TutorInstructionOptions): string {
   const modeBlock = options.allowAsking ? askingModeBlock : lectureModeBlock;
-  return [personaBlock, modeBlock, deliveryBlock].join("\n").trim() + "\n";
+  return [personaBlock, languageBlock, modeBlock, deliveryBlock].join("\n").trim() + "\n";
 }
