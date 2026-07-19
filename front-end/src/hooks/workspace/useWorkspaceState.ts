@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { paths } from "@/routes/paths";
 import { useChatStore } from "@/store/chatStore";
 import { useDocumentStore } from "@/store/documentStore";
+import { startExtractionWatch, stopExtractionWatch } from "@/store/extractionStreamRunner";
 import { useSessionStore } from "@/store/sessionStore";
 import { useSpeechStore } from "@/store/speechStore";
 import { useVoiceStore } from "@/store/voiceStore";
@@ -43,6 +44,15 @@ export function useWorkspaceState() {
   const navigate = useNavigate();
 
   const documentId = loadedDocument?.document.id;
+  const extraction = useDocumentStore((s) => documentId ? s.extraction[documentId] : undefined);
+  const extractionDone = extraction?.done ?? false;
+
+  useEffect(() => {
+    if (!documentId || extractionDone) return;
+    startExtractionWatch(documentId);
+    return () => stopExtractionWatch(documentId);
+  }, [documentId, extractionDone]);
+
   const [boardReady, setBoardReady] = useState(false);
   const [loadProgress, setLoadProgress] = useState<PdfLoadProgress | null>(null);
   useEffect(() => {
@@ -90,6 +100,7 @@ export function useWorkspaceState() {
     showLoadingCover: !boardReady || uploadState === "processing",
     loadProgress: uploadState === "processing" ? null : loadProgress,
     pageCount: loadedDocument?.document.pageCount ?? 0,
+    extraction,
     handleBack,
     handleBoardReady,
     handleLoadProgress,

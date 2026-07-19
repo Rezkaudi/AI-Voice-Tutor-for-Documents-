@@ -28,6 +28,27 @@ export async function prepareLessonPages(
   }
 }
 
+export async function openExtractionStream(
+  documentId: string,
+  signal: AbortSignal
+): Promise<ReadableStream<Uint8Array>> {
+  try {
+    const response = await api.get<ReadableStream<Uint8Array>>(
+      `/api/documents/${documentId}/pages/extract-stream`,
+      { adapter: "fetch", responseType: "stream", signal }
+    );
+    if (!response.data) {
+      throw new Error("The extraction stream could not be opened.");
+    }
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      extractErrorMessage(error, "The extraction stream could not be opened."),
+      { cause: error }
+    );
+  }
+}
+
 export async function deleteDocument(documentId: string): Promise<void> {
   try {
     await api.delete(`/api/documents/${documentId}`);

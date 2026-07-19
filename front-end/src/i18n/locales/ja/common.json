@@ -96,7 +96,11 @@
       "pageLabel": "{{page}} ページ",
       "pageAtMost": "選択できるのは最大 {{max}} ページです",
       "updatePages": "ページを更新",
-      "startLesson": "レッスンを開始"
+      "startLesson": "レッスンを開始",
+      "ready": "{{total}} ページ中 {{ready}} ページ準備完了",
+      "pageExtracting": "{{page}} ページを読み取り中…",
+      "pagePending": "このページはまだ準備できていません",
+      "pageFailed": "このページは読み取れませんでした"
     },
     "preparing": {
       "startTitle": "レッスンを準備しています",

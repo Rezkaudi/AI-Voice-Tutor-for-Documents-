@@ -7,7 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Readable } from "node:stream";
-import { UpstreamError } from "@/domain/errors/app-error";
+import { PreconditionFailedError, UpstreamError } from "@/domain/errors/app-error";
 import type {
   FileStorage,
   RetrievedFile,
@@ -39,10 +39,17 @@ export class S3FileStorage implements FileStorage {
           Bucket: this.config.S3_BUCKET,
           Key: input.key,
           Body: input.body,
-          ContentType: input.contentType
+          ContentType: input.contentType,
+          IfMatch: input.ifMatch,
+          IfNoneMatch: input.ifNoneMatch
         })
       );
     } catch (error) {
+      if (isPreconditionFailure(error)) {
+        throw new PreconditionFailedError(
+          `The stored file changed concurrently: ${input.key}`
+        );
+      }
       throw new UpstreamError(
         `Failed to store the document file: ${describe(error)}`
       );
@@ -114,7 +121,8 @@ export class S3FileStorage implements FileStorage {
       );
       return {
         body,
-        contentType: response.ContentType ?? "application/octet-stream"
+        contentType: response.ContentType ?? "application/octet-stream",
+        eTag: response.ETag
       };
     } catch (error) {
       if (isNotFound(error)) {
@@ -149,6 +157,21 @@ export class S3FileStorage implements FileStorage {
       );
     }
   }
+}
+
+function isPreconditionFailure(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+  const name = (error as { name?: string }).name;
+  const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata
+    ?.httpStatusCode;
+  return (
+    name === "PreconditionFailed" ||
+    name === "ConditionalRequestConflict" ||
+    status === 412 ||
+    status === 409
+  );
 }
 
 function isNotFound(error: unknown): boolean {

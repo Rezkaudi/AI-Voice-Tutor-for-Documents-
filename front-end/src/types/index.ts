@@ -76,6 +76,27 @@ export type StreamEvent =
   | { event: "done"; data: Record<string, unknown> }
   | { event: "error"; data: { error: string } };
 
+export type PageExtractionStreamEvent =
+  | {
+    event: "progress";
+    data: { pageCount: number; extracted: number[]; failed: number[]; done: boolean };
+  }
+  | { event: "page-start"; data: { page: number } }
+  | { event: "page-ready"; data: { page: number } }
+  | { event: "page-failed"; data: { page: number } }
+  | { event: "done"; data: Record<string, never> }
+  | { event: "ping"; data: Record<string, never> }
+  | { event: "error"; data: { error: string } };
+
+export interface ExtractionState {
+  status: "connecting" | "extracting" | "done" | "error";
+  pageCount: number;
+  extractedPages: number[];
+  failedPages: number[];
+  currentPage: number | null;
+  done: boolean;
+}
+
 export interface SegmentedText {
   words: string[];
   offsets: number[];

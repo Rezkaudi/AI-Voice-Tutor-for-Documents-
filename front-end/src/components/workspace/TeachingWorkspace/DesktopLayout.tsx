@@ -61,6 +61,7 @@ export function DesktopLayout({
           pageCount={vm.pageCount}
           selectedPages={vm.selectedPages}
           pageDialogOpen={vm.pageDialogOpen}
+          extraction={vm.extraction}
           onSpeechLanguageChange={session.setSpeechLanguage}
           onMicToggle={session.handleMicToggle}
           onCallToggle={session.handleCallToggle}

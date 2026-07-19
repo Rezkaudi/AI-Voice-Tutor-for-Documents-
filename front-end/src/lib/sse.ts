@@ -1,8 +1,8 @@
 import type { StreamEvent } from "@/types";
 
-export async function readEventStream(
+export async function readEventStream<E extends { event: string; data: unknown } = StreamEvent>(
   body: ReadableStream<Uint8Array>,
-  onEvent: (event: StreamEvent) => void
+  onEvent: (event: E) => void
 ): Promise<void> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -19,7 +19,7 @@ export async function readEventStream(
     buffer = parts.pop() ?? "";
 
     for (const part of parts) {
-      const event = parseStreamEvent(part);
+      const event = parseStreamEvent<E>(part);
       if (event) {
         onEvent(event);
       }
@@ -27,7 +27,9 @@ export async function readEventStream(
   }
 }
 
-export function parseStreamEvent(part: string): StreamEvent | null {
+export function parseStreamEvent<E extends { event: string; data: unknown } = StreamEvent>(
+  part: string
+): E | null {
   const lines = part.split("\n");
   const eventLine = lines.find((line) => line.startsWith("event: "));
   const dataLine = lines.find((line) => line.startsWith("data: "));
@@ -40,7 +42,7 @@ export function parseStreamEvent(part: string): StreamEvent | null {
     return {
       event: eventLine.replace("event: ", ""),
       data: JSON.parse(dataLine.replace("data: ", ""))
-    } as StreamEvent;
+    } as E;
   } catch {
     return null;
   }

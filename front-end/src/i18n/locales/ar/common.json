@@ -101,7 +101,11 @@
       "pageLabel": "صفحة {{page}}",
       "pageAtMost": "يمكنك اختيار {{max}} صفحات كحدّ أقصى",
       "updatePages": "تحديث الصفحات",
-      "startLesson": "ابدأ الدرس"
+      "startLesson": "ابدأ الدرس",
+      "ready": "{{ready}} من {{total}} صفحات جاهزة",
+      "pageExtracting": "جارٍ قراءة الصفحة {{page}}…",
+      "pagePending": "هذه الصفحة ليست جاهزة بعد",
+      "pageFailed": "تعذّرت قراءة هذه الصفحة"
     },
     "preparing": {
       "startTitle": "جارٍ تجهيز درسك",

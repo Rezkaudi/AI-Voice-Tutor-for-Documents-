@@ -43,3 +43,9 @@ export class UpstreamError extends AppError {
     super(message, 502, "UPSTREAM_ERROR");
   }
 }
+
+export class PreconditionFailedError extends AppError {
+  constructor(message = "The resource was modified concurrently.") {
+    super(message, 412, "PRECONDITION_FAILED", false);
+  }
+}

@@ -4,11 +4,14 @@ export interface StoredFileInput {
   readonly key: string;
   readonly body: Buffer;
   readonly contentType: string;
+  readonly ifMatch?: string;
+  readonly ifNoneMatch?: "*";
 }
 
 export interface RetrievedFile {
   readonly body: Buffer;
   readonly contentType: string;
+  readonly eTag?: string;
 }
 
 export interface RetrievedFileStream {

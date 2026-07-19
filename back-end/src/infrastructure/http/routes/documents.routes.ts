@@ -15,6 +15,11 @@ export function buildDocumentRoutes(controller: DocumentsController): Router {
     prepareLessonPagesValidation,
     asyncHandler(controller.preparePages)
   );
+  router.get(
+    "/documents/:id/pages/extract-stream",
+    documentIdParamValidation,
+    asyncHandler(controller.extractStream)
+  );
   router.post(
     "/documents",
     documentUpload.single("file"),
