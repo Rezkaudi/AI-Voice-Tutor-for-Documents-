@@ -19,6 +19,7 @@ export type EnvConfig = {
   OPENAI_SPEECH_MODEL: string;
   OPENAI_SPEECH_VOICE: string;
   TUTOR_LOG_VERBOSE: boolean;
+  DEFAULT_PAGE_EXTRACTION_BATCH_SIZE: number;
 
   // ─── Hugging Face vision-language OCR (Qwen3-VL) ──────────────────────────
   HF_TOKEN: string;
@@ -84,6 +85,7 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
     getEnv("TUTOR_LOG_VERBOSE"),
     (getEnv("NODE_ENV") || "development") !== "production"
   ),
+  DEFAULT_PAGE_EXTRACTION_BATCH_SIZE: Number(getEnv("DEFAULT_PAGE_EXTRACTION_BATCH_SIZE")) || 4,
 
   HF_TOKEN: getEnv("HF_TOKEN") || "",
   HF_VL_MODEL: getEnv("HF_VL_MODEL") || "Qwen/Qwen3-VL-30B-A3B-Instruct",

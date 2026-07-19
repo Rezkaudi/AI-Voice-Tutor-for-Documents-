@@ -43,39 +43,16 @@ function normalize(pages: number[], pageCount: number): number[] {
 
 function pageStatus(
   page: number,
-  extraction: ExtractionState | undefined,
-  loadingPage: number | null
+  extraction: ExtractionState | undefined
 ): PageStatus {
   if (!extraction) return "ready";
   if (extraction.extractedPages.includes(page)) return "ready";
   if (extraction.failedPages.includes(page)) return "failed";
   if (extraction.done) return "failed";
-  if (loadingPage === page) return "extracting";
+  if ((extraction.currentPages ?? []).includes(page) || extraction.currentPage === page) {
+    return "extracting";
+  }
   return "pending";
-}
-
-function loadingPageFor(
-  extraction: ExtractionState | undefined,
-  pageCount: number
-): number | null {
-  if (!extraction || extraction.done) return null;
-
-  const ready = new Set(extraction.extractedPages);
-  const failed = new Set(extraction.failedPages);
-  if (
-    extraction.currentPage !== null &&
-    extraction.currentPage >= 1 &&
-    extraction.currentPage <= pageCount &&
-    !ready.has(extraction.currentPage) &&
-    !failed.has(extraction.currentPage)
-  ) {
-    return extraction.currentPage;
-  }
-
-  for (let page = 1; page <= pageCount; page += 1) {
-    if (!ready.has(page) && !failed.has(page)) return page;
-  }
-  return null;
 }
 
 export function PageSelectionDialog({
@@ -99,11 +76,9 @@ export function PageSelectionDialog({
     return () => document.removeEventListener("keydown", onKey);
   }, [onCancel]);
 
-  const loadingPage = loadingPageFor(extraction, pageCount);
-
   // Only successfully extracted pages may stay selected while extraction runs.
   const selected = chosen.filter(
-    (page) => pageStatus(page, extraction, loadingPage) === "ready"
+    (page) => pageStatus(page, extraction) === "ready"
   );
 
   const atLimit = selected.length >= MAX_LESSON_PAGES;
@@ -149,6 +124,12 @@ export function PageSelectionDialog({
 
         {showProgress ? (
           <div className={readyRow} aria-live="polite">
+            <Loader2
+              size={13}
+              className={cx(ui.spin, "shrink-0 text-accent")}
+              data-extraction-spinner
+              aria-hidden
+            />
             <span className="shrink-0">
               {t("dialogs.pages.ready", { ready: readyCount, total: pageCount })}
             </span>
@@ -175,7 +156,7 @@ export function PageSelectionDialog({
         <div className="relative -mx-1">
           <div className={grid}>
             {pages.map((page) => {
-              const status = pageStatus(page, extraction, loadingPage);
+              const status = pageStatus(page, extraction);
               const active = selected.includes(page);
               const disabled = status !== "ready" || (!active && atLimit);
               const title =
@@ -211,7 +192,7 @@ export function PageSelectionDialog({
                   )}
                 >
                   {status === "extracting" ? (
-                    <Loader2 size={14} className="animate-spin" aria-hidden />
+                    <Loader2 size={14} className="animate-spin" data-page-spinner aria-hidden />
                   ) : (
                     page
                   )}

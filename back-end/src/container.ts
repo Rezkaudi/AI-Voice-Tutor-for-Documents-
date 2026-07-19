@@ -187,7 +187,8 @@ export async function buildContainer(): Promise<Container> {
     textExtractor,
     documentPagesStore,
     extractionRegistry,
-    logger
+    logger,
+    ENV_CONFIG.DEFAULT_PAGE_EXTRACTION_BATCH_SIZE
   );
   const streamChat = new StreamChatUseCase(
     documentRepository,
