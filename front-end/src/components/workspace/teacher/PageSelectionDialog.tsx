@@ -41,13 +41,41 @@ function normalize(pages: number[], pageCount: number): number[] {
     .slice(0, MAX_LESSON_PAGES);
 }
 
-function pageStatus(page: number, extraction: ExtractionState | undefined): PageStatus {
+function pageStatus(
+  page: number,
+  extraction: ExtractionState | undefined,
+  loadingPage: number | null
+): PageStatus {
   if (!extraction) return "ready";
   if (extraction.extractedPages.includes(page)) return "ready";
   if (extraction.failedPages.includes(page)) return "failed";
   if (extraction.done) return "failed";
-  if (extraction.currentPage === page) return "extracting";
+  if (loadingPage === page) return "extracting";
   return "pending";
+}
+
+function loadingPageFor(
+  extraction: ExtractionState | undefined,
+  pageCount: number
+): number | null {
+  if (!extraction || extraction.done) return null;
+
+  const ready = new Set(extraction.extractedPages);
+  const failed = new Set(extraction.failedPages);
+  if (
+    extraction.currentPage !== null &&
+    extraction.currentPage >= 1 &&
+    extraction.currentPage <= pageCount &&
+    !ready.has(extraction.currentPage) &&
+    !failed.has(extraction.currentPage)
+  ) {
+    return extraction.currentPage;
+  }
+
+  for (let page = 1; page <= pageCount; page += 1) {
+    if (!ready.has(page) && !failed.has(page)) return page;
+  }
+  return null;
 }
 
 export function PageSelectionDialog({
@@ -71,8 +99,12 @@ export function PageSelectionDialog({
     return () => document.removeEventListener("keydown", onKey);
   }, [onCancel]);
 
+  const loadingPage = loadingPageFor(extraction, pageCount);
+
   // Only successfully extracted pages may stay selected while extraction runs.
-  const selected = chosen.filter((page) => pageStatus(page, extraction) === "ready");
+  const selected = chosen.filter(
+    (page) => pageStatus(page, extraction, loadingPage) === "ready"
+  );
 
   const atLimit = selected.length >= MAX_LESSON_PAGES;
   const pages = Array.from({ length: pageCount }, (_, i) => i + 1);
@@ -143,7 +175,7 @@ export function PageSelectionDialog({
         <div className="relative -mx-1">
           <div className={grid}>
             {pages.map((page) => {
-              const status = pageStatus(page, extraction);
+              const status = pageStatus(page, extraction, loadingPage);
               const active = selected.includes(page);
               const disabled = status !== "ready" || (!active && atLimit);
               const title =
