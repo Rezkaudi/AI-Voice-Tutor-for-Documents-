@@ -97,7 +97,11 @@
       "pageLabel": "Seite {{page}}",
       "pageAtMost": "Du kannst höchstens {{max}} Seiten auswählen",
       "updatePages": "Seiten aktualisieren",
-      "startLesson": "Lektion starten"
+      "startLesson": "Lektion starten",
+      "ready": "{{ready}} von {{total}} Seiten bereit",
+      "pageExtracting": "Seite {{page}} wird gelesen…",
+      "pagePending": "Diese Seite ist noch nicht bereit",
+      "pageFailed": "Diese Seite konnte nicht gelesen werden"
     },
     "preparing": {
       "startTitle": "Deine Lektion wird vorbereitet",

@@ -40,6 +40,7 @@ export function MobileLayout({ vm, documentBoard, loadingCover, questionPopup }:
         pageCount={vm.pageCount}
         selectedPages={vm.selectedPages}
         pageDialogOpen={vm.pageDialogOpen}
+        extraction={vm.extraction}
         showTranscript={vm.showTranscript}
         showCaption={vm.showCaption}
         onMicToggle={session.handleMicToggle}

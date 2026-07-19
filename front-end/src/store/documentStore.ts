@@ -6,11 +6,17 @@ import {
   uploadDocument
 } from "@/services/documentsApi";
 import { useSessionStore } from "./sessionStore";
+import {
+  startExtractionWatch,
+  stopExtractionWatch
+} from "./extractionStreamRunner";
 import type {
   DocumentCitation,
   DocumentReference,
   DocumentSummary,
+  ExtractionState,
   LoadedDocument,
+  PageExtractionStreamEvent,
   UploadState
 } from "@/types";
 
@@ -30,6 +36,9 @@ interface DocumentStore {
   deletingId: string | null;
 
   uploadError: string | null;
+  extraction: Record<string, ExtractionState>;
+  applyExtractionEvent: (documentId: string, event: PageExtractionStreamEvent) => void;
+  clearExtraction: (documentId: string) => void;
   setActivePage: (activePage: number) => void;
   setUploadError: (uploadError: string | null) => void;
   applyReference: (reference: DocumentReference | null) => void;
@@ -54,6 +63,22 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   libraryLoading: false,
   deletingId: null,
   uploadError: null,
+  extraction: {},
+
+  applyExtractionEvent: (documentId, event) =>
+    set((state) => ({
+      extraction: {
+        ...state.extraction,
+        [documentId]: reduceExtraction(state.extraction[documentId], event)
+      }
+    })),
+
+  clearExtraction: (documentId) =>
+    set((state) => {
+      const extraction = { ...state.extraction };
+      delete extraction[documentId];
+      return { extraction };
+    }),
 
   setActivePage: (activePage) => set({ activePage, activeCitationKey: null }),
 
@@ -142,6 +167,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       set({ loadedDocument: data, activePage: 1 });
       window.localStorage.setItem(LAST_DOC_KEY, documentId);
       void get().loadLibrary();
+      startExtractionWatch(documentId);
       return documentId;
     } catch (error) {
       set({ uploadError: error instanceof Error ? error.message : "Upload failed." });
@@ -151,13 +177,16 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }
   },
 
-  closeDocument: () =>
+  closeDocument: () => {
+    const documentId = get().loadedDocument?.document.id;
+    if (documentId) stopExtractionWatch(documentId);
     set({
       loadedDocument: null,
       highlight: null,
       activePage: 1,
       activeCitationKey: null
-    }),
+    });
+  },
 
   deleteDocument: async (documentId) => {
     if (get().deletingId) return;
@@ -165,6 +194,8 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     useSessionStore.getState().setError(null);
     try {
       await deleteDocumentRequest(documentId);
+      stopExtractionWatch(documentId);
+      get().clearExtraction(documentId);
       set((state) => ({
         library: state.library.filter((doc) => doc.id !== documentId)
       }));
@@ -195,4 +226,58 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
 export function citationKey(citation: DocumentCitation): string {
   return `${citation.pageNumber}:${citation.start}:${citation.end}`;
+}
+
+function reduceExtraction(
+  current: ExtractionState | undefined,
+  event: PageExtractionStreamEvent
+): ExtractionState {
+  const state: ExtractionState = current ?? {
+    status: "connecting",
+    pageCount: 0,
+    extractedPages: [],
+    failedPages: [],
+    currentPage: null,
+    done: false
+  };
+
+  switch (event.event) {
+    case "progress":
+      return {
+        ...state,
+        status: event.data.done ? "done" : "extracting",
+        pageCount: event.data.pageCount || state.pageCount,
+        extractedPages: sortedUnique([...state.extractedPages, ...event.data.extracted]),
+        failedPages: sortedUnique([...state.failedPages, ...event.data.failed]),
+        done: event.data.done || state.done
+      };
+    case "page-start":
+      return { ...state, status: "extracting", currentPage: event.data.page };
+    case "page-ready":
+      return {
+        ...state,
+        status: "extracting",
+        extractedPages: sortedUnique([...state.extractedPages, event.data.page]),
+        failedPages: state.failedPages.filter((page) => page !== event.data.page),
+        currentPage: state.currentPage === event.data.page ? null : state.currentPage
+      };
+    case "page-failed":
+      return {
+        ...state,
+        failedPages: state.extractedPages.includes(event.data.page)
+          ? state.failedPages
+          : sortedUnique([...state.failedPages, event.data.page]),
+        currentPage: state.currentPage === event.data.page ? null : state.currentPage
+      };
+    case "done":
+      return { ...state, status: "done", done: true, currentPage: null };
+    case "error":
+      return { ...state, status: "error", currentPage: null };
+    default:
+      return state;
+  }
+}
+
+function sortedUnique(pages: number[]): number[] {
+  return Array.from(new Set(pages)).sort((a, b) => a - b);
 }

@@ -1,4 +1,4 @@
-import type { ChatMessage, SpeechCaption } from "@/types";
+import type { ChatMessage, ExtractionState, SpeechCaption } from "@/types";
 import { SessionControlBar } from "@/components/workspace/controls/SessionControlBar";
 import { FloatingTutor } from "./FloatingTutor";
 import { MicPermissionDialog } from "./MicPermissionDialog";
@@ -27,6 +27,7 @@ interface CallOverlayProps {
   pageCount: number;
   selectedPages: number[];
   pageDialogOpen: boolean;
+  extraction?: ExtractionState;
   showTranscript: boolean;
   showCaption: boolean;
   onMicToggle: () => void;
@@ -53,6 +54,7 @@ export function CallOverlay({
   pageCount,
   selectedPages,
   pageDialogOpen,
+  extraction,
   showTranscript,
   showCaption,
   onToggleTranscript,
@@ -124,6 +126,7 @@ export function CallOverlay({
           pageCount={pageCount}
           selectedPages={selectedPages}
           callMode={callMode}
+          extraction={extraction}
           onConfirm={onSubmitPageSelection}
           onCancel={onClosePageDialog}
         />

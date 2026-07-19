@@ -97,7 +97,11 @@
       "pageLabel": "Page {{page}}",
       "pageAtMost": "You can pick at most {{max}} pages",
       "updatePages": "Update pages",
-      "startLesson": "Start lesson"
+      "startLesson": "Start lesson",
+      "ready": "{{ready}} of {{total}} pages ready",
+      "pageExtracting": "Page {{page}} is being read…",
+      "pagePending": "This page isn't ready yet",
+      "pageFailed": "This page couldn't be read"
     },
     "preparing": {
       "startTitle": "Preparing your lesson",

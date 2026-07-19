@@ -18,3 +18,21 @@ export const pageButtonIdle =
 
 export const fade =
   "pointer-events-none absolute inset-x-2 bottom-px h-7 rounded-b-xl bg-linear-to-t from-paper to-transparent";
+
+export const pageButtonPending =
+  "border-line bg-paper text-muted opacity-45";
+
+export const pageButtonExtracting =
+  "border-accent/60 bg-paper-strong text-accent opacity-90!";
+
+export const pageButtonFailed =
+  "border-[oklch(0.75_0.12_25)] bg-[oklch(0.96_0.03_25)] text-[oklch(0.5_0.15_25)] opacity-70!";
+
+export const readyRow =
+  "flex items-center gap-2 text-[0.74rem] font-semibold text-muted";
+
+export const readyTrack =
+  "h-1.5 flex-1 overflow-hidden rounded-full bg-[oklch(0.92_0.01_244)]";
+
+export const readyFill =
+  "h-full rounded-full bg-accent transition-[width] duration-500 ease-out";

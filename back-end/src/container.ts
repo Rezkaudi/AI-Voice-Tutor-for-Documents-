@@ -10,6 +10,9 @@ import { CreateUploadUrlUseCase } from "@/application/use-cases/documents/create
 import { RegisterUploadUseCase } from "@/application/use-cases/documents/register-upload.use-case";
 import { LoadLessonPagesUseCase } from "@/application/use-cases/documents/load-lesson-pages.use-case";
 import { PrepareLessonPagesUseCase } from "@/application/use-cases/documents/prepare-lesson-pages.use-case";
+import { ExtractDocumentPagesUseCase } from "@/application/use-cases/documents/extract-document-pages.use-case";
+import { DocumentPagesStore } from "@/application/services/document-pages-store";
+import { ExtractionRegistry } from "@/application/services/extraction-registry";
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
 import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
 import { TranscribeAudioUseCase } from "@/application/use-cases/transcription/transcribe-audio.use-case";
@@ -50,7 +53,7 @@ import { PdfiumPageRenderer } from "@/infrastructure/services/documents/pdfium-p
 import { PaddleOcrTextExtractor } from "@/infrastructure/services/documents/paddle-ocr-text-extractor";
 import { HfVlTextExtractor } from "@/infrastructure/services/documents/hf-vl-text-extractor";
 import { DocLayoutRegionDetector } from "@/infrastructure/services/documents/doclayout-region-detector";
-import { InMemoryPageCache } from "@/infrastructure/services/cache/in-memory-page-cache";
+import { StoragePageCache } from "@/infrastructure/services/cache/storage-page-cache";
 import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.service";
 import { OpenAiTextToSpeechService } from "@/infrastructure/services/ai/openai-text-to-speech.service";
 import { OpenAiSpeechToTextService } from "@/infrastructure/services/ai/openai-speech-to-text.service";
@@ -120,7 +123,9 @@ export async function buildContainer(): Promise<Container> {
   );
 
   // const textExtractor = PdfJsTextExtractor.createDefault();
-  const pageCache = new InMemoryPageCache();
+  const documentPagesStore = new DocumentPagesStore(fileStorage, logger);
+  const extractionRegistry = new ExtractionRegistry();
+  const pageCache = new StoragePageCache(documentPagesStore);
   const tutorService = new OpenAiTutorService(
     ENV_CONFIG,
     referenceSelector,
@@ -174,8 +179,16 @@ export async function buildContainer(): Promise<Container> {
     fileStorage
   );
   const listDocuments = new ListDocumentsUseCase(documentRepository);
-  const deleteDocument = new DeleteDocumentUseCase(documentRepository, fileStorage);
+  const deleteDocument = new DeleteDocumentUseCase(documentRepository, fileStorage, documentPagesStore);
   const endLessonSession = new EndLessonSessionUseCase(pageCache);
+  const extractDocumentPages = new ExtractDocumentPagesUseCase(
+    documentRepository,
+    fileStorage,
+    textExtractor,
+    documentPagesStore,
+    extractionRegistry,
+    logger
+  );
   const streamChat = new StreamChatUseCase(
     documentRepository,
     tutorService,
@@ -219,7 +232,8 @@ export async function buildContainer(): Promise<Container> {
       listDocuments,
       deleteDocument,
       endLessonSession,
-      prepareLessonPages
+      prepareLessonPages,
+      extractDocumentPages
     ),
     chat: new ChatController(streamChat),
     speech: new SpeechController(synthesizeSpeech),

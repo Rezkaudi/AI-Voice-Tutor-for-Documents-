@@ -1,4 +1,4 @@
-import { Check, FileText, GraduationCap } from "lucide-react";
+import { Check, FileText, GraduationCap, Loader2, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentSummary } from "@/types";
@@ -17,7 +17,7 @@ export function DocumentRow({
   isActive,
   isDeleting,
   onSelect,
-  // onRequestDelete
+  onRequestDelete
 }: DocumentRowProps) {
   const { t } = useTranslation();
   const label = doc.title || doc.fileName || t("library.untitled");
@@ -85,9 +85,7 @@ export function DocumentRow({
           </span>
         </button>
 
-        {/* Delete document button — hidden for now, keep for later.
-            To re-enable: import { Loader2, Trash2 } from "lucide-react".
-        {onRequestDelete ? (
+        {/* {onRequestDelete ? (
           <button
             type="button"
             title={t("library.deleteDocument")}
@@ -106,8 +104,8 @@ export function DocumentRow({
               <Trash2 size={16} aria-hidden />
             )}
           </button>
-        ) : null}
-        */}
+        ) : null} */}
+
       </div>
     </li>
   );
