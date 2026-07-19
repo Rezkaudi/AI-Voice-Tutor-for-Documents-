@@ -238,44 +238,74 @@ function reduceExtraction(
     extractedPages: [],
     failedPages: [],
     currentPage: null,
+    currentPages: [],
     done: false
   };
 
   switch (event.event) {
-    case "progress":
+    case "progress": {
+      const extractedPages = sortedUnique([...state.extractedPages, ...event.data.extracted]);
+      const failedPages = sortedUnique([...state.failedPages, ...event.data.failed]);
+      const activePages = event.data.extracting ?? activePagesOf(state);
+      const currentPages = sortedUnique(activePages).filter(
+        (page) => !extractedPages.includes(page) && !failedPages.includes(page)
+      );
       return {
         ...state,
         status: event.data.done ? "done" : "extracting",
         pageCount: event.data.pageCount || state.pageCount,
-        extractedPages: sortedUnique([...state.extractedPages, ...event.data.extracted]),
-        failedPages: sortedUnique([...state.failedPages, ...event.data.failed]),
+        extractedPages,
+        failedPages,
+        currentPage: currentPages[0] ?? null,
+        currentPages,
         done: event.data.done || state.done
       };
+    }
     case "page-start":
-      return { ...state, status: "extracting", currentPage: event.data.page };
-    case "page-ready":
+      return {
+        ...state,
+        status: "extracting",
+        currentPage: event.data.page,
+        currentPages: sortedUnique([...activePagesOf(state), event.data.page])
+      };
+    case "page-ready": {
+      const currentPages = activePagesOf(state).filter((page) => page !== event.data.page);
       return {
         ...state,
         status: "extracting",
         extractedPages: sortedUnique([...state.extractedPages, event.data.page]),
         failedPages: state.failedPages.filter((page) => page !== event.data.page),
-        currentPage: state.currentPage === event.data.page ? null : state.currentPage
+        currentPage: state.currentPage === event.data.page ? currentPages[0] ?? null : state.currentPage,
+        currentPages
       };
-    case "page-failed":
+    }
+    case "page-failed": {
+      const currentPages = activePagesOf(state).filter((page) => page !== event.data.page);
       return {
         ...state,
         failedPages: state.extractedPages.includes(event.data.page)
           ? state.failedPages
           : sortedUnique([...state.failedPages, event.data.page]),
-        currentPage: state.currentPage === event.data.page ? null : state.currentPage
+        currentPage: state.currentPage === event.data.page ? currentPages[0] ?? null : state.currentPage,
+        currentPages
       };
+    }
     case "done":
-      return { ...state, status: "done", done: true, currentPage: null };
+      return { ...state, status: "done", done: true, currentPage: null, currentPages: [] };
     case "error":
-      return { ...state, status: "error", currentPage: null };
+      return { ...state, status: "error", currentPage: null, currentPages: [] };
     default:
       return state;
   }
+}
+
+function activePagesOf(state: ExtractionState): number[] {
+  const currentPages = state.currentPages ?? [];
+  return currentPages.length > 0
+    ? currentPages
+    : state.currentPage !== null
+      ? [state.currentPage]
+      : [];
 }
 
 function sortedUnique(pages: number[]): number[] {

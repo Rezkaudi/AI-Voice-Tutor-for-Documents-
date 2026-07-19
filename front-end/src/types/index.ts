@@ -79,7 +79,13 @@ export type StreamEvent =
 export type PageExtractionStreamEvent =
   | {
     event: "progress";
-    data: { pageCount: number; extracted: number[]; failed: number[]; done: boolean };
+    data: {
+      pageCount: number;
+      extracted: number[];
+      failed: number[];
+      extracting?: number[];
+      done: boolean;
+    };
   }
   | { event: "page-start"; data: { page: number } }
   | { event: "page-ready"; data: { page: number } }
@@ -94,6 +100,7 @@ export interface ExtractionState {
   extractedPages: number[];
   failedPages: number[];
   currentPage: number | null;
+  currentPages: number[];
   done: boolean;
 }
 
