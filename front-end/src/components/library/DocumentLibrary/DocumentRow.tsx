@@ -85,7 +85,7 @@ export function DocumentRow({
           </span>
         </button>
 
-        {onRequestDelete ? (
+        {/* {onRequestDelete ? (
           <button
             type="button"
             title={t("library.deleteDocument")}
@@ -104,7 +104,7 @@ export function DocumentRow({
               <Trash2 size={16} aria-hidden />
             )}
           </button>
-        ) : null}
+        ) : null} */}
 
       </div>
     </li>
