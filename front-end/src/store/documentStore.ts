@@ -5,7 +5,9 @@ import {
   listDocuments,
   uploadDocument
 } from "@/services/documentsApi";
+import { toErrorMessage } from "@/lib/errors";
 import { useSessionStore } from "./sessionStore";
+import { reduceExtraction } from "./extractionReducer";
 import {
   startExtractionWatch,
   stopExtractionWatch
@@ -20,7 +22,12 @@ import type {
   UploadState
 } from "@/types";
 
-const LAST_DOC_KEY = "lastDocumentId";
+const CLOSED_DOCUMENT_STATE = {
+  loadedDocument: null,
+  highlight: null,
+  activePage: 1,
+  activeCitationKey: null
+} as const;
 
 interface DocumentStore {
   loadedDocument: LoadedDocument | null;
@@ -108,9 +115,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       const documents = await listDocuments();
       set({ library: documents });
     } catch (error) {
-      useSessionStore
-        .getState()
-        .setError(error instanceof Error ? error.message : "Library failed to load.");
+      useSessionStore.getState().setError(toErrorMessage(error, "Library failed to load."));
     } finally {
       set({ libraryLoading: false });
     }
@@ -128,11 +133,8 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
         loadedDocument: data,
         activePage: 1
       });
-      window.localStorage.setItem(LAST_DOC_KEY, documentId);
     } catch (error) {
-      useSessionStore
-        .getState()
-        .setError(error instanceof Error ? error.message : "Document failed to load.");
+      useSessionStore.getState().setError(toErrorMessage(error, "Document failed to load."));
     } finally {
       set({ uploadState: "idle" });
     }
@@ -165,12 +167,11 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
       const data = await fetchDocument(documentId);
       set({ loadedDocument: data, activePage: 1 });
-      window.localStorage.setItem(LAST_DOC_KEY, documentId);
       void get().loadLibrary();
       startExtractionWatch(documentId);
       return documentId;
     } catch (error) {
-      set({ uploadError: error instanceof Error ? error.message : "Upload failed." });
+      set({ uploadError: toErrorMessage(error, "Upload failed.") });
       return null;
     } finally {
       set({ uploadState: "idle", uploadProgress: 0, uploadPhase: "uploading" });
@@ -180,12 +181,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
   closeDocument: () => {
     const documentId = get().loadedDocument?.document.id;
     if (documentId) stopExtractionWatch(documentId);
-    set({
-      loadedDocument: null,
-      highlight: null,
-      activePage: 1,
-      activeCitationKey: null
-    });
+    set({ ...CLOSED_DOCUMENT_STATE });
   },
 
   deleteDocument: async (documentId) => {
@@ -199,21 +195,11 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       set((state) => ({
         library: state.library.filter((doc) => doc.id !== documentId)
       }));
-      if (window.localStorage.getItem(LAST_DOC_KEY) === documentId) {
-        window.localStorage.removeItem(LAST_DOC_KEY);
-      }
       if (get().loadedDocument?.document.id === documentId) {
-        set({
-          loadedDocument: null,
-          highlight: null,
-          activePage: 1,
-          activeCitationKey: null
-        });
+        set({ ...CLOSED_DOCUMENT_STATE });
       }
     } catch (error) {
-      useSessionStore
-        .getState()
-        .setError(error instanceof Error ? error.message : "Delete failed.");
+      useSessionStore.getState().setError(toErrorMessage(error, "Delete failed."));
     } finally {
       set({ deletingId: null });
     }
@@ -228,86 +214,3 @@ export function citationKey(citation: DocumentCitation): string {
   return `${citation.pageNumber}:${citation.start}:${citation.end}`;
 }
 
-function reduceExtraction(
-  current: ExtractionState | undefined,
-  event: PageExtractionStreamEvent
-): ExtractionState {
-  const state: ExtractionState = current ?? {
-    status: "connecting",
-    pageCount: 0,
-    extractedPages: [],
-    failedPages: [],
-    currentPage: null,
-    currentPages: [],
-    done: false
-  };
-
-  switch (event.event) {
-    case "progress": {
-      const extractedPages = sortedUnique([...state.extractedPages, ...event.data.extracted]);
-      const failedPages = sortedUnique([...state.failedPages, ...event.data.failed]);
-      const activePages = event.data.extracting ?? activePagesOf(state);
-      const currentPages = sortedUnique(activePages).filter(
-        (page) => !extractedPages.includes(page) && !failedPages.includes(page)
-      );
-      return {
-        ...state,
-        status: event.data.done ? "done" : "extracting",
-        pageCount: event.data.pageCount || state.pageCount,
-        extractedPages,
-        failedPages,
-        currentPage: currentPages[0] ?? null,
-        currentPages,
-        done: event.data.done || state.done
-      };
-    }
-    case "page-start":
-      return {
-        ...state,
-        status: "extracting",
-        currentPage: event.data.page,
-        currentPages: sortedUnique([...activePagesOf(state), event.data.page])
-      };
-    case "page-ready": {
-      const currentPages = activePagesOf(state).filter((page) => page !== event.data.page);
-      return {
-        ...state,
-        status: "extracting",
-        extractedPages: sortedUnique([...state.extractedPages, event.data.page]),
-        failedPages: state.failedPages.filter((page) => page !== event.data.page),
-        currentPage: state.currentPage === event.data.page ? currentPages[0] ?? null : state.currentPage,
-        currentPages
-      };
-    }
-    case "page-failed": {
-      const currentPages = activePagesOf(state).filter((page) => page !== event.data.page);
-      return {
-        ...state,
-        failedPages: state.extractedPages.includes(event.data.page)
-          ? state.failedPages
-          : sortedUnique([...state.failedPages, event.data.page]),
-        currentPage: state.currentPage === event.data.page ? currentPages[0] ?? null : state.currentPage,
-        currentPages
-      };
-    }
-    case "done":
-      return { ...state, status: "done", done: true, currentPage: null, currentPages: [] };
-    case "error":
-      return { ...state, status: "error", currentPage: null, currentPages: [] };
-    default:
-      return state;
-  }
-}
-
-function activePagesOf(state: ExtractionState): number[] {
-  const currentPages = state.currentPages ?? [];
-  return currentPages.length > 0
-    ? currentPages
-    : state.currentPage !== null
-      ? [state.currentPage]
-      : [];
-}
-
-function sortedUnique(pages: number[]): number[] {
-  return Array.from(new Set(pages)).sort((a, b) => a - b);
-}
