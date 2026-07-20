@@ -5,14 +5,12 @@ import { useDismissable } from "@/hooks/useDismissable";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import {
   getWorkspaceLanguageLabel,
+  type WorkspaceMenuActionMap,
   type WorkspaceMenuDisabledState,
   type WorkspaceMenuState,
 } from "@/components/workspace/workspaceMenuConfig";
 
-import {
-  buildDesktopWorkspaceMenuEntries,
-  type WorkspaceMenuActionMap,
-} from "./menuEntries";
+import { buildDesktopWorkspaceMenuEntries } from "./menuEntries";
 import type { WorkspaceMenuProps } from "./types";
 
 export function useWorkspaceMenuController({

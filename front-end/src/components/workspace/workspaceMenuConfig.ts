@@ -11,52 +11,24 @@ import {
 } from "lucide-react";
 
 import { LANGUAGES } from "@/i18n/config";
+import type {
+  WorkspaceMenuActionId,
+  WorkspaceMenuConfigEntry,
+  WorkspaceMenuItemConfig,
+  WorkspaceMenuLabelKey,
+} from "./workspaceMenuTypes";
+export type {
+  WorkspaceMenuActionId,
+  WorkspaceMenuActionMap,
+  WorkspaceMenuConfigEntry,
+  WorkspaceMenuDisabledState,
+  WorkspaceMenuItemConfig,
+  WorkspaceMenuLabelKey,
+  WorkspaceMenuState,
+} from "./workspaceMenuTypes";
 
-export type WorkspaceMenuState = {
-  isFullscreen: boolean; langOpen: boolean; showCaption: boolean;
-  showTranscript: boolean; teacherAsks: boolean;
-};
-
-export type WorkspaceMenuDisabledState = {
-  restartDisabled: boolean; teacherAsksDisabled: boolean;
-};
-
-type WorkspaceMenuStateKey = keyof WorkspaceMenuState;
-type WorkspaceMenuChipKey = "showCaption" | "showTranscript" | "teacherAsks";
-type WorkspaceMenuDisabledKey = keyof WorkspaceMenuDisabledState;
-type WorkspaceMenuIconResolver = (state: WorkspaceMenuState) => LucideIcon;
-type WorkspaceMenuLabelResolver = (state: WorkspaceMenuState) => WorkspaceMenuLabelKey;
-
-export type WorkspaceMenuLabelKey =
-  | "common.exitFullscreen"
-  | "common.fullscreen"
-  | "common.restartLesson"
-  | "common.teachingPages"
-  | "common.transcript"
-  | "controls.teacherAsks"
-  | "language.label"
-  | "workspaceMenu.captions";
-
-export type WorkspaceMenuActionId =
-  | "editPages"
-  | "fullscreen"
-  | "language"
-  | "restart"
-  | "toggleCaption"
-  | "toggleTeacherAsks"
-  | "toggleTranscript";
-
-export type WorkspaceMenuItemConfig = {
-  kind: "item"; id: string; action: WorkspaceMenuActionId;
-  icon: WorkspaceMenuIconResolver; labelKey: WorkspaceMenuLabelResolver;
-  activeKey?: WorkspaceMenuStateKey; closeOnSelect?: boolean; danger?: boolean;
-  disabledKey?: WorkspaceMenuDisabledKey; expandedKey?: WorkspaceMenuStateKey;
-  stateChipKey?: WorkspaceMenuChipKey; trailing?: "language";
-};
-
-export type WorkspaceMenuConfigEntry =
-  | WorkspaceMenuItemConfig
-  | { kind: "divider"; id: string };
+type WorkspaceMenuIconResolver = WorkspaceMenuItemConfig["icon"];
+type WorkspaceMenuLabelResolver = WorkspaceMenuItemConfig["labelKey"];
 
 type WorkspaceMenuItemOptions = Partial<
   Omit<WorkspaceMenuItemConfig, "action" | "icon" | "id" | "kind" | "labelKey">
@@ -86,6 +58,7 @@ export const workspaceMenuConfig: readonly WorkspaceMenuConfigEntry[] = [
   }),
   item("captions", "toggleCaption", icon(Captions), label("workspaceMenu.captions"), {
     activeKey: "showCaption",
+    controlLabelKey: label("controls.liveCaptions"),
     stateChipKey: "showCaption",
   }),
   item("teacher-asks", "toggleTeacherAsks", icon(MessageCircleQuestion),

@@ -8,7 +8,7 @@ import {
 } from "@/styles/components/workspace/workspaceMenu";
 import {
   workspaceMenuConfig,
-  type WorkspaceMenuActionId,
+  type WorkspaceMenuActionMap,
   type WorkspaceMenuDisabledState,
   type WorkspaceMenuItemConfig,
   type WorkspaceMenuLabelKey,
@@ -16,11 +16,6 @@ import {
 } from "@/components/workspace/workspaceMenuConfig";
 
 import { StateChip } from "./StateChip";
-
-export type WorkspaceMenuActionMap = Record<
-  WorkspaceMenuActionId,
-  (() => void) | undefined
->;
 
 type DesktopWorkspaceMenuItemEntry = {
   kind: "item" | "language";
