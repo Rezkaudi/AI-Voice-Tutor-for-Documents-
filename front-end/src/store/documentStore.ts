@@ -1,26 +1,10 @@
 import { create } from "zustand";
-import {
-  deleteDocument as deleteDocumentRequest,
-  fetchDocument,
-  listDocuments,
-  uploadDocument
-} from "@/services/documentsApi";
+import { deleteDocument as deleteDocumentRequest, fetchDocument, listDocuments, uploadDocument } from "@/services/documentsApi";
 import { toErrorMessage } from "@/lib/errors";
 import { useSessionStore } from "./sessionStore";
 import { reduceExtraction } from "./extractionReducer";
-import {
-  startExtractionWatch,
-  stopExtractionWatch
-} from "./extractionStreamRunner";
-import type {
-  DocumentCitation,
-  DocumentReference,
-  DocumentSummary,
-  ExtractionState,
-  LoadedDocument,
-  PageExtractionStreamEvent,
-  UploadState
-} from "@/types";
+import { startExtractionWatch, stopExtractionWatch } from "./extractionStreamRunner";
+import type { DocumentCitation, DocumentReference, DocumentSummary, ExtractionState, LoadedDocument, PageExtractionStreamEvent, UploadState } from "@/types";
 
 const CLOSED_DOCUMENT_STATE = {
   loadedDocument: null,
