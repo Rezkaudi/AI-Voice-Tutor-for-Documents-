@@ -2,20 +2,15 @@ import { memo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cx } from "@/lib/uiClasses";
 import type { DocumentReference } from "@/types";
-import { citationKey } from "@/store/documentStore";
-import { CitationChips } from "@/components/workspace/pdf/CitationChips";
 import { PdfViewer } from "@/components/workspace/pdf/PdfViewer";
 import type { PdfLoadProgress } from "@/hooks/pdf-viewer/usePdfDocument";
 
 interface DocumentBoardProps {
   fileUrl: string | null;
   mimeType: string;
-  pageCount: number;
   activePage: number;
   highlight: DocumentReference | null;
   activeCitationKey: string | null;
-  onPageChange: (page: number) => void;
-  onFocusCitation: (citation: DocumentReference["citations"][number]) => void;
   onReady?: () => void;
   onProgress?: (progress: PdfLoadProgress) => void;
 }
@@ -23,11 +18,9 @@ interface DocumentBoardProps {
 function DocumentBoardComponent({
   fileUrl,
   mimeType,
-  pageCount,
   activePage,
   highlight,
   activeCitationKey,
-  onFocusCitation,
   onReady,
   onProgress
 }: DocumentBoardProps) {
@@ -83,5 +76,3 @@ function DocumentBoardComponent({
 }
 
 export const DocumentBoard = memo(DocumentBoardComponent);
-
-export { citationKey };

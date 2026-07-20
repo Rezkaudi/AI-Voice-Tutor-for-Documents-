@@ -9,7 +9,7 @@ import { useSpacebarPause } from "@/hooks/workspace/useSpacebarPause";
 
 export function TeachingWorkspace() {
   const vm = useWorkspaceState();
-  const { loadedDocument, session, documentStore } = vm;
+  const { loadedDocument, session } = vm;
 
   useSpacebarPause();
 
@@ -19,12 +19,9 @@ export function TeachingWorkspace() {
     <DocumentBoard
       fileUrl={loadedDocument.fileUrl}
       mimeType={loadedDocument.document.mimeType}
-      pageCount={loadedDocument.document.pageCount}
       activePage={vm.activePage}
       highlight={vm.highlight}
       activeCitationKey={vm.activeCitationKey}
-      onPageChange={documentStore.setActivePage}
-      onFocusCitation={documentStore.focusCitation}
       onReady={vm.handleBoardReady}
       onProgress={vm.handleLoadProgress}
     />
