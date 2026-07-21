@@ -10,11 +10,13 @@ import type { Readable } from "node:stream";
 import { PreconditionFailedError, UpstreamError } from "@/domain/errors/app-error";
 import type {
   FileStorage,
+  PresignGetOptions,
   RetrievedFile,
   RetrievedFileStream,
   StoredFileInput,
   StoredFileMetadata
 } from "@/domain/services/file-storage";
+import { contentDisposition } from "@/infrastructure/services/storage/content-disposition";
 import type { EnvConfig } from "@/config/env.config";
 
 const DEFAULT_PRESIGN_TTL_SECONDS = 15 * 60;
@@ -73,6 +75,29 @@ export class S3FileStorage implements FileStorage {
       );
     } catch (error) {
       throw new UpstreamError(`Failed to prepare the upload URL: ${describe(error)}`);
+    }
+  }
+
+  async presignGet(key: string, options: PresignGetOptions = {}): Promise<string> {
+    const { expiresInSeconds = DEFAULT_PRESIGN_TTL_SECONDS, fileName, contentType, download } =
+      options;
+    try {
+      return await getSignedUrl(
+        this.client,
+        new GetObjectCommand({
+          Bucket: this.config.S3_BUCKET,
+          Key: key,
+          ResponseContentType: contentType,
+          ResponseContentDisposition: fileName
+            ? contentDisposition(fileName, download ? "attachment" : "inline")
+            : undefined
+        }),
+        { expiresIn: expiresInSeconds }
+      );
+    } catch (error) {
+      throw new UpstreamError(
+        `Failed to prepare the document file URL: ${describe(error)}`
+      );
     }
   }
 
