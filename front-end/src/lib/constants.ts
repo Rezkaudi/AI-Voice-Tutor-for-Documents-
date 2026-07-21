@@ -36,4 +36,4 @@ export const ORT_WASM_BASE = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.
 export const ACCEPTED_UPLOAD_TYPES = ".pdf,application/pdf";
 
 // Keep in sync with DOCUMENT_LIMIT_BYTES in back-end document-upload middleware.
-export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 30 * 1024 * 1024;
