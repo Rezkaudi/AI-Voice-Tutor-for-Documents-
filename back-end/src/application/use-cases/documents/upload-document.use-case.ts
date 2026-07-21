@@ -41,7 +41,8 @@ export class UploadDocumentUseCase {
 
     const validation = this.validator.validate({
       name: input.filename,
-      type: input.mimeType
+      type: input.mimeType,
+      size: input.size
     });
     if (!validation.ok) {
       log.warn(`rejected — ${validation.error}`);

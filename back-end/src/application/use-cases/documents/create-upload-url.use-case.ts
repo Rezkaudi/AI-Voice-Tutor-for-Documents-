@@ -32,7 +32,8 @@ export class CreateUploadUrlUseCase {
     const log = this.logger.scope("upload");
     const validation = this.validator.validate({
       name: input.filename,
-      type: input.mimeType
+      type: input.mimeType,
+      size: input.size
     });
     if (!validation.ok) {
       log.warn(`rejected upload-url request — ${validation.error}`);

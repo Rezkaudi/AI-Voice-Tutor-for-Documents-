@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { ACCEPTED_UPLOAD_TYPES } from "@/lib/constants";
 import { cx } from "@/lib/uiClasses";
-import { pickUploadFile } from "@/lib/uploadValidation";
+import { pickUploadFile, type UploadRejectReason } from "@/lib/uploadValidation";
 
 interface DropZoneProps {
   onFile: (file: File | null) => void;
@@ -17,12 +17,15 @@ export function DropZone({ onFile, onReject }: DropZoneProps) {
   const dragDepth = useRef(0);
   const [isDragOver, setIsDragOver] = useState(false);
 
+  const rejectMessage = (reason: UploadRejectReason) =>
+    reason === "size" ? t("upload.errorSize") : t("upload.errorType");
+
   const submit = (files: FileList | File[]) => {
     const picked = pickUploadFile(files);
     if (picked.file) {
       onFile(picked.file);
     } else if (picked.reason) {
-      onReject?.(t("upload.errorType"));
+      onReject?.(rejectMessage(picked.reason));
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
