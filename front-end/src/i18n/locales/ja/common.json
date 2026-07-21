@@ -37,7 +37,7 @@
     "yourDocuments": "あなたの資料",
     "orUploadNew": "または新しいファイルをアップロード",
     "uploadTitle": "レッスン素材をアップロード",
-    "pdfLimit": "PDFファイル（最大25MB）。",
+    "pdfLimit": "任意のPDFファイル。",
     "dropHint": "ここにファイルをドロップ、または<choose>ファイルを選択</choose>",
     "uploadingTitle": "資料をアップロードしています",
     "uploadingBody": "ファイルを送信しています。このタブを開いたままにしてください。",
@@ -45,7 +45,6 @@
     "processingBody": "ページを抽出し、レッスンの本文を構築し、講師を準備しています。",
     "loadingLibrary": "ライブラリを読み込んでいます…",
     "errorType": "このファイルはPDFではありません。PDF文書を選択してください。",
-    "errorSize": "このファイルは大きすぎます。25MB未満のPDFを選択してください。",
     "dropActive": "ここで離してPDFをアップロード",
     "dropAria": "PDFをアップロード — ここにファイルをドロップ、または選択"
   },

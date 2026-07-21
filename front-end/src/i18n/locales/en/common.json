@@ -37,7 +37,7 @@
     "yourDocuments": "Your documents",
     "orUploadNew": "Or upload a new file",
     "uploadTitle": "Upload a Lesson Source",
-    "pdfLimit": "PDF files up to 25MB.",
+    "pdfLimit": "Any PDF file.",
     "dropHint": "Drop a file here, or <choose>choose file</choose>",
     "uploadingTitle": "Uploading your document",
     "uploadingBody": "Sending your file — please keep this tab open.",
@@ -45,7 +45,6 @@
     "processingBody": "Extracting pages, building lesson passages, and warming up the teacher.",
     "loadingLibrary": "Loading your library…",
     "errorType": "That file isn’t a PDF. Please choose a PDF document.",
-    "errorSize": "That file is too large. Please choose a PDF under 25MB.",
     "dropActive": "Release to upload your PDF",
     "dropAria": "Upload a PDF — drop a file here or choose one"
   },
