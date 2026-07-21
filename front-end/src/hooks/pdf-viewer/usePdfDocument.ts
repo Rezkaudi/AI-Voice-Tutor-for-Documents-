@@ -38,6 +38,7 @@ export function usePdfDocument(
       url: fileUrl,
       withCredentials: isSameOrigin(fileUrl),
       wasmUrl: pdfjsWasmUrl,
+      disableStream: true,
       disableAutoFetch: true,
       rangeChunkSize: 262144
     });
