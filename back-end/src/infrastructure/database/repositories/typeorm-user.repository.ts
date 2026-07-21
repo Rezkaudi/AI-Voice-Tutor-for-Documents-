@@ -1,6 +1,6 @@
 import type { DataSource } from "typeorm";
 import type { GoogleProfile, User } from "@/domain/entities/user";
-import type { UserRepository } from "@/domain/repositories/user-repository";
+import type { UserRepository, UserUpsert } from "@/domain/repositories/user-repository";
 import type { IdGenerator } from "@/domain/services/id-generator";
 import { UserOrmEntity } from "../entities/user.entity";
 
@@ -24,7 +24,7 @@ export class TypeOrmUserRepository implements UserRepository {
     return row ? toUser(row) : null;
   }
 
-  async upsertFromGoogle(profile: GoogleProfile): Promise<User> {
+  async upsertFromGoogle(profile: GoogleProfile): Promise<UserUpsert> {
     const repository = this.dataSource.getRepository(UserOrmEntity);
     const existing = await repository.findOne({
       where: { googleId: profile.googleId }
@@ -40,7 +40,7 @@ export class TypeOrmUserRepository implements UserRepository {
     row.picture = profile.picture;
 
     const saved = await repository.save(row);
-    return toUser(saved);
+    return { user: toUser(saved), created: !existing };
   }
 }
 

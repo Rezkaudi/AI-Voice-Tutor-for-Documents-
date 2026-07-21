@@ -36,6 +36,10 @@ export type EnvConfig = {
   ACCESS_TOKEN_TTL: string;
   REFRESH_TOKEN_TTL: string;
   FRONTEND_URL: string;
+
+  // ─── Brevo (marketing contact list for feature announcements) ────────────
+  BREVO_API_KEY: string;
+  BREVO_LIST_ID: number;
 };
 
 type EnvKey = keyof EnvConfig;
@@ -101,4 +105,7 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   ACCESS_TOKEN_TTL: getEnv("ACCESS_TOKEN_TTL") || "1d",
   REFRESH_TOKEN_TTL: getEnv("REFRESH_TOKEN_TTL") || "7d",
   FRONTEND_URL: getEnv("FRONTEND_URL") || "http://localhost:5173",
+
+  BREVO_API_KEY: getEnv("BREVO_API_KEY") || "",
+  BREVO_LIST_ID: Number(getEnv("BREVO_LIST_ID")) || 0,
 });
