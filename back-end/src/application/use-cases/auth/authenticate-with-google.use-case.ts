@@ -1,6 +1,7 @@
 import { type AuthResultDto, toAuthenticatedUserDto } from "@/application/dto/auth-dto";
 import { UnauthorizedError } from "@/domain/errors/app-error";
 import type { UserRepository } from "@/domain/repositories/user-repository";
+import type { ContactSync } from "@/domain/services/contact-sync";
 import type { OAuthProvider } from "@/domain/services/oauth-provider";
 import type { TokenService } from "@/domain/services/token-service";
 
@@ -8,7 +9,8 @@ export class AuthenticateWithGoogleUseCase {
   constructor(
     private readonly oauthProvider: OAuthProvider,
     private readonly userRepository: UserRepository,
-    private readonly tokenService: TokenService
+    private readonly tokenService: TokenService,
+    private readonly contactSync: ContactSync
   ) { }
 
   async execute(code: unknown): Promise<AuthResultDto> {
@@ -23,7 +25,12 @@ export class AuthenticateWithGoogleUseCase {
       throw new UnauthorizedError("Google sign-in could not be completed.");
     }
 
-    const user = await this.userRepository.upsertFromGoogle(profile);
+    const { user, created } = await this.userRepository.upsertFromGoogle(profile);
+
+    if (created) {
+      void this.contactSync.syncUser(user);
+    }
+
     const payload = { userId: user.id };
 
     return {

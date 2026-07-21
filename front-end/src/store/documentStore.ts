@@ -79,11 +79,9 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     const firstCitation = reference?.citations[0] ?? null;
     set({
       highlight: reference,
-      activeCitationKey: firstCitation ? citationKey(firstCitation) : null
+      activeCitationKey: firstCitation ? citationKey(firstCitation) : null,
+      ...(reference ? { activePage: reference.pageNumber } : null)
     });
-    if (reference) {
-      set({ activePage: reference.pageNumber });
-    }
   },
 
   focusCitation: (citation) => {

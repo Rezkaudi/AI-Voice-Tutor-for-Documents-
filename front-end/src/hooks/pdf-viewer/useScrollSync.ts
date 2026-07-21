@@ -49,18 +49,10 @@ export function useScrollSync(
   }, [pdf, scrollRef, slotRefs]);
 
   useEffect(() => {
-    if (!pdf) return;
+    if (!pdf || !focusCitationKey) return;
     const root = scrollRef.current;
     const el = slotRefs.current[page - 1];
     if (!root || !el) return;
-    if (focusCitationKey) {
-      if (page !== dominantRef.current) {
-        dominantRef.current = page;
-        root.scrollTo({ top: el.offsetTop });
-      }
-      return;
-    }
-
     if (page === dominantRef.current) return;
     dominantRef.current = page;
     root.scrollTo({ top: el.offsetTop, behavior: "smooth" });

@@ -47,6 +47,8 @@ import { GoogleOAuthService } from "@/infrastructure/services/auth/google-oauth.
 import { JwtTokenService } from "@/infrastructure/services/auth/jwt-token.service";
 import { CryptoIdGenerator } from "@/infrastructure/services/generators/crypto-id-generator";
 
+import { BrevoContactSync } from "@/infrastructure/services/marketing/brevo-contact-sync";
+
 import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage";
 // import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
 import { PdfiumPageRenderer } from "@/infrastructure/services/documents/pdfium-page-renderer";
@@ -103,6 +105,8 @@ export async function buildContainer(): Promise<Container> {
   const oauthProvider = new GoogleOAuthService(ENV_CONFIG);
   const tokenService = new JwtTokenService(ENV_CONFIG);
   const fileStorage = new S3FileStorage(ENV_CONFIG);
+
+  const contactSync = new BrevoContactSync(ENV_CONFIG, logger);
 
   // const textExtractor = new HfVlTextExtractor(
   //   ENV_CONFIG,
@@ -214,7 +218,8 @@ export async function buildContainer(): Promise<Container> {
   const authenticateWithGoogle = new AuthenticateWithGoogleUseCase(
     oauthProvider,
     userRepository,
-    tokenService
+    tokenService,
+    contactSync
   );
   const refreshSession = new RefreshSessionUseCase(userRepository, tokenService);
   const getCurrentUser = new GetCurrentUserUseCase(userRepository);
