@@ -1,4 +1,4 @@
-import { AlertTriangle, Info, Library } from "lucide-react";
+import { AlertTriangle, Library } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cx, ui } from "@/lib/uiClasses";
 import type { DocumentSummary, UploadState } from "@/types";
@@ -88,10 +88,6 @@ export function UploadPanel({
           </h3>
         )}
         <DropZone onFile={onFile} onReject={onReject} />
-        <p className="mt-3 inline-flex items-center gap-1.5 text-[0.8rem] text-muted">
-          <Info size={14} aria-hidden className="flex-none" />
-          {t("upload.pdfHint")}
-        </p>
       </section>
 
       {error ? (

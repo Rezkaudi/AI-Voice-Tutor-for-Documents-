@@ -38,8 +38,7 @@ export class RegisterUploadUseCase {
 
     const validation = this.validator.validate({
       name: input.filename,
-      type: input.mimeType,
-      size: 0
+      type: input.mimeType
     });
     if (!validation.ok) {
       log.warn(`rejected register — ${validation.error}`);
