@@ -25,12 +25,6 @@ export interface StoredFileMetadata {
   readonly size: number;
   readonly contentType: string;
 }
-export interface PresignGetOptions {
-  readonly expiresInSeconds?: number;
-  readonly fileName?: string;
-  readonly contentType?: string;
-  readonly download?: boolean;
-}
 
 export interface FileStorage {
   put(input: StoredFileInput): Promise<void>;
@@ -38,6 +32,5 @@ export interface FileStorage {
   getStream(key: string): Promise<RetrievedFileStream | null>;
   delete(key: string): Promise<void>;
   presignPut(key: string, contentType: string, expiresInSeconds?: number): Promise<string>;
-  presignGet(key: string, options?: PresignGetOptions): Promise<string>;
   head(key: string): Promise<StoredFileMetadata | null>;
 }

@@ -1,19 +1,23 @@
+import type { Readable } from "node:stream";
 import { NotFoundError, ValidationError } from "@/domain/errors/app-error";
-import type { DocumentFileUrlSigner } from "@/domain/logic/document-file-url";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
+import type { FileStorage } from "@/domain/services/file-storage";
 
-export interface DocumentFileLocation {
-  url: string;
-  expiresInSeconds: number;
+export interface DocumentFileResult {
+  body: Readable;
+  contentType: string;
+  fileName: string;
+  contentLength?: number;
+  eTag?: string;
 }
 
 export class GetDocumentFileUseCase {
   constructor(
     private readonly repository: DocumentRepository,
-    private readonly fileUrlSigner: DocumentFileUrlSigner
+    private readonly storage: FileStorage
   ) { }
 
-  async execute(documentId: unknown, userId: string): Promise<DocumentFileLocation> {
+  async execute(documentId: unknown, userId: string): Promise<DocumentFileResult> {
     if (typeof documentId !== "string" || documentId.trim().length === 0) {
       throw new ValidationError("A document id is required.");
     }
@@ -23,9 +27,17 @@ export class GetDocumentFileUseCase {
       throw new NotFoundError("File not found.");
     }
 
+    const file = await this.storage.getStream(document.storagePath);
+    if (!file) {
+      throw new NotFoundError("File not found.");
+    }
+
     return {
-      url: await this.fileUrlSigner.sign(document),
-      expiresInSeconds: this.fileUrlSigner.ttl
+      body: file.body,
+      contentType: file.contentType || document.mimeType,
+      fileName: document.fileName,
+      contentLength: file.contentLength,
+      eTag: file.eTag
     };
   }
 }

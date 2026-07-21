@@ -120,23 +120,51 @@ export class DocumentsController {
     res.json(await this.getDocument.execute(req.params.id, req.auth!.userId));
   };
 
-  /**
-   * GET /api/documents/:id/file — checks ownership, then redirects to a
-   * presigned storage URL.
-   */
+  /** GET /api/documents/:id/file — streams the original uploaded file. */
   file = async (req: Request, res: Response): Promise<void> => {
-    const { url, expiresInSeconds } = await this.getDocumentFile.execute(
-      req.params.id,
-      req.auth!.userId
-    );
-    res.setHeader(
-      "Cache-Control",
-      `private, max-age=${Math.max(0, Math.floor(expiresInSeconds / 2))}`
-    );
-    res.redirect(302, url);
+    const result = await this.getDocumentFile.execute(req.params.id, req.auth!.userId);
+    res.setHeader("Content-Type", result.contentType);
+    res.setHeader("Content-Disposition", contentDisposition(result.fileName));
+    res.setHeader("Cache-Control", "private, max-age=31536000, immutable");
+    if (result.eTag) res.setHeader("ETag", result.eTag);
+    if (typeof result.contentLength === "number") {
+      res.setHeader("Content-Length", result.contentLength);
+    }
+
+    const source = result.body;
+    res.on("close", () => {
+      if (!source.destroyed) source.destroy();
+    });
+    source.on("error", (error: Error) => {
+      if (!res.headersSent) {
+        res.status(502).json({ message: "Failed to stream the document file." });
+      } else {
+        res.destroy(error);
+      }
+    });
+    source.pipe(res);
   };
 }
 
 function serializeEvent(event: PageExtractionEvent): string {
   return `event: ${event.event}\ndata: ${JSON.stringify(event.data)}\n\n`;
+}
+
+function contentDisposition(fileName: string): string {
+  const name = String(fileName ?? "").slice(0, 200);
+  const asciiFallback =
+    Array.from(name)
+      .map((char) => {
+        const code = char.codePointAt(0) ?? 0;
+        return code > 0x1f && code < 0x7f && char !== '"' && char !== "\\"
+          ? char
+          : "_";
+      })
+      .join("")
+      .trim() || "document";
+  const encoded = encodeURIComponent(name).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `inline; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
 }
