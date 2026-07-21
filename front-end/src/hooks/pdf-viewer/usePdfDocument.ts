@@ -37,7 +37,9 @@ export function usePdfDocument(
     const task = pdfjs.getDocument({
       url: fileUrl,
       withCredentials: isSameOrigin(fileUrl),
-      wasmUrl: pdfjsWasmUrl
+      wasmUrl: pdfjsWasmUrl,
+      disableAutoFetch: true,
+      rangeChunkSize: 262144
     });
     task.onProgress = ({ loaded, total }: { loaded: number; total: number }) => {
       if (cancelled) return;
