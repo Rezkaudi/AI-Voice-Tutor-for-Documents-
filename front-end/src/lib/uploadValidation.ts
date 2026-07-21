@@ -1,4 +1,6 @@
-export type UploadRejectReason = "type";
+import { MAX_UPLOAD_BYTES } from "./constants";
+
+export type UploadRejectReason = "type" | "size";
 
 export type UploadValidation =
   | { ok: true }
@@ -13,6 +15,7 @@ function isPdf(file: File): boolean {
 /** Mirrors the server-side fileFilter so bad files fail fast, before upload. */
 export function validateUploadFile(file: File): UploadValidation {
   if (!isPdf(file)) return { ok: false, reason: "type" };
+  if (file.size > MAX_UPLOAD_BYTES) return { ok: false, reason: "size" };
   return { ok: true };
 }
 
