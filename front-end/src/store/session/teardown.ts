@@ -1,4 +1,5 @@
 import { endLessonSession } from "@/services/documentsApi";
+import { useDocumentStore } from "../documentStore";
 import { useSpeechStore } from "../speechStore";
 import { useVoiceStore } from "../voiceStore";
 import type { SessionStore } from "./types";
@@ -19,4 +20,5 @@ export function haltCall(set: Set, get: Get): void {
   }
   useSpeechStore.getState().stopSpeaking();
   useSpeechStore.getState().resetPaused();
+  useDocumentStore.getState().applyReference(null);
 }
