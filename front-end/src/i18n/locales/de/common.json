@@ -39,7 +39,6 @@
     "uploadTitle": "Lektionsquelle hochladen",
     "pdfLimit": "PDF-Dateien bis zu 25 MB.",
     "dropHint": "Lege eine Datei hier ab oder <choose>wähle eine Datei</choose>",
-    "pdfHint": "Verwende ein textbasiertes PDF. Reine Bild- oder gescannte Dokumente können nicht gelesen werden und funktionieren nicht.",
     "uploadingTitle": "Dein Dokument wird hochgeladen",
     "uploadingBody": "Deine Datei wird gesendet — bitte lass diesen Tab geöffnet.",
     "processingTitle": "Dein Dokument wird vorbereitet",
