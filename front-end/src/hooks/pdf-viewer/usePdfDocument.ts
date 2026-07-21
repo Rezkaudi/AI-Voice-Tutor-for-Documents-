@@ -9,6 +9,14 @@ export interface PdfLoadProgress {
   ratio: number | null;
 }
 
+function isSameOrigin(url: string): boolean {
+  try {
+    return new URL(url, window.location.href).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 export function usePdfDocument(
   fileUrl: string,
   onLoaded?: () => void,
@@ -28,7 +36,7 @@ export function usePdfDocument(
     setError(null);
     const task = pdfjs.getDocument({
       url: fileUrl,
-      withCredentials: true,
+      withCredentials: isSameOrigin(fileUrl),
       wasmUrl: pdfjsWasmUrl
     });
     task.onProgress = ({ loaded, total }: { loaded: number; total: number }) => {
