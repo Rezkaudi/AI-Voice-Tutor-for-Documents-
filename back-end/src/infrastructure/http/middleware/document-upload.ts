@@ -1,6 +1,6 @@
 import multer from "multer";
 
-const DOCUMENT_LIMIT_BYTES = 25 * 1024 * 1024;
+const DOCUMENT_LIMIT_BYTES = 30 * 1024 * 1024;
 
 function decodeFileName(originalname: string): string {
   return Buffer.from(originalname, "latin1").toString("utf8");

@@ -33,7 +33,7 @@ Think of it like hiring a private teacher who is given a single book to study. T
 
 ## What Can It Do?
 
-- 📄 **Read any PDF, `.txt`, or `.md` file** you give it (up to 25 MB).
+- 📄 **Read any PDF, `.txt`, or `.md` file** you give it (up to 30 MB).
 - 💬 **Chat with you in writing** about what's inside.
 - 🎙️ **Listen to you talk** (record with your microphone) and turn your voice into a question.
 - 🔊 **Talk back to you out loud** using a natural AI voice.
@@ -93,7 +93,7 @@ sequenceDiagram
 
     You->>App: Drag & drop a PDF
     App->>Server: Send the file
-    Server->>Server: Check file type & size (≤25 MB)
+    Server->>Server: Check file type & size (≤30 MB)
     Server->>S3: Save the original file
     Server->>Server: Extract the text from each page
     Server->>Server: Split text into small chunks (~1600 chars)
@@ -532,7 +532,7 @@ No. By design it only uses the document you uploaded. If the answer isn't in the
 No — there's a demo mode that returns canned answers. But for real Q&A, voice in (Whisper), and voice out (TTS), you need a key.
 
 **Q: How big can my PDF be?**
-25 MB max. Larger files are rejected.
+30 MB max. Larger files are rejected.
 
 **Q: Can I use a different AI provider?**
 Yes, but you'd write a new adapter. The `domain` layer doesn't know about OpenAI — only `infrastructure/services/ai/` does. Swap that out and you're good.
