@@ -30,6 +30,7 @@ import { DocumentReferenceFactory } from "@/domain/logic/citation/document-refer
 import { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
 import { UploadValidator } from "@/domain/logic/upload-validator";
+import { DocumentFileUrlSigner } from "@/domain/logic/document-file-url";
 import { FileNaming } from "@/domain/logic/file-naming";
 import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
 import { CostCalculator } from "@/domain/logic/cost/cost-calculator";
@@ -177,10 +178,11 @@ export async function buildContainer(): Promise<Container> {
     loadLessonPages,
     logger
   );
-  const getDocument = new GetDocumentUseCase(documentRepository);
+  const documentFileUrlSigner = new DocumentFileUrlSigner(fileStorage, ENV_CONFIG.DOCUMENT_URL_TTL_SECONDS);
+  const getDocument = new GetDocumentUseCase(documentRepository, documentFileUrlSigner);
   const getDocumentFile = new GetDocumentFileUseCase(
     documentRepository,
-    fileStorage
+    documentFileUrlSigner
   );
   const listDocuments = new ListDocumentsUseCase(documentRepository);
   const deleteDocument = new DeleteDocumentUseCase(documentRepository, fileStorage, documentPagesStore);

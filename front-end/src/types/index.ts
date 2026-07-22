@@ -29,6 +29,7 @@ export type DocumentSummary = DocumentRecord;
 export interface LoadedDocument {
   document: DocumentRecord;
   fileUrl: string | null;
+  fileUrlExpiresAt: string | null;
 }
 
 export interface DocumentCitation {

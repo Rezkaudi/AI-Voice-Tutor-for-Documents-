@@ -6,15 +6,15 @@ import {
   S3Client
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import type { Readable } from "node:stream";
 import { PreconditionFailedError, UpstreamError } from "@/domain/errors/app-error";
 import type {
   FileStorage,
+  PresignGetOptions,
   RetrievedFile,
-  RetrievedFileStream,
   StoredFileInput,
   StoredFileMetadata
 } from "@/domain/services/file-storage";
+import { inlineDisposition } from "@/infrastructure/services/storage/content-disposition";
 import type { EnvConfig } from "@/config/env.config";
 
 const DEFAULT_PRESIGN_TTL_SECONDS = 15 * 60;
@@ -134,26 +134,24 @@ export class S3FileStorage implements FileStorage {
     }
   }
 
-  async getStream(key: string): Promise<RetrievedFileStream | null> {
+
+  async presignGet(key: string, options: PresignGetOptions = {}): Promise<string> {
     try {
-      const response = await this.client.send(
-        new GetObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key })
+      return await getSignedUrl(
+        this.client,
+        new GetObjectCommand({
+          Bucket: this.config.S3_BUCKET,
+          Key: key,
+          ResponseContentType: options.contentType,
+          ResponseContentDisposition: options.fileName
+            ? inlineDisposition(options.fileName)
+            : undefined
+        }),
+        { expiresIn: options.expiresInSeconds ?? DEFAULT_PRESIGN_TTL_SECONDS }
       );
-      if (!response.Body) {
-        return null;
-      }
-      return {
-        body: response.Body as Readable,
-        contentType: response.ContentType ?? "application/octet-stream",
-        contentLength: response.ContentLength,
-        eTag: response.ETag
-      };
     } catch (error) {
-      if (isNotFound(error)) {
-        return null;
-      }
       throw new UpstreamError(
-        `Failed to read the document file: ${describe(error)}`
+        `Failed to prepare the document URL: ${describe(error)}`
       );
     }
   }

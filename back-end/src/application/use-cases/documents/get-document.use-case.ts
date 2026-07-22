@@ -1,9 +1,13 @@
 import type { LoadedDocumentDto } from "@/application/dto/document-dto";
 import { NotFoundError, ValidationError } from "@/domain/errors/app-error";
+import type { DocumentFileUrlSigner } from "@/domain/logic/document-file-url";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 
 export class GetDocumentUseCase {
-  constructor(private readonly repository: DocumentRepository) { }
+  constructor(
+    private readonly repository: DocumentRepository,
+    private readonly fileUrlSigner: DocumentFileUrlSigner
+  ) { }
 
   async execute(documentId: unknown, userId: string): Promise<LoadedDocumentDto> {
     if (typeof documentId !== "string" || documentId.trim().length === 0) {
@@ -15,6 +19,7 @@ export class GetDocumentUseCase {
       throw new NotFoundError("Document not found.");
     }
 
-    return { document, fileUrl: `/api/documents/${documentId}/file` };
+    const file = await this.fileUrlSigner.sign(document);
+    return { document, fileUrl: file.url, fileUrlExpiresAt: file.expiresAt };
   }
 }
