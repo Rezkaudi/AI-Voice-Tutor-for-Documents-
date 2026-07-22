@@ -11,18 +11,10 @@ export type ValidationResult =
   | { ok: false; error: string };
 
 export class UploadValidator {
-  static readonly MAX_UPLOAD_BYTES = 30 * 1024 * 1024;
-
-  /** Validates an upload's name, size, and type. */
+  /** Validates an upload's name and type. */
   validate(file: UploadDescriptor): ValidationResult {
     if (!file.name.trim()) {
       return { ok: false, error: "Choose a PDF file." };
-    }
-    if (
-      typeof file.size === "number" &&
-      file.size > UploadValidator.MAX_UPLOAD_BYTES
-    ) {
-      return { ok: false, error: "Files must be 30MB or smaller." };
     }
     const kind = this.detectKind(file);
     if (!kind) {
