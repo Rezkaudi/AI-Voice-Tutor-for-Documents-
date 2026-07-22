@@ -38,6 +38,7 @@ interface DocumentStore {
   closeDocument: () => void;
   loadLibrary: () => Promise<void>;
   selectDocument: (documentId: string) => Promise<void>;
+  refreshFileUrl: () => Promise<void>;
   deleteDocument: (documentId: string) => Promise<void>;
   initLibrary: () => Promise<void>;
 }
@@ -119,6 +120,18 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       useSessionStore.getState().setError(toErrorMessage(error, "Document failed to load."));
     } finally {
       set({ uploadState: "idle" });
+    }
+  },
+
+  refreshFileUrl: async () => {
+    const current = get().loadedDocument;
+    if (!current) return;
+    try {
+      const data = await fetchDocument(current.document.id);
+      if (get().loadedDocument?.document.id !== current.document.id) return;
+      set({ loadedDocument: data });
+    } catch {
+      // Leave the existing error on screen — the viewer already reported it.
     }
   },
 

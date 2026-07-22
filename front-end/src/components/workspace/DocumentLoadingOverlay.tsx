@@ -28,7 +28,10 @@ export function DocumentLoadingOverlay({
 
   const resolvedLabel = label ?? t("workspace.loadingDocument");
   const resolvedHint =
-    hint ?? (determinate ? t("workspace.loadingDownloading") : t("workspace.loadingHint"));
+    hint ??
+    (determinate && pct < 100
+      ? t("workspace.loadingDownloading")
+      : t("workspace.loadingHint"));
 
   return (
     <div

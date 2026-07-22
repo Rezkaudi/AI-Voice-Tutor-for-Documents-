@@ -5,6 +5,7 @@ import { usePdfDocument, type PdfLoadProgress } from "@/hooks/pdf-viewer/usePdfD
 import { FALLBACK_ASPECT, usePageAspects } from "@/hooks/pdf-viewer/usePageAspects";
 import { usePageWindowing } from "@/hooks/pdf-viewer/usePageWindowing";
 import { useScrollSync } from "@/hooks/pdf-viewer/useScrollSync";
+import { useDocumentStore } from "@/store/documentStore";
 
 interface PdfViewerProps {
   fileUrl: string;
@@ -29,7 +30,8 @@ export function PdfViewer({
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [fitWidth, setFitWidth] = useState(0);
 
-  const { pdf, error } = usePdfDocument(fileUrl, onLoaded, onProgress);
+  const refreshFileUrl = useDocumentStore((s) => s.refreshFileUrl);
+  const { pdf, error } = usePdfDocument(fileUrl, onLoaded, onProgress, refreshFileUrl);
   const aspects = usePageAspects(pdf);
 
   const numPages = pdf?.numPages ?? 0;

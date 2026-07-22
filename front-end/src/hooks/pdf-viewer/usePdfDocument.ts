@@ -9,55 +9,139 @@ export interface PdfLoadProgress {
   ratio: number | null;
 }
 
+function isSameOrigin(url: string): boolean {
+  try {
+    return new URL(url, window.location.href).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+async function downloadDocument(
+  url: string,
+  signal: AbortSignal,
+  onTick: (loaded: number, total: number) => void
+): Promise<Uint8Array> {
+  const response = await fetch(url, {
+    signal,
+
+    credentials: isSameOrigin(url) ? "include" : "omit"
+  });
+  if (!response.ok) {
+    throw new Error(`The document could not be downloaded (${response.status}).`);
+  }
+
+  const declared = Number(response.headers.get("Content-Length") ?? 0);
+  const total = Number.isFinite(declared) && declared > 0 ? declared : 0;
+
+  if (!response.body) {
+    const buffer = new Uint8Array(await response.arrayBuffer());
+    onTick(buffer.byteLength, buffer.byteLength);
+    return buffer;
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let loaded = 0;
+  for (; ;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    chunks.push(value);
+    loaded += value.byteLength;
+    onTick(loaded, total);
+  }
+
+  const complete = new Uint8Array(loaded);
+  let offset = 0;
+  for (const chunk of chunks) {
+    complete.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  onTick(loaded, loaded);
+  return complete;
+}
+
+interface DocumentState {
+  url: string;
+  pdf: PDFDocumentProxy | null;
+  error: string | null;
+}
+
 export function usePdfDocument(
   fileUrl: string,
   onLoaded?: () => void,
-  onProgress?: (progress: PdfLoadProgress) => void
+  onProgress?: (progress: PdfLoadProgress) => void,
+  onExpired?: () => void
 ) {
-  const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<DocumentState>({
+    url: fileUrl,
+    pdf: null,
+    error: null
+  });
   const onLoadedRef = useRef(onLoaded);
-  onLoadedRef.current = onLoaded;
   const onProgressRef = useRef(onProgress);
-  onProgressRef.current = onProgress;
+  const onExpiredRef = useRef(onExpired);
+  // Re-sign at most once per URL, so a genuinely broken document can't loop.
+  const refreshedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    onLoadedRef.current = onLoaded;
+    onProgressRef.current = onProgress;
+    onExpiredRef.current = onExpired;
+  });
 
   useEffect(() => {
     let cancelled = false;
-    let lastTotal = 0;
-    setPdf(null);
-    setError(null);
-    const task = pdfjs.getDocument({
-      url: fileUrl,
-      withCredentials: true,
-      wasmUrl: pdfjsWasmUrl
-    });
-    task.onProgress = ({ loaded, total }: { loaded: number; total: number }) => {
-      if (cancelled) return;
-      const safeTotal = typeof total === "number" && total > 0 ? total : 0;
-      if (safeTotal > 0) lastTotal = safeTotal;
-      const ratio = safeTotal > 0 ? Math.min(1, loaded / safeTotal) : null;
-      onProgressRef.current?.({ loaded, total: safeTotal, ratio });
-    };
-    task.promise
-      .then((doc) => {
+    const controller = new AbortController();
+    let task: ReturnType<typeof pdfjs.getDocument> | null = null;
+
+    void (async () => {
+      try {
+        const data = await downloadDocument(
+          fileUrl,
+          controller.signal,
+          (loaded, total) => {
+            if (cancelled) return;
+            const ratio = total > 0 ? Math.min(1, loaded / total) : null;
+            onProgressRef.current?.({ loaded, total, ratio });
+          }
+        );
+        if (cancelled) return;
+
+        task = pdfjs.getDocument({ data, wasmUrl: pdfjsWasmUrl });
+        const doc = await task.promise;
         if (cancelled) {
-          doc.destroy();
+          void doc.destroy();
           return;
         }
-        onProgressRef.current?.({ loaded: lastTotal, total: lastTotal, ratio: 1 });
-        setPdf(doc);
+        setState({ url: fileUrl, pdf: doc, error: null });
         onLoadedRef.current?.();
-      })
-      .catch((cause: unknown) => {
-        if (!cancelled) {
-          setError(cause instanceof Error ? cause.message : "PDF failed to load.");
+      } catch (cause: unknown) {
+        if (cancelled) return;
+        // A stale signed URL fails the same way a missing one does; ask for a
+        // fresh one before deciding the document is actually broken.
+        if (refreshedRef.current !== fileUrl && onExpiredRef.current) {
+          refreshedRef.current = fileUrl;
+          onExpiredRef.current();
+          return;
         }
-      });
+        setState({
+          url: fileUrl,
+          pdf: null,
+          error: cause instanceof Error ? cause.message : "PDF failed to load."
+        });
+      }
+    })();
+
     return () => {
       cancelled = true;
-      void task.destroy();
+      controller.abort();
+      void task?.destroy();
     };
   }, [fileUrl]);
 
-  return { pdf, error };
+
+  const settled = state.url === fileUrl ? state : null;
+  return { pdf: settled?.pdf ?? null, error: settled?.error ?? null };
 }
