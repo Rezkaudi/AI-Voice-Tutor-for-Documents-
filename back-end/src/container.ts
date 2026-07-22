@@ -30,6 +30,7 @@ import { DocumentReferenceFactory } from "@/domain/logic/citation/document-refer
 import { ReferenceSelector } from "@/domain/logic/citation/reference-selector";
 import { LearnerQuestionExtractor } from "@/domain/logic/question/learner-question-extractor";
 import { UploadValidator } from "@/domain/logic/upload-validator";
+import { GhostscriptPdfCompressor } from "@/infrastructure/services/pdf/ghostscript-pdf-compressor";
 import { DocumentFileUrlSigner } from "@/domain/logic/document-file-url";
 import { FileNaming } from "@/domain/logic/file-naming";
 import { ChatHistorySanitizer } from "@/domain/logic/chat-history-sanitizer";
@@ -143,6 +144,15 @@ export async function buildContainer(): Promise<Container> {
   // Single seam every AI flow calls to bill a user's usage (USD + questions).
   const costTracker = new CostTracker(userCostRepository, costCalculator, logger);
 
+
+  const pdfCompressor = new GhostscriptPdfCompressor(textExtractor, logger, {
+    enabled: ENV_CONFIG.PDF_COMPRESSION_ENABLED,
+    minBytes: ENV_CONFIG.PDF_COMPRESSION_MIN_BYTES,
+    preset: ENV_CONFIG.PDF_COMPRESSION_PRESET,
+    minGain: ENV_CONFIG.PDF_COMPRESSION_MIN_GAIN,
+    timeoutMs: ENV_CONFIG.PDF_COMPRESSION_TIMEOUT_MS
+  });
+
   // ─── Application use cases ───────────────────────────────────────────────
   const uploadDocument = new UploadDocumentUseCase(
     documentRepository,
@@ -165,6 +175,7 @@ export async function buildContainer(): Promise<Container> {
     fileStorage,
     uploadValidator,
     fileNaming,
+    pdfCompressor,
     logger
   );
   const loadLessonPages = new LoadLessonPagesUseCase(

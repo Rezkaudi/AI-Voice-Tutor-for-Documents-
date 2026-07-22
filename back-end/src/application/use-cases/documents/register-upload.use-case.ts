@@ -4,6 +4,7 @@ import type { DocumentRepository } from "@/domain/repositories/document-reposito
 import type { FileStorage } from "@/domain/services/file-storage";
 import type { UploadValidator } from "@/domain/logic/upload-validator";
 import type { FileNaming } from "@/domain/logic/file-naming";
+import type { PdfCompressor } from "@/domain/services/pdf-compressor";
 import type { Logger } from "@/domain/services/logger";
 
 export interface RegisterUploadInput {
@@ -25,6 +26,7 @@ export class RegisterUploadUseCase {
     private readonly storage: FileStorage,
     private readonly validator: UploadValidator,
     private readonly naming: FileNaming,
+    private readonly compressor: PdfCompressor,
     private readonly logger: Logger
   ) { }
 
@@ -54,6 +56,8 @@ export class RegisterUploadUseCase {
     }
 
     const contentType = input.mimeType || this.validator.defaultContentType(validation.kind);
+    const storedSize = await this.shrinkStoredFile(key, contentType, meta.size);
+
     const now = new Date().toISOString();
     const record: DocumentRecord = {
       id: input.documentId,
@@ -62,7 +66,7 @@ export class RegisterUploadUseCase {
       fileName: input.filename,
       mimeType: contentType,
       fileType: validation.kind,
-      fileSize: meta.size,
+      fileSize: storedSize,
       status: "ready",
       pageCount,
       storagePath: key,
@@ -72,8 +76,37 @@ export class RegisterUploadUseCase {
     };
 
     await this.repository.save(record);
-    log.info(`registered documentId=${input.documentId} · ${pageCount} page(s) · ${meta.size} bytes`);
+    log.info(`registered documentId=${input.documentId} · ${pageCount} page(s) · ${storedSize} bytes`);
 
     return { documentId: input.documentId, status: record.status };
+  }
+
+  private async shrinkStoredFile(
+    key: string,
+    contentType: string,
+    uploadedSize: number
+  ): Promise<number> {
+    const log = this.logger.scope("upload");
+
+    try {
+      const stored = await this.storage.get(key);
+      if (!stored) return uploadedSize;
+
+      const result = await this.compressor.compress(stored.body);
+      if (!result.compressed) return uploadedSize;
+
+      await this.storage.put({ key, body: result.body, contentType });
+      log.info(
+        `replaced ${key} with compressed copy · ` +
+        `${result.bytesBefore} → ${result.bytesAfter} bytes`
+      );
+      return result.bytesAfter;
+    } catch (error) {
+      log.warn(
+        `compression step skipped for ${key} — ` +
+        `${error instanceof Error ? error.message : String(error)}`
+      );
+      return uploadedSize;
+    }
   }
 }
