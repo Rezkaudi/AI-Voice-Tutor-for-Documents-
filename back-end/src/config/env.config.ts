@@ -22,6 +22,12 @@ export type EnvConfig = {
   DEFAULT_PAGE_EXTRACTION_BATCH_SIZE: number;
   DOCUMENT_URL_TTL_SECONDS: number;
 
+  PDF_COMPRESSION_ENABLED: boolean;
+  PDF_COMPRESSION_MIN_BYTES: number;
+  PDF_COMPRESSION_PRESET: string;
+  PDF_COMPRESSION_MIN_GAIN: number;
+  PDF_COMPRESSION_TIMEOUT_MS: number;
+
   // ─── Hugging Face vision-language OCR (Qwen3-VL) ──────────────────────────
   HF_TOKEN: string;
   HF_VL_MODEL: string;
@@ -92,6 +98,12 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   ),
   DEFAULT_PAGE_EXTRACTION_BATCH_SIZE: Number(getEnv("DEFAULT_PAGE_EXTRACTION_BATCH_SIZE")) || 4,
   DOCUMENT_URL_TTL_SECONDS: Number(getEnv("DOCUMENT_URL_TTL_SECONDS")) || 24 * 60 * 60,
+
+  PDF_COMPRESSION_ENABLED: bool(getEnv("PDF_COMPRESSION_ENABLED"), true),
+  PDF_COMPRESSION_MIN_BYTES: Number(getEnv("PDF_COMPRESSION_MIN_BYTES")) || 4 * 1024 * 1024,
+  PDF_COMPRESSION_PRESET: getEnv("PDF_COMPRESSION_PRESET") || "ebook",
+  PDF_COMPRESSION_MIN_GAIN: Number(getEnv("PDF_COMPRESSION_MIN_GAIN")) || 0.1,
+  PDF_COMPRESSION_TIMEOUT_MS: Number(getEnv("PDF_COMPRESSION_TIMEOUT_MS")) || 4 * 60 * 1000,
 
   HF_TOKEN: getEnv("HF_TOKEN") || "",
   HF_VL_MODEL: getEnv("HF_VL_MODEL") || "Qwen/Qwen3-VL-30B-A3B-Instruct",
