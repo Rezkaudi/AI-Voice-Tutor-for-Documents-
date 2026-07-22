@@ -136,6 +136,15 @@ export class S3FileStorage implements FileStorage {
 
 
   async presignGet(key: string, options: PresignGetOptions = {}): Promise<string> {
+    const ttl = options.expiresInSeconds ?? DEFAULT_PRESIGN_TTL_SECONDS;
+    const window = options.stableWindowSeconds ?? 0;
+
+    const signingDate =
+      window > 0
+        ? new Date(Math.floor(Date.now() / (window * 1000)) * window * 1000)
+        : undefined;
+    const expiresIn = window > 0 ? ttl + window : ttl;
+
     try {
       return await getSignedUrl(
         this.client,
@@ -143,11 +152,12 @@ export class S3FileStorage implements FileStorage {
           Bucket: this.config.S3_BUCKET,
           Key: key,
           ResponseContentType: options.contentType,
+          ResponseCacheControl: options.cacheControl,
           ResponseContentDisposition: options.fileName
             ? inlineDisposition(options.fileName)
             : undefined
         }),
-        { expiresIn: options.expiresInSeconds ?? DEFAULT_PRESIGN_TTL_SECONDS }
+        { expiresIn, signingDate }
       );
     } catch (error) {
       throw new UpstreamError(

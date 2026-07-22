@@ -21,6 +21,8 @@ export interface PresignGetOptions {
   readonly expiresInSeconds?: number;
   readonly fileName?: string;
   readonly contentType?: string;
+  readonly cacheControl?: string;
+  readonly stableWindowSeconds?: number;
 }
 
 export interface FileStorage {

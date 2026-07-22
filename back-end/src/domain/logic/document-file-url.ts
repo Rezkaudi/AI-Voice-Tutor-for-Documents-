@@ -1,6 +1,8 @@
 import type { DocumentRecord } from "@/domain/entities/document";
 import type { FileStorage } from "@/domain/services/file-storage";
 
+const CACHE_CONTROL = "private, max-age=31536000, immutable";
+
 export interface SignedFileUrl {
   readonly url: string;
   readonly expiresAt: string;
@@ -16,7 +18,9 @@ export class DocumentFileUrlSigner {
     const url = await this.storage.presignGet(document.storagePath, {
       expiresInSeconds: this.ttlSeconds,
       fileName: document.fileName,
-      contentType: document.mimeType
+      contentType: document.mimeType,
+      cacheControl: CACHE_CONTROL,
+      stableWindowSeconds: this.ttlSeconds
     });
     return {
       url,
