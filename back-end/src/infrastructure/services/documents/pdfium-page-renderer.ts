@@ -1,12 +1,14 @@
 import { createCanvas, ImageData } from "@napi-rs/canvas";
 import type { PDFiumLibrary as PdfiumLibraryType } from "@hyzyla/pdfium";
 
+import type { PdfPageCounter } from "@/domain/services/pdf-page-counter";
+
 export interface RenderedPage {
   pageNumber: number;
   png: ArrayBuffer;
 }
 
-export class PdfiumPageRenderer {
+export class PdfiumPageRenderer implements PdfPageCounter {
   private static readonly DPI = 150;
 
   private libraryPromise: Promise<PdfiumLibraryType> | null = null;

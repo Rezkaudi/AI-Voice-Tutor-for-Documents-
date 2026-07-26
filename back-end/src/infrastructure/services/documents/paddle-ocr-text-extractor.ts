@@ -2,8 +2,9 @@ import { createHash } from "node:crypto";
 
 import type { PaddleOcrService, PaddleOcrResult, ModelUrls } from "ppu-paddle-ocr";
 
-import type { DocumentPage, UploadKind } from "@/domain/entities/document";
+import type { DocumentPage } from "@/domain/entities/document";
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
+import { fetchPdfBytes } from "@/infrastructure/services/documents/fetch-pdf-bytes";
 import type { Logger } from "@/domain/services/logger";
 import { TextNormalizer } from "@/domain/logic/citation/text-normalizer";
 import { ReadingOrderBuilder } from "@/domain/logic/pdf/reading-order-builder";
@@ -35,17 +36,8 @@ export class PaddleOcrTextExtractor implements DocumentTextExtractor {
     private readonly logger: Logger
   ) { }
 
-  async extract(buffer: Buffer, _kind: UploadKind): Promise<DocumentPage[]> {
-    const total = await this.renderer.countPages(buffer);
-    const pageNumbers = Array.from({ length: total }, (_, index) => index + 1);
-    return this.extractPages(buffer, pageNumbers);
-  }
-
-  async countPages(buffer: Buffer): Promise<number> {
-    return this.renderer.countPages(buffer);
-  }
-
-  async extractPages(buffer: Buffer, pageNumbers: number[]): Promise<DocumentPage[]> {
+  async extractPages(pdfUrl: string, pageNumbers: number[]): Promise<DocumentPage[]> {
+    const buffer = await fetchPdfBytes(pdfUrl);
     const rendered = await this.renderer.renderPages(buffer, pageNumbers);
     if (rendered.length === 0) return [];
 

@@ -1,7 +1,7 @@
 import type { DocumentRecord } from "@/domain/entities/document";
 import { UnprocessableEntityError } from "@/domain/errors/app-error";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
-import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
+import type { PdfPageCounter } from "@/domain/services/pdf-page-counter";
 import type { FileStorage } from "@/domain/services/file-storage";
 import type { IdGenerator } from "@/domain/services/id-generator";
 import type { UploadValidator } from "@/domain/logic/upload-validator";
@@ -25,7 +25,7 @@ export class UploadDocumentUseCase {
   constructor(
     private readonly repository: DocumentRepository,
     private readonly storage: FileStorage,
-    private readonly extractor: DocumentTextExtractor,
+    private readonly pageCounter: PdfPageCounter,
     private readonly validator: UploadValidator,
     private readonly naming: FileNaming,
     private readonly idGenerator: IdGenerator,
@@ -52,7 +52,7 @@ export class UploadDocumentUseCase {
 
     const id = this.idGenerator.uuid();
 
-    const pageCount = await this.extractor.countPages(input.buffer);
+    const pageCount = await this.pageCounter.countPages(input.buffer);
     if (pageCount < 1) {
       log.warn("PDF reports no pages — rejecting");
       throw new UnprocessableEntityError(

@@ -1,7 +1,7 @@
 import { DOMMatrix, ImageData, Path2D } from "@napi-rs/canvas";
-import type { DocumentPage, UploadKind } from "@/domain/entities/document";
-import { UnprocessableEntityError } from "@/domain/errors/app-error";
+import type { DocumentPage } from "@/domain/entities/document";
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
+import { fetchPdfBytes } from "@/infrastructure/services/documents/fetch-pdf-bytes";
 import { LayoutTextBuilder } from "@/domain/logic/pdf/layout-text-builder";
 import type { PositionedTextItem } from "@/domain/logic/pdf/positioned-text-item";
 import { HeaderFooterRemover } from "@/domain/logic/pdf/header-footer-remover";
@@ -32,31 +32,8 @@ export class PdfJsTextExtractor implements DocumentTextExtractor {
     );
   }
 
-  async extract(buffer: Buffer, _kind: UploadKind): Promise<DocumentPage[]> {
-    const pdf = await this.load(buffer);
-
-    const pages: DocumentPage[] = [];
-    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-      pages.push(await this.readPage(pdf, pageNumber));
-    }
-
-    const cleaned = this.headerFooterRemover.remove(pages);
-    const hasText = cleaned.some((page) => page.text.trim().length > 0);
-    if (!hasText) {
-      throw new UnprocessableEntityError(
-        "We couldn't read any text in this PDF. Image-only or scanned files aren't supported — please upload a text-based PDF."
-      );
-    }
-    return cleaned;
-  }
-
-  async countPages(buffer: Buffer): Promise<number> {
-    const pdf = await this.load(buffer);
-    return pdf.numPages;
-  }
-
-  async extractPages(buffer: Buffer, pageNumbers: number[]): Promise<DocumentPage[]> {
-    const pdf = await this.load(buffer);
+  async extractPages(pdfUrl: string, pageNumbers: number[]): Promise<DocumentPage[]> {
+    const pdf = await this.load(await fetchPdfBytes(pdfUrl));
 
     const wanted = Array.from(new Set(pageNumbers))
       .filter((pageNumber) => pageNumber >= 1 && pageNumber <= pdf.numPages)

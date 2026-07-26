@@ -1,5 +1,5 @@
 import type { EnvConfig } from "@/config/env.config";
-import type { DocumentPage, UploadKind } from "@/domain/entities/document";
+import type { DocumentPage } from "@/domain/entities/document";
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
 import type { Logger } from "@/domain/services/logger";
 
@@ -10,9 +10,6 @@ interface RemotePage {
 interface ExtractResponse {
   pages: RemotePage[];
 }
-interface CountResponse {
-  count: number;
-}
 
 export class RemoteOcrTextExtractor implements DocumentTextExtractor {
   constructor(
@@ -20,40 +17,23 @@ export class RemoteOcrTextExtractor implements DocumentTextExtractor {
     private readonly logger: Logger
   ) { }
 
-  async extract(buffer: Buffer, _kind: UploadKind): Promise<DocumentPage[]> {
-    const total = await this.countPages(buffer);
-    const pageNumbers = Array.from({ length: total }, (_, index) => index + 1);
-    return this.extractPages(buffer, pageNumbers);
-  }
-
-  async countPages(buffer: Buffer): Promise<number> {
-    const { count } = await this.call<CountResponse>("/count-pages", { pdf: this.encode(buffer) });
-    return count;
-  }
-
-  async extractPages(buffer: Buffer, pageNumbers: number[]): Promise<DocumentPage[]> {
+  async extractPages(pdfUrl: string, pageNumbers: number[]): Promise<DocumentPage[]> {
     if (pageNumbers.length === 0) return [];
 
     const started = Date.now();
-    const pdf = this.encode(buffer);
-
     const results = await Promise.all(
       pageNumbers.map((pageNumber) =>
-        this.call<ExtractResponse>("/extract-pages", { pdf, pages: [pageNumber] })
+        this.call<ExtractResponse>("/extract-pages", { url: pdfUrl, pages: [pageNumber] })
       )
     );
     const pages = results.flatMap((result) => result.pages);
     this.logger
       .scope("remote-ocr")
-      .info(`extracted ${pages.length} page(s) in ${Date.now() - started}ms (parallel)`);
+      .info(`extracted ${pages.length} page(s) via s3-url in ${Date.now() - started}ms (parallel)`);
 
     return pages
       .map((page) => ({ pageNumber: page.page_number, text: page.text }))
       .sort((a, b) => a.pageNumber - b.pageNumber);
-  }
-
-  private encode(buffer: Buffer): string {
-    return buffer.toString("base64");
   }
 
   private async call<T>(path: string, body: unknown): Promise<T> {

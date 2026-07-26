@@ -4,10 +4,14 @@ Full pipeline in Python — render → recognize (PP-OCRv6/PP-OCRv5 ONNX) → la
 (PP-DocLayoutV2 ONNX) → reading-order + RTL + normalize → **final page text**.
 The Node backend keeps zero OCR code; it just calls these endpoints.
 
+The Node backend sends the PDF as a presigned S3 URL (`{ "url": ... }`) and this
+service streams the file straight from object storage — the bytes never travel
+through the request body.
+
 Entry point: `ocr` (functions-framework). Routes on request path:
   GET  /health         → liveness
-  POST /count-pages    → { count }
-  POST /extract-pages  → { pages:[{ page_number, text }] }
+  POST /count-pages    → { count }         · body: { url }
+  POST /extract-pages  → { pages:[...] }    · body: { url, pages }
 
 Local run:   functions-framework --target ocr --port 8080
 Deploy:      gcloud run deploy ocr-service --source . --function ocr ...
@@ -15,12 +19,13 @@ Deploy:      gcloud run deploy ocr-service --source . --function ocr ...
 
 from __future__ import annotations
 
-import base64
-import binascii
 import hashlib
 import logging
+import os
 import threading
 import time
+import urllib.request
+from urllib.parse import urlparse
 
 import functions_framework
 
@@ -44,6 +49,15 @@ _model_cache: dict[str, str] = {}
 _engine_lock = threading.Lock()
 
 _PROBE_PAGE_COUNT = 2
+
+_ALLOWED_SCHEMES = {"http", "https"}
+_MAX_PDF_BYTES = int(os.getenv("OCR_MAX_PDF_BYTES", str(200 * 1024 * 1024)))
+_DOWNLOAD_TIMEOUT_S = float(os.getenv("OCR_DOWNLOAD_TIMEOUT_S", "60"))
+
+_PDF_CACHE_TTL_S = float(os.getenv("OCR_PDF_CACHE_TTL_S", "300"))
+_PDF_CACHE_MAX = int(os.getenv("OCR_PDF_CACHE_MAX", "4"))
+_pdf_cache: dict[str, tuple[float, bytes]] = {}
+_pdf_cache_lock = threading.Lock()
 
 
 def _get_renderer() -> PageRenderer:
@@ -76,11 +90,74 @@ def _get_layout() -> LayoutEngine:
     return _layout
 
 
-def _decode(pdf_b64: str) -> bytes:
+def _load_pdf(body: dict) -> bytes:
+    """The PDF bytes, streamed from the presigned S3 URL in the request body."""
+    url = body.get("url")
+    if not url:
+        raise ValueError("request must include a 'url'")
+    return _download(url)
+
+
+def _download(url: str) -> bytes:
+    parsed = urlparse(url)
+    if parsed.scheme not in _ALLOWED_SCHEMES:
+        raise ValueError(f"unsupported url scheme: {parsed.scheme or '(none)'}")
+
+    cache_key = f"{parsed.netloc}{parsed.path}"
+    cached = _pdf_cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    started = time.time()
     try:
-        return base64.b64decode(pdf_b64, validate=True)
-    except (binascii.Error, ValueError) as error:
-        raise ValueError(f"invalid base64 pdf: {error}") from error
+        request = urllib.request.Request(url, method="GET")
+        with urllib.request.urlopen(request, timeout=_DOWNLOAD_TIMEOUT_S) as response:
+            declared = response.headers.get("Content-Length")
+            if declared is not None and int(declared) > _MAX_PDF_BYTES:
+                raise ValueError(f"pdf exceeds {_MAX_PDF_BYTES} byte limit")
+            data = _read_capped(response, _MAX_PDF_BYTES)
+    except (OSError, ValueError) as error:
+        raise ValueError(f"failed to fetch pdf: {error}") from error
+
+    log.info("downloaded pdf (%d bytes) in %dms", len(data), int((time.time() - started) * 1000))
+    _pdf_cache_put(cache_key, data)
+    return data
+
+
+def _read_capped(response, limit: int) -> bytes:
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = response.read(1 << 16)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > limit:
+            raise ValueError(f"pdf exceeds {limit} byte limit")
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _pdf_cache_get(key: str) -> bytes | None:
+    now = time.time()
+    with _pdf_cache_lock:
+        entry = _pdf_cache.get(key)
+        if entry is None:
+            return None
+        expires_at, data = entry
+        if expires_at < now:
+            _pdf_cache.pop(key, None)
+            return None
+        return data
+
+
+def _pdf_cache_put(key: str, data: bytes) -> None:
+    with _pdf_cache_lock:
+        # Evict the soonest-to-expire entries once the cache is full.
+        while len(_pdf_cache) >= _PDF_CACHE_MAX and key not in _pdf_cache:
+            oldest = min(_pdf_cache, key=lambda k: _pdf_cache[k][0])
+            _pdf_cache.pop(oldest, None)
+        _pdf_cache[key] = (time.time() + _PDF_CACHE_TTL_S, data)
 
 
 def _fingerprint(pdf_bytes: bytes) -> str:
@@ -127,7 +204,7 @@ def _choose_model(pdf_bytes: bytes) -> str:
 
 def _extract_pages(body: dict) -> dict:
     renderer, ocr, layout = _get_renderer(), _get_ocr(), _get_layout()
-    pdf_bytes = _decode(body["pdf"])
+    pdf_bytes = _load_pdf(body)
     pages = body.get("pages") or []
 
     started = time.time()
@@ -149,7 +226,7 @@ def _extract_pages(body: dict) -> dict:
 
 
 def _count_pages(body: dict) -> dict:
-    return {"count": _get_renderer().count(_decode(body["pdf"]))}
+    return {"count": _get_renderer().count(_load_pdf(body))}
 
 
 @functions_framework.http

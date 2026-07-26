@@ -36,6 +36,7 @@ export type EnvConfig = {
 
   OCR_SERVICE_URL: string;
   OCR_SERVICE_TIMEOUT_MS: number;
+  OCR_SOURCE_URL_TTL_SECONDS: number;
   // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
@@ -114,6 +115,8 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
 
   OCR_SERVICE_URL: getEnv("OCR_SERVICE_URL") || "http://localhost:8080",
   OCR_SERVICE_TIMEOUT_MS: Number(getEnv("OCR_SERVICE_TIMEOUT_MS")) || 2 * 60 * 1000,
+
+  OCR_SOURCE_URL_TTL_SECONDS: Number(getEnv("OCR_SOURCE_URL_TTL_SECONDS")) || 15 * 60,
 
   // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
   GOOGLE_CLIENT_ID: requireEnv("GOOGLE_CLIENT_ID"),
