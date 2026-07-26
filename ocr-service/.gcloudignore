@@ -1,0 +1,7 @@
+# Keep the Cloud Build upload small.
+.venv/
+local/
+__pycache__/
+*.pyc
+.git/
+.gitignore

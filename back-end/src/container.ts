@@ -57,6 +57,8 @@ import { PdfiumPageRenderer } from "@/infrastructure/services/documents/pdfium-p
 import { PaddleOcrTextExtractor } from "@/infrastructure/services/documents/paddle-ocr-text-extractor";
 import { HfVlTextExtractor } from "@/infrastructure/services/documents/hf-vl-text-extractor";
 import { DocLayoutRegionDetector } from "@/infrastructure/services/documents/doclayout-region-detector";
+import { RemoteOcrTextExtractor } from "@/infrastructure/services/documents/remote-ocr-text-extractor";
+
 import { StoragePageCache } from "@/infrastructure/services/cache/storage-page-cache";
 import { OpenAiTutorService } from "@/infrastructure/services/ai/openai-tutor.service";
 import { OpenAiTextToSpeechService } from "@/infrastructure/services/ai/openai-text-to-speech.service";
@@ -117,18 +119,20 @@ export async function buildContainer(): Promise<Container> {
   //   logger
   // );
 
-  const textExtractor = new PaddleOcrTextExtractor(
-    new PdfiumPageRenderer(),
-    new DocLayoutRegionDetector(logger),
-    readingOrderBuilder,
-    textNormalizer,
-    new ScriptDirection(),
-    new RtlVisualOrderConverter(),
-    new OcrScriptDetector(),
-    logger
-  );
+  // const textExtractor = new PaddleOcrTextExtractor(
+  //   new PdfiumPageRenderer(),
+  //   new DocLayoutRegionDetector(logger),
+  //   readingOrderBuilder,
+  //   textNormalizer,
+  //   new ScriptDirection(),
+  //   new RtlVisualOrderConverter(),
+  //   new OcrScriptDetector(),
+  //   logger
+  // );
 
   // const textExtractor = PdfJsTextExtractor.createDefault();
+  const textExtractor = new RemoteOcrTextExtractor(ENV_CONFIG, logger);
+
   const documentPagesStore = new DocumentPagesStore(fileStorage, logger);
   const extractionRegistry = new ExtractionRegistry();
   const pageCache = new StoragePageCache(documentPagesStore);
