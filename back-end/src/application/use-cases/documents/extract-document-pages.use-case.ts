@@ -3,6 +3,7 @@ import { AsyncEventQueue } from "@/application/services/async-event-queue";
 import type { DocumentPagesStore } from "@/application/services/document-pages-store";
 import type { ExtractionRegistry } from "@/application/services/extraction-registry";
 import type { DocumentPagesFile } from "@/domain/entities/document-pages";
+import { isPageSettled } from "@/domain/entities/document-pages";
 import { NotFoundError } from "@/domain/errors/app-error";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
 import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
@@ -27,6 +28,7 @@ export class ExtractDocumentPagesUseCase {
     private readonly logger: Logger,
     private readonly batchSize: number,
     private readonly sourceUrlTtlSeconds: number,
+    private readonly maxPageAttempts: number,
   ) { }
 
   async execute(
@@ -101,28 +103,50 @@ export class ExtractDocumentPagesUseCase {
     });
     log.info(`document ${documentId} · driving extraction of ${pageCount} page(s)`);
 
-    let batch: number[] = [];
-    for (let page = 1; page <= pageCount; page += 1) {
-      if (isKnown(known, page)) continue;
-      if (signal.aborted) {
-        log.info(`document ${documentId} · client disconnected · pausing at page ${page}`);
-        return;
-      }
-      batch.push(page);
-      if (batch.length >= this.normalizedBatchSize()) {
-        known = await this.extractBatch(pdfUrl, batch, input, pageCount, queue, log);
-        batch = [];
-      }
-    }
+    for (let pass = 0; !signal.aborted; pass += 1) {
+      const targets = this.pagesNeedingWork(known, pageCount);
+      if (targets.length === 0) break;
 
-    if (batch.length > 0 && !signal.aborted) {
-      known = await this.extractBatch(pdfUrl, batch, input, pageCount, queue, log);
+      if (pass > 0) {
+        log.info(
+          `document ${documentId} · retry pass ${pass} · ${targets.length} page(s) still pending`
+        );
+        // Back off before retrying so transient rate limits have time to clear.
+        await abortableSleep(this.retryBackoffMs(pass), signal);
+        if (signal.aborted) return;
+      }
+
+      for (let i = 0; i < targets.length; i += this.normalizedBatchSize()) {
+        if (signal.aborted) {
+          log.info(`document ${documentId} · client disconnected · pausing extraction`);
+          return;
+        }
+        const batch = targets.slice(i, i + this.normalizedBatchSize());
+        known = await this.extractBatch(pdfUrl, batch, input, pageCount, queue, log);
+      }
     }
 
     if (known?.done) {
       log.info(`document ${documentId} · extraction complete`);
       queue.push({ event: "done", data: {} });
     }
+  }
+
+  /** Exponential backoff between retry passes, capped at 30s. */
+  private retryBackoffMs(pass: number): number {
+    return Math.min(30_000, 2_000 * 2 ** (pass - 1));
+  }
+
+  /**
+   * Pages that still need (re)extraction: not yet extracted and not yet out of
+   * retry budget, in ascending order.
+   */
+  private pagesNeedingWork(file: DocumentPagesFile | null, pageCount: number): number[] {
+    const pages: number[] = [];
+    for (let page = 1; page <= pageCount; page += 1) {
+      if (!isPageSettled(file, page, this.maxPageAttempts)) pages.push(page);
+    }
+    return pages;
   }
 
   private async extractBatch(
@@ -265,7 +289,7 @@ export class ExtractDocumentPagesUseCase {
     const active = this.registry.activePages(documentId);
     if (active.length > 0) return active;
     if (file?.done) return [];
-    return nextMissingPages(file, pageCount, this.normalizedBatchSize());
+    return this.pagesNeedingWork(file, pageCount).slice(0, this.normalizedBatchSize());
   }
 }
 
@@ -292,23 +316,6 @@ function extractedPages(file: DocumentPagesFile | null): number[] {
     .map(Number)
     .filter((page) => Number.isInteger(page) && page >= 1)
     .sort((a, b) => a - b);
-}
-
-function isKnown(file: DocumentPagesFile | null, page: number): boolean {
-  if (!file) return false;
-  return file.pages[String(page)] !== undefined || file.failed.includes(page);
-}
-
-function nextMissingPages(
-  file: DocumentPagesFile | null,
-  pageCount: number,
-  batchSize: number
-): number[] {
-  const pages: number[] = [];
-  for (let page = 1; page <= pageCount && pages.length < batchSize; page += 1) {
-    if (!isKnown(file, page)) pages.push(page);
-  }
-  return pages;
 }
 
 function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {

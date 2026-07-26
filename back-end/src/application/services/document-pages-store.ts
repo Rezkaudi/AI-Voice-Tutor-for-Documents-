@@ -20,13 +20,15 @@ const EMPTY_FILE: DocumentPagesFile = {
   pageCount: 0,
   done: false,
   pages: {},
-  failed: []
+  failed: [],
+  attempts: {}
 };
 
 export class DocumentPagesStore {
   constructor(
     private readonly storage: FileStorage,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly maxPageAttempts: number
   ) { }
 
   keyFor(userId: string, documentId: string): string {
@@ -92,25 +94,40 @@ export class DocumentPagesStore {
       }
     }
     const failed = new Set<number>(existing?.failed ?? []);
+    const attempts: Record<string, number> = { ...(existing?.attempts ?? {}) };
     for (const page of options?.failedPages ?? []) {
       failed.add(page);
+      attempts[String(page)] = (attempts[String(page)] ?? 0) + 1;
     }
     for (const key of Object.keys(pages)) {
       failed.delete(Number(key));
+      delete attempts[key];
     }
     const pageCount = existing?.pageCount || options?.pageCount || 0;
-    const done =
-      pageCount >= 1 &&
-      Array.from({ length: pageCount }, (_, i) => i + 1).every(
-        (page) => pages[String(page)] !== undefined || failed.has(page)
-      );
+    const failedList = Array.from(failed).sort((a, b) => a - b);
     return {
       version: 1,
       pageCount,
-      done,
+      done: this.computeDone(pageCount, pages, failed, attempts),
       pages,
-      failed: Array.from(failed).sort((a, b) => a - b)
+      failed: failedList,
+      attempts
     };
+  }
+
+  private computeDone(
+    pageCount: number,
+    pages: Record<string, string>,
+    failed: Set<number>,
+    attempts: Record<string, number>
+  ): boolean {
+    if (pageCount < 1) return false;
+    for (let page = 1; page <= pageCount; page += 1) {
+      const extracted = pages[String(page)] !== undefined;
+      const exhausted = failed.has(page) && (attempts[String(page)] ?? 0) >= this.maxPageAttempts;
+      if (!extracted && !exhausted) return false;
+    }
+    return true;
   }
 
   private parse(body: Buffer): DocumentPagesFile | null {
@@ -119,12 +136,20 @@ export class DocumentPagesStore {
       if (raw.version !== 1 || typeof raw.pages !== "object" || raw.pages === null) {
         return null;
       }
+      const pageCount = typeof raw.pageCount === "number" ? raw.pageCount : 0;
+      const pages = raw.pages as Record<string, string>;
+      const failed = Array.isArray(raw.failed) ? raw.failed : [];
+      const attempts =
+        typeof raw.attempts === "object" && raw.attempts !== null
+          ? (raw.attempts as Record<string, number>)
+          : {};
       return {
         version: 1,
-        pageCount: typeof raw.pageCount === "number" ? raw.pageCount : 0,
-        done: raw.done === true,
-        pages: raw.pages as Record<string, string>,
-        failed: Array.isArray(raw.failed) ? raw.failed : []
+        pageCount,
+        done: this.computeDone(pageCount, pages, new Set(failed), attempts),
+        pages,
+        failed,
+        attempts
       };
     } catch {
       return null;

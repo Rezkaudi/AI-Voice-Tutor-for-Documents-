@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { streamChat } from "@/services/chatApi";
-import { runChatStream } from "./chatStreamRunner";
+import { ChatStreamFatalError, runChatStream } from "./chatStreamRunner";
 import { useDocumentStore } from "./documentStore";
 import { useSessionStore } from "./sessionStore";
 import { useSpeechStore } from "./speechStore";
@@ -8,6 +8,26 @@ import type { ChatMessage, DocumentReference } from "@/types";
 
 interface SendMessageOptions {
   hidden?: boolean;
+}
+
+const MAX_CHAT_ATTEMPTS = 3;
+
+function retryDelayMs(attempt: number): number {
+  return Math.min(800 * 2 ** attempt, 4000);
+}
+
+function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 interface ChatStore {
@@ -90,41 +110,69 @@ export const useChatStore = create<ChatStore>((set, get) => {
       const controller = new AbortController();
       abortController = controller;
 
+      const payload = {
+        documentId: loadedDocument.document.id,
+        message: trimmed,
+        language: session.speechLanguage,
+        messages: history,
+        selectedPages: useSessionStore.getState().selectedPages,
+        teacherAsks: useSessionStore.getState().teacherAsks
+      };
+
       try {
-        const body = await streamChat(
-          {
-            documentId: loadedDocument.document.id,
-            message: trimmed,
-            language: session.speechLanguage,
-            messages: history,
-            selectedPages: useSessionStore.getState().selectedPages,
-            teacherAsks: useSessionStore.getState().teacherAsks
-          },
-          controller.signal
-        );
+        let lastError: unknown = null;
 
-        await runChatStream({
-          body,
-          speechSession: useSpeechStore.getState().createSpeechSession(),
-          signal: controller.signal,
-          onText: (text) => patchAssistant(assistantId, { content: text }),
-          onReference: (reference) => applyReference(assistantId, reference),
-          onFocusCitation: (citation) => useDocumentStore.getState().focusCitation(citation),
-          onQuestion: (question) => useSessionStore.getState().setPendingQuestion(question),
-          onEndSession: () => useSessionStore.getState().endCall()
-        });
+        for (let attempt = 0; attempt < MAX_CHAT_ATTEMPTS; attempt += 1) {
+          if (controller.signal.aborted) return;
 
-        useSessionStore.getState().maybeContinueCall();
-      } catch (error) {
-        if (controller.signal.aborted) {
+          if (attempt > 0) {
+            // Reconnecting after a dropped stream: wipe the partial answer and
+            // silence any half-played audio so the retry starts from a clean
+            // slate — the learner never sees or hears the turn twice.
+            useSpeechStore.getState().stopSpeaking();
+            patchAssistant(assistantId, { content: "", reference: null });
+            useSpeechStore.getState().resumeThinkingCue();
+          }
 
-          return;
+          try {
+            const body = await streamChat(payload, controller.signal);
+
+            await runChatStream({
+              body,
+              speechSession: useSpeechStore.getState().createSpeechSession(),
+              signal: controller.signal,
+              onText: (text) => patchAssistant(assistantId, { content: text }),
+              onReference: (reference) => applyReference(assistantId, reference),
+              onFocusCitation: (citation) => useDocumentStore.getState().focusCitation(citation),
+              onQuestion: (question) => useSessionStore.getState().setPendingQuestion(question),
+              onEndSession: () => useSessionStore.getState().endCall()
+            });
+
+            useSessionStore.getState().maybeContinueCall();
+            lastError = null;
+            break;
+          } catch (error) {
+            if (controller.signal.aborted) return;
+            lastError = error;
+
+            // A server-reported error is a genuine failure — stop. Everything
+            // else (dropped connection, QUIC reset) gets a bounded retry.
+            const fatal = error instanceof ChatStreamFatalError;
+            if (fatal || attempt === MAX_CHAT_ATTEMPTS - 1) break;
+
+            await abortableSleep(retryDelayMs(attempt), controller.signal);
+          }
         }
-        useSpeechStore.getState().stopSpeaking();
-        useSessionStore
-          .getState()
-          .setError(error instanceof Error ? error.message : "The teacher could not respond.");
-        set({ messages: get().messages.filter((message) => message.id !== assistantId) });
+
+        if (lastError && !controller.signal.aborted) {
+          useSpeechStore.getState().stopSpeaking();
+          useSessionStore
+            .getState()
+            .setError(
+              lastError instanceof Error ? lastError.message : "The teacher could not respond."
+            );
+          set({ messages: get().messages.filter((message) => message.id !== assistantId) });
+        }
       } finally {
         if (abortController === controller) abortController = null;
         set({ isStreaming: false });

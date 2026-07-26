@@ -39,6 +39,7 @@ export function reduceExtraction(
       return {
         ...state,
         status: "extracting",
+        failedPages: state.failedPages.filter((page) => page !== event.data.page),
         currentPage: event.data.page,
         currentPages: sortedUnique([...activePagesOf(state), event.data.page])
       };
