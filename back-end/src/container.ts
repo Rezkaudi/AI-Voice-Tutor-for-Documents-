@@ -132,6 +132,7 @@ export async function buildContainer(): Promise<Container> {
 
   // const textExtractor = PdfJsTextExtractor.createDefault();
   const textExtractor = new RemoteOcrTextExtractor(ENV_CONFIG, logger);
+  const pdfPageCounter = new PdfiumPageRenderer();
 
   const documentPagesStore = new DocumentPagesStore(fileStorage, logger);
   const extractionRegistry = new ExtractionRegistry();
@@ -149,7 +150,7 @@ export async function buildContainer(): Promise<Container> {
   const costTracker = new CostTracker(userCostRepository, costCalculator, logger);
 
 
-  const pdfCompressor = new GhostscriptPdfCompressor(textExtractor, logger, {
+  const pdfCompressor = new GhostscriptPdfCompressor(pdfPageCounter, logger, {
     enabled: ENV_CONFIG.PDF_COMPRESSION_ENABLED,
     minBytes: ENV_CONFIG.PDF_COMPRESSION_MIN_BYTES,
     preset: ENV_CONFIG.PDF_COMPRESSION_PRESET,
@@ -161,7 +162,7 @@ export async function buildContainer(): Promise<Container> {
   const uploadDocument = new UploadDocumentUseCase(
     documentRepository,
     fileStorage,
-    textExtractor,
+    pdfPageCounter,
     uploadValidator,
     fileNaming,
     idGenerator,
@@ -186,7 +187,8 @@ export async function buildContainer(): Promise<Container> {
     fileStorage,
     textExtractor,
     pageCache,
-    logger
+    logger,
+    ENV_CONFIG.OCR_SOURCE_URL_TTL_SECONDS
   );
   const prepareLessonPages = new PrepareLessonPagesUseCase(
     documentRepository,
@@ -209,7 +211,8 @@ export async function buildContainer(): Promise<Container> {
     documentPagesStore,
     extractionRegistry,
     logger,
-    ENV_CONFIG.DEFAULT_PAGE_EXTRACTION_BATCH_SIZE
+    ENV_CONFIG.DEFAULT_PAGE_EXTRACTION_BATCH_SIZE,
+    ENV_CONFIG.OCR_SOURCE_URL_TTL_SECONDS
   );
   const streamChat = new StreamChatUseCase(
     documentRepository,

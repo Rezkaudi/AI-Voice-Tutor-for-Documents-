@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
-import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
+import type { PdfPageCounter } from "@/domain/services/pdf-page-counter";
 import type { Logger } from "@/domain/services/logger";
 import type {
   PdfCompressionResult,
@@ -26,7 +26,7 @@ export class GhostscriptPdfCompressor implements PdfCompressor {
   private binaryMissing = false;
 
   constructor(
-    private readonly extractor: DocumentTextExtractor,
+    private readonly pageCounter: PdfPageCounter,
     private readonly logger: Logger,
     private readonly options: GhostscriptOptions
   ) { }
@@ -83,8 +83,8 @@ export class GhostscriptPdfCompressor implements PdfCompressor {
 
       // A preset that silently dropped pages would quietly break every
       // citation into the missing range, so this is a hard gate.
-      const pagesBefore = await this.extractor.countPages(source);
-      const pagesAfter = await this.extractor.countPages(compressedBody);
+      const pagesBefore = await this.pageCounter.countPages(source);
+      const pagesAfter = await this.pageCounter.countPages(compressedBody);
       if (pagesBefore !== pagesAfter) {
         log.warn(
           `discarded compressed copy — page count changed ` +

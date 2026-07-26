@@ -26,6 +26,7 @@ export class ExtractDocumentPagesUseCase {
     private readonly registry: ExtractionRegistry,
     private readonly logger: Logger,
     private readonly batchSize: number,
+    private readonly sourceUrlTtlSeconds: number,
   ) { }
 
   async execute(
@@ -89,11 +90,15 @@ export class ExtractDocumentPagesUseCase {
     known: DocumentPagesFile | null,
     log: Logger
   ): Promise<void> {
-    const { userId, documentId } = input;
-    const file = await this.storage.get(storagePath);
-    if (!file) {
+    const { documentId } = input;
+    if (!(await this.storage.head(storagePath))) {
       throw new NotFoundError("The document file could not be found.");
     }
+
+    const pdfUrl = await this.storage.presignGet(storagePath, {
+      expiresInSeconds: this.sourceUrlTtlSeconds,
+      contentType: "application/pdf"
+    });
     log.info(`document ${documentId} · driving extraction of ${pageCount} page(s)`);
 
     let batch: number[] = [];
@@ -105,13 +110,13 @@ export class ExtractDocumentPagesUseCase {
       }
       batch.push(page);
       if (batch.length >= this.normalizedBatchSize()) {
-        known = await this.extractBatch(file.body, batch, input, pageCount, queue, log);
+        known = await this.extractBatch(pdfUrl, batch, input, pageCount, queue, log);
         batch = [];
       }
     }
 
     if (batch.length > 0 && !signal.aborted) {
-      known = await this.extractBatch(file.body, batch, input, pageCount, queue, log);
+      known = await this.extractBatch(pdfUrl, batch, input, pageCount, queue, log);
     }
 
     if (known?.done) {
@@ -121,7 +126,7 @@ export class ExtractDocumentPagesUseCase {
   }
 
   private async extractBatch(
-    file: Buffer,
+    pdfUrl: string,
     pages: number[],
     input: ExtractDocumentPagesInput,
     pageCount: number,
@@ -135,7 +140,7 @@ export class ExtractDocumentPagesUseCase {
     }
 
     try {
-      const extracted = await this.extractor.extractPages(file, pages);
+      const extracted = await this.extractor.extractPages(pdfUrl, pages);
       const textByPage = new Map(extracted.map((page) => [page.pageNumber, page.text]));
       const known = await this.pagesStore.mergePages(
         userId,
@@ -152,14 +157,14 @@ export class ExtractDocumentPagesUseCase {
       return known;
     } catch (error) {
       log.warn(`document ${documentId} · batch [${pages.join(", ")}] extraction failed`, error);
-      return this.extractBatchOneByOne(file, pages, input, pageCount, queue, log);
+      return this.extractBatchOneByOne(pdfUrl, pages, input, pageCount, queue, log);
     } finally {
       this.registry.clearActivePages(documentId);
     }
   }
 
   private async extractBatchOneByOne(
-    file: Buffer,
+    pdfUrl: string,
     pages: number[],
     input: ExtractDocumentPagesInput,
     pageCount: number,
@@ -170,7 +175,7 @@ export class ExtractDocumentPagesUseCase {
     let known: DocumentPagesFile | null = null;
     for (const page of pages) {
       try {
-        const extracted = await this.extractor.extractPages(file, [page]);
+        const extracted = await this.extractor.extractPages(pdfUrl, [page]);
         const text = extracted.find((item) => item.pageNumber === page)?.text ?? "";
         known = await this.pagesStore.mergePages(
           userId,

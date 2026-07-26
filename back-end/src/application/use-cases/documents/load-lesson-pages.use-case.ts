@@ -17,7 +17,8 @@ export class LoadLessonPagesUseCase {
     private readonly storage: FileStorage,
     private readonly extractor: DocumentTextExtractor,
     private readonly cache: PageCache,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly sourceUrlTtlSeconds: number
   ) { }
 
   async execute(input: LoadLessonPagesInput): Promise<DocumentPage[]> {
@@ -47,11 +48,14 @@ export class LoadLessonPagesUseCase {
         `user ${userId} · document ${documentId} · extracting [${missing.join(", ")}] · ` +
         `cached [${requested.filter((page) => pages.has(page)).join(", ")}]`
       );
-      const file = await this.storage.get(input.storagePath);
-      if (!file) {
+      if (!(await this.storage.head(input.storagePath))) {
         throw new NotFoundError("The document file could not be found.");
       }
-      for (const page of await this.extractor.extractPages(file.body, missing)) {
+      const pdfUrl = await this.storage.presignGet(input.storagePath, {
+        expiresInSeconds: this.sourceUrlTtlSeconds,
+        contentType: "application/pdf"
+      });
+      for (const page of await this.extractor.extractPages(pdfUrl, missing)) {
         await this.cache.set(userId, documentId, page.pageNumber, page.text);
         pages.set(page.pageNumber, page.text);
       }
