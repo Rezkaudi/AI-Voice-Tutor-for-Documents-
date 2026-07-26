@@ -18,6 +18,25 @@ coverage/
 !.env.example
 !**/.env.example
 
+# Python (ocr-service)
+__pycache__/
+**/__pycache__/
+*.pyc
+.venv/
+**/.venv/
+venv/
+**/venv/
+# Downloaded/large ONNX model weights — keep out of git.
+models/
+**/models/
+*.onnx
+# PaddleOCR model cache
+.paddlex/
+**/.paddlex/
+# ocr-service local-only files (test scripts, sample PDFs, outputs) — never uploaded
+ocr-service/local/
+**/local/
+
 # Logs
 logs/
 *.log

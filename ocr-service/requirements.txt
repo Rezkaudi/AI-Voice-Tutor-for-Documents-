@@ -1,0 +1,6 @@
+pypdfium2>=4.30
+numpy>=1.26,<2.3
+Pillow>=10.4
+
+paddlepaddle>=3.0
+paddleocr>=3.0

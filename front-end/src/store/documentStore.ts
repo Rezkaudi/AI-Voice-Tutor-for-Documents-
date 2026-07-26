@@ -110,6 +110,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }
     set({ uploadState: "processing", highlight: null, activeCitationKey: null });
     useSessionStore.getState().setError(null);
+    get().clearExtraction(documentId);
     try {
       const data = await fetchDocument(documentId);
       set({
@@ -175,7 +176,10 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
   closeDocument: () => {
     const documentId = get().loadedDocument?.document.id;
-    if (documentId) stopExtractionWatch(documentId);
+    if (documentId) {
+      stopExtractionWatch(documentId);
+      get().clearExtraction(documentId);
+    }
     set({ ...CLOSED_DOCUMENT_STATE });
   },
 
