@@ -134,7 +134,11 @@ export async function buildContainer(): Promise<Container> {
   const textExtractor = new RemoteOcrTextExtractor(ENV_CONFIG, logger);
   const pdfPageCounter = new PdfiumPageRenderer();
 
-  const documentPagesStore = new DocumentPagesStore(fileStorage, logger);
+  const documentPagesStore = new DocumentPagesStore(
+    fileStorage,
+    logger,
+    ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS
+  );
   const extractionRegistry = new ExtractionRegistry();
   const pageCache = new StoragePageCache(documentPagesStore);
   const tutorService = new OpenAiTutorService(
@@ -212,7 +216,8 @@ export async function buildContainer(): Promise<Container> {
     extractionRegistry,
     logger,
     ENV_CONFIG.DEFAULT_PAGE_EXTRACTION_BATCH_SIZE,
-    ENV_CONFIG.OCR_SOURCE_URL_TTL_SECONDS
+    ENV_CONFIG.OCR_SOURCE_URL_TTL_SECONDS,
+    ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS
   );
   const streamChat = new StreamChatUseCase(
     documentRepository,

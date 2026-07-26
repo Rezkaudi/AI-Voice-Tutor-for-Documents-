@@ -20,6 +20,7 @@ export type EnvConfig = {
   OPENAI_SPEECH_VOICE: string;
   TUTOR_LOG_VERBOSE: boolean;
   DEFAULT_PAGE_EXTRACTION_BATCH_SIZE: number;
+  MAX_PAGE_EXTRACTION_ATTEMPTS: number;
   DOCUMENT_URL_TTL_SECONDS: number;
 
   PDF_COMPRESSION_ENABLED: boolean;
@@ -100,6 +101,8 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
     (getEnv("NODE_ENV") || "development") !== "production"
   ),
   DEFAULT_PAGE_EXTRACTION_BATCH_SIZE: Number(getEnv("DEFAULT_PAGE_EXTRACTION_BATCH_SIZE")) || 4,
+
+  MAX_PAGE_EXTRACTION_ATTEMPTS: Number(getEnv("MAX_PAGE_EXTRACTION_ATTEMPTS")) || 5,
   DOCUMENT_URL_TTL_SECONDS: Number(getEnv("DOCUMENT_URL_TTL_SECONDS")) || 24 * 60 * 60,
 
   PDF_COMPRESSION_ENABLED: bool(getEnv("PDF_COMPRESSION_ENABLED"), true),
