@@ -1,6 +1,10 @@
 import { readEventStream } from "@/lib/sse";
 import type { DocumentCitation, DocumentReference, SpeechSession } from "@/types";
 
+export class ChatStreamFatalError extends Error {
+  readonly fatal = true;
+}
+
 interface RunChatStreamDeps {
   body: ReadableStream<Uint8Array>;
   speechSession: SpeechSession;
@@ -106,7 +110,7 @@ export async function runChatStream({
     }
 
     if (event.event === "error") {
-      throw new Error(event.data.error);
+      throw new ChatStreamFatalError(event.data.error);
     }
   });
 
