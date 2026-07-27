@@ -166,14 +166,14 @@ sequenceDiagram
     participant Server as 🧠 Server
     participant TTS as 🔊 OpenAI TTS
 
-    App->>Server: POST /api/speak (the answer text)
-    Server->>TTS: Make this sound like speech
+    Server->>Server: Cut the reply into sentences as it streams
+    Server->>TTS: Make this sentence sound like speech
     TTS-->>Server: Audio bytes
-    Server-->>App: Audio stream
-    App-->>App: 🔊 Play it
+    Server-->>App: `speech-*` SSE events on the same chat stream
+    App-->>App: 🔊 Play each clip in order
 ```
 
-**Plain English:** Once the answer is written, the app asks OpenAI to read it aloud, then plays the audio in your browser.
+**Plain English:** While the answer is still being written, the server slices it sentence by sentence, has OpenAI read each one aloud, and pushes the audio down the same stream as the text — so the browser can start playing before the answer is finished. There is no separate "speak" request.
 
 ---
 
@@ -424,12 +424,11 @@ All endpoints live under `/api` (except `/health`).
 | -------- | -------------------------- | ----------------------------------------- |
 | `GET`    | `/health`                  | Is the server alive? Returns `{status:"ok"}` |
 | `GET`    | `/api/documents`           | List your documents                       |
-| `POST`   | `/api/documents`           | Upload a new document (multipart)         |
-| `GET`    | `/api/documents/:id`       | Get a document + its pages and chunks     |
+| `POST`   | `/api/documents/upload-url`| Get a presigned S3 `PUT` URL for a new upload |
+| `POST`   | `/api/documents/register`  | Register a file the browser PUT to S3     |
+| `GET`    | `/api/documents/:id`       | Get a document + a signed URL to its PDF  |
 | `DELETE` | `/api/documents/:id`       | Delete a document and its file            |
-| `GET`    | `/api/documents/:id/file`  | Download the original PDF                 |
 | `POST`   | `/api/chat`                | Ask a question — streams the answer (SSE) |
-| `POST`   | `/api/speak`               | Turn text into spoken audio               |
 | `POST`   | `/api/transcribe`          | Turn audio into text                      |
 
 ### Example: `POST /api/chat`

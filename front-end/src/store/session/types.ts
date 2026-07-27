@@ -1,9 +1,8 @@
-import type { MobilePane, SpeechLanguage } from "@/types";
+import type { SpeechLanguage } from "@/types";
 
 /** View preferences, transient error, and the pending tutor question. */
 export interface UiSlice {
   error: string | null;
-  mobilePane: MobilePane;
   speechLanguage: SpeechLanguage;
   showTranscript: boolean;
   showCaption: boolean;
@@ -14,7 +13,6 @@ export interface UiSlice {
   toggleTranscript: () => void;
   setTranscript: (open: boolean) => void;
   toggleCaption: () => void;
-  setMobilePane: (mobilePane: MobilePane) => void;
   setSpeechLanguage: (speechLanguage: SpeechLanguage) => void;
 }
 

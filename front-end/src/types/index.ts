@@ -1,15 +1,9 @@
 export type UploadState = "idle" | "processing";
-export type MobilePane = "document" | "teacher";
 export type SpeechLanguage = "ja" | "en" | "ar" | "";
 export type MicPermission = "unknown" | PermissionState;
 export type MessageRole = "user" | "assistant";
 export type CaptionSpeaker = "teacher" | "user";
 export type AvatarState = "idle" | "idle-call" | "listening" | "thinking" | "speaking";
-
-export interface SpeechLanguageOption {
-  value: SpeechLanguage;
-  label: string;
-}
 
 export interface DocumentRecord {
   id: string;

@@ -3,9 +3,7 @@ import type { DataSource } from "typeorm";
 import { DeleteDocumentUseCase } from "@/application/use-cases/documents/delete-document.use-case";
 import { EndLessonSessionUseCase } from "@/application/use-cases/documents/end-lesson-session.use-case";
 import { GetDocumentUseCase } from "@/application/use-cases/documents/get-document.use-case";
-import { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";
 import { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
-import { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
 import { CreateUploadUrlUseCase } from "@/application/use-cases/documents/create-upload-url.use-case";
 import { RegisterUploadUseCase } from "@/application/use-cases/documents/register-upload.use-case";
 import { LoadLessonPagesUseCase } from "@/application/use-cases/documents/load-lesson-pages.use-case";
@@ -13,8 +11,9 @@ import { PrepareLessonPagesUseCase } from "@/application/use-cases/documents/pre
 import { ExtractDocumentPagesUseCase } from "@/application/use-cases/documents/extract-document-pages.use-case";
 import { DocumentPagesStore } from "@/application/services/document-pages-store";
 import { ExtractionRegistry } from "@/application/services/extraction-registry";
+import { PageExtractionDriver } from "@/application/services/page-extraction-driver";
+import { PageExtractionWatcher } from "@/application/services/page-extraction-watcher";
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
-import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
 import { TranscribeAudioUseCase } from "@/application/use-cases/transcription/transcribe-audio.use-case";
 import { CostTracker } from "@/application/services/cost-tracker";
 import { GetGoogleAuthUrlUseCase } from "@/application/use-cases/auth/get-google-auth-url.use-case";
@@ -52,7 +51,6 @@ import { CryptoIdGenerator } from "@/infrastructure/services/generators/crypto-i
 import { BrevoContactSync } from "@/infrastructure/services/marketing/brevo-contact-sync";
 
 import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage";
-// import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
 import { PdfiumPageRenderer } from "@/infrastructure/services/documents/pdfium-page-renderer";
 import { PaddleOcrTextExtractor } from "@/infrastructure/services/documents/paddle-ocr-text-extractor";
 import { HfVlTextExtractor } from "@/infrastructure/services/documents/hf-vl-text-extractor";
@@ -67,7 +65,6 @@ import { ConsoleLogger } from "@/infrastructure/logging/console-logger";
 
 import { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
 import { ChatController } from "@/infrastructure/http/controllers/chat.controller";
-import { SpeechController } from "@/infrastructure/http/controllers/speech.controller";
 import { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
 import { AuthController } from "@/infrastructure/http/controllers/auth.controller";
 import { buildRequireAuth } from "@/infrastructure/http/middleware/require-auth";
@@ -130,7 +127,6 @@ export async function buildContainer(): Promise<Container> {
   //   logger
   // );
 
-  // const textExtractor = PdfJsTextExtractor.createDefault();
   const textExtractor = new RemoteOcrTextExtractor(ENV_CONFIG, logger);
   const pdfPageCounter = new PdfiumPageRenderer();
 
@@ -163,15 +159,6 @@ export async function buildContainer(): Promise<Container> {
   });
 
   // ─── Application use cases ───────────────────────────────────────────────
-  const uploadDocument = new UploadDocumentUseCase(
-    documentRepository,
-    fileStorage,
-    pdfPageCounter,
-    uploadValidator,
-    fileNaming,
-    idGenerator,
-    logger
-  );
   const createUploadUrl = new CreateUploadUrlUseCase(
     fileStorage,
     uploadValidator,
@@ -201,23 +188,25 @@ export async function buildContainer(): Promise<Container> {
   );
   const documentFileUrlSigner = new DocumentFileUrlSigner(fileStorage, ENV_CONFIG.DOCUMENT_URL_TTL_SECONDS);
   const getDocument = new GetDocumentUseCase(documentRepository, documentFileUrlSigner);
-  const getDocumentFile = new GetDocumentFileUseCase(
-    documentRepository,
-    documentFileUrlSigner
-  );
   const listDocuments = new ListDocumentsUseCase(documentRepository);
   const deleteDocument = new DeleteDocumentUseCase(documentRepository, fileStorage, documentPagesStore);
   const endLessonSession = new EndLessonSessionUseCase(pageCache);
-  const extractDocumentPages = new ExtractDocumentPagesUseCase(
-    documentRepository,
+  const pageExtractionDriver = new PageExtractionDriver(
     fileStorage,
     textExtractor,
     documentPagesStore,
     extractionRegistry,
-    logger,
     ENV_CONFIG.DEFAULT_PAGE_EXTRACTION_BATCH_SIZE,
     ENV_CONFIG.OCR_SOURCE_URL_TTL_SECONDS,
     ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS
+  );
+  const extractDocumentPages = new ExtractDocumentPagesUseCase(
+    documentRepository,
+    documentPagesStore,
+    extractionRegistry,
+    pageExtractionDriver,
+    new PageExtractionWatcher(documentPagesStore, extractionRegistry, pageExtractionDriver),
+    logger
   );
   const streamChat = new StreamChatUseCase(
     documentRepository,
@@ -225,11 +214,6 @@ export async function buildContainer(): Promise<Container> {
     speechService,
     historySanitizer,
     loadLessonPages,
-    costTracker,
-    logger
-  );
-  const synthesizeSpeech = new SynthesizeSpeechUseCase(
-    speechService,
     costTracker,
     logger
   );
@@ -255,11 +239,9 @@ export async function buildContainer(): Promise<Container> {
   // ─── HTTP controllers ────────────────────────────────────────────────────
   const deps: ServerDependencies = {
     documents: new DocumentsController(
-      uploadDocument,
       createUploadUrl,
       registerUpload,
       getDocument,
-      getDocumentFile,
       listDocuments,
       deleteDocument,
       endLessonSession,
@@ -267,7 +249,6 @@ export async function buildContainer(): Promise<Container> {
       extractDocumentPages
     ),
     chat: new ChatController(streamChat),
-    speech: new SpeechController(synthesizeSpeech),
     transcription: new TranscriptionController(transcribeAudio),
     auth: new AuthController(
       getGoogleAuthUrl,

@@ -2,9 +2,7 @@ import type { Request, Response } from "express";
 
 import type { DeleteDocumentUseCase } from "@/application/use-cases/documents/delete-document.use-case";
 import type { GetDocumentUseCase } from "@/application/use-cases/documents/get-document.use-case";
-import type { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";
 import type { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
-import type { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
 import type { CreateUploadUrlUseCase } from "@/application/use-cases/documents/create-upload-url.use-case";
 import type { RegisterUploadUseCase } from "@/application/use-cases/documents/register-upload.use-case";
 import type { EndLessonSessionUseCase } from "@/application/use-cases/documents/end-lesson-session.use-case";
@@ -14,11 +12,9 @@ import type { PageExtractionEvent } from "@/application/dto/page-extraction-even
 
 export class DocumentsController {
   constructor(
-    private readonly uploadDocument: UploadDocumentUseCase,
     private readonly createUploadUrl: CreateUploadUrlUseCase,
     private readonly registerUpload: RegisterUploadUseCase,
     private readonly getDocument: GetDocumentUseCase,
-    private readonly getDocumentFile: GetDocumentFileUseCase,
     private readonly listDocuments: ListDocumentsUseCase,
     private readonly deleteDocument: DeleteDocumentUseCase,
     private readonly endLessonSession: EndLessonSessionUseCase,
@@ -77,19 +73,6 @@ export class DocumentsController {
     res.status(204).end();
   };
 
-  /** POST /api/documents — accepts a multipart `file` field. */
-  upload = async (req: Request, res: Response): Promise<void> => {
-    const file = req.file!;
-    const result = await this.uploadDocument.execute({
-      userId: req.auth!.userId,
-      buffer: file.buffer,
-      filename: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size
-    });
-    res.json(result);
-  };
-
   /**
    * POST /api/documents/upload-url — validates a would-be upload and returns a
    * presigned URL the browser PUTs the file to directly (no bytes touch us).
@@ -118,12 +101,6 @@ export class DocumentsController {
   /** GET /api/documents/:id — returns the processed document. */
   get = async (req: Request, res: Response): Promise<void> => {
     res.json(await this.getDocument.execute(req.params.id, req.auth!.userId));
-  };
-
-  file = async (req: Request, res: Response): Promise<void> => {
-    const url = await this.getDocumentFile.execute(req.params.id, req.auth!.userId);
-    res.setHeader("Cache-Control", "private, no-store");
-    res.redirect(302, url);
   };
 }
 
