@@ -15,12 +15,6 @@ export const callHint =
 export const captionBase =
   "pointer-events-none z-30 col-start-1 row-start-3 flex w-[min(560px,calc(100%_-_24px))] flex-nowrap items-center gap-2 rounded-xl border border-[oklch(1_0_0/0.1)] bg-[oklch(0.13_0.022_244/0.9)] px-3.5 py-2 shadow-[0_14px_36px_oklch(0.05_0.02_244/0.6)] backdrop-blur-[10px] animate-caption-rise motion-reduce:animate-none min-[920px]:w-[min(640px,calc(100%_-_24px))] min-[920px]:gap-2.5 min-[920px]:rounded-2xl min-[920px]:px-[18px] min-[920px]:py-[11px]";
 
-export const langOptionBase =
-  "min-h-[38px] appearance-none rounded-full border-0 bg-transparent px-4 py-2 text-[0.8rem] font-semibold leading-none text-[oklch(0.78_0.02_215)] transition-colors duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.78_0.13_165)] [&:hover:not(:disabled)]:bg-[oklch(0.3_0.03_230)] [&:hover:not(:disabled)]:text-[oklch(0.92_0.01_215)]";
-
-export const langOptionActive =
-  "bg-[oklch(0.78_0.13_165)]! text-[oklch(0.18_0.04_230)]!";
-
 export const callButtonBase =
   "relative grid h-[72px] w-[72px] place-items-center rounded-full border-0 text-[oklch(0.99_0.005_100)] shadow-[0_10px_24px_oklch(0.18_0.04_244/0.5)] transition-[transform,box-shadow,filter,background-position] duration-160 ease-out disabled:cursor-not-allowed disabled:opacity-50 [&:active:not(:disabled)]:translate-y-0 [&:active:not(:disabled)]:scale-[0.98] [&:hover:not(:disabled)]:-translate-y-px [&:hover:not(:disabled)]:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[oklch(0.82_0.09_200)]";
 

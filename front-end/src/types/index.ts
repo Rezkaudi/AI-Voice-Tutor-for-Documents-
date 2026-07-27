@@ -5,11 +5,6 @@ export type MessageRole = "user" | "assistant";
 export type CaptionSpeaker = "teacher" | "user";
 export type AvatarState = "idle" | "idle-call" | "listening" | "thinking" | "speaking";
 
-export interface SpeechLanguageOption {
-  value: SpeechLanguage;
-  label: string;
-}
-
 export interface DocumentRecord {
   id: string;
   title: string;

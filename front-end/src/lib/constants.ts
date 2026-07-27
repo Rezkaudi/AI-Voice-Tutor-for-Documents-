@@ -1,12 +1,3 @@
-import type { SpeechLanguageOption } from "@/types";
-
-export const SPEECH_LANGUAGES = [
-  { value: "ja", label: "Japanese" },
-  { value: "en", label: "English" },
-  { value: "ar", label: "Arabic" },
-  { value: "", label: "Auto" }
-] satisfies SpeechLanguageOption[];
-
 export const GREETING_PROMPT = "START THE LESSON";
 
 export const CONTINUE_PROMPT = "CONTINUE";
