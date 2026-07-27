@@ -1,14 +1,7 @@
-import type { Request, RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { check, param } from "express-validator";
 import { MAX_LESSON_PAGES } from "@/config/constant.config";
 import { handleValidationErrors } from "./handle-validation-errors";
-
-export const uploadDocumentValidation: RequestHandler[] = [
-  check("file")
-    .custom((_value, { req }) => Boolean((req as Request).file))
-    .withMessage("Upload one PDF file."),
-  handleValidationErrors
-];
 
 export const uploadUrlValidation: RequestHandler[] = [
   check("filename").isString().bail().trim().notEmpty().withMessage("A filename is required."),

@@ -424,10 +424,10 @@ All endpoints live under `/api` (except `/health`).
 | -------- | -------------------------- | ----------------------------------------- |
 | `GET`    | `/health`                  | Is the server alive? Returns `{status:"ok"}` |
 | `GET`    | `/api/documents`           | List your documents                       |
-| `POST`   | `/api/documents`           | Upload a new document (multipart)         |
-| `GET`    | `/api/documents/:id`       | Get a document + its pages and chunks     |
+| `POST`   | `/api/documents/upload-url`| Get a presigned S3 `PUT` URL for a new upload |
+| `POST`   | `/api/documents/register`  | Register a file the browser PUT to S3     |
+| `GET`    | `/api/documents/:id`       | Get a document + a signed URL to its PDF  |
 | `DELETE` | `/api/documents/:id`       | Delete a document and its file            |
-| `GET`    | `/api/documents/:id/file`  | Download the original PDF                 |
 | `POST`   | `/api/chat`                | Ask a question — streams the answer (SSE) |
 | `POST`   | `/api/transcribe`          | Turn audio into text                      |
 

@@ -3,9 +3,7 @@ import type { DataSource } from "typeorm";
 import { DeleteDocumentUseCase } from "@/application/use-cases/documents/delete-document.use-case";
 import { EndLessonSessionUseCase } from "@/application/use-cases/documents/end-lesson-session.use-case";
 import { GetDocumentUseCase } from "@/application/use-cases/documents/get-document.use-case";
-import { GetDocumentFileUseCase } from "@/application/use-cases/documents/get-document-file.use-case";
 import { ListDocumentsUseCase } from "@/application/use-cases/documents/list-documents.use-case";
-import { UploadDocumentUseCase } from "@/application/use-cases/documents/upload-document.use-case";
 import { CreateUploadUrlUseCase } from "@/application/use-cases/documents/create-upload-url.use-case";
 import { RegisterUploadUseCase } from "@/application/use-cases/documents/register-upload.use-case";
 import { LoadLessonPagesUseCase } from "@/application/use-cases/documents/load-lesson-pages.use-case";
@@ -161,15 +159,6 @@ export async function buildContainer(): Promise<Container> {
   });
 
   // ─── Application use cases ───────────────────────────────────────────────
-  const uploadDocument = new UploadDocumentUseCase(
-    documentRepository,
-    fileStorage,
-    pdfPageCounter,
-    uploadValidator,
-    fileNaming,
-    idGenerator,
-    logger
-  );
   const createUploadUrl = new CreateUploadUrlUseCase(
     fileStorage,
     uploadValidator,
@@ -199,10 +188,6 @@ export async function buildContainer(): Promise<Container> {
   );
   const documentFileUrlSigner = new DocumentFileUrlSigner(fileStorage, ENV_CONFIG.DOCUMENT_URL_TTL_SECONDS);
   const getDocument = new GetDocumentUseCase(documentRepository, documentFileUrlSigner);
-  const getDocumentFile = new GetDocumentFileUseCase(
-    documentRepository,
-    documentFileUrlSigner
-  );
   const listDocuments = new ListDocumentsUseCase(documentRepository);
   const deleteDocument = new DeleteDocumentUseCase(documentRepository, fileStorage, documentPagesStore);
   const endLessonSession = new EndLessonSessionUseCase(pageCache);
@@ -254,11 +239,9 @@ export async function buildContainer(): Promise<Container> {
   // ─── HTTP controllers ────────────────────────────────────────────────────
   const deps: ServerDependencies = {
     documents: new DocumentsController(
-      uploadDocument,
       createUploadUrl,
       registerUpload,
       getDocument,
-      getDocumentFile,
       listDocuments,
       deleteDocument,
       endLessonSession,
