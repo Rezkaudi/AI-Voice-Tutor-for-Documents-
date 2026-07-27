@@ -31,3 +31,23 @@ export function isPageSettled(
 ): boolean {
   return isPageExtracted(file, page) || isPageExhausted(file, page, maxAttempts);
 }
+
+export function extractedPages(file: DocumentPagesFile | null): number[] {
+  if (!file) return [];
+  return Object.keys(file.pages)
+    .map(Number)
+    .filter((page) => Number.isInteger(page) && page >= 1)
+    .sort((a, b) => a - b);
+}
+
+export function pagesNeedingWork(
+  file: DocumentPagesFile | null,
+  pageCount: number,
+  maxAttempts: number
+): number[] {
+  const pages: number[] = [];
+  for (let page = 1; page <= pageCount; page += 1) {
+    if (!isPageSettled(file, page, maxAttempts)) pages.push(page);
+  }
+  return pages;
+}

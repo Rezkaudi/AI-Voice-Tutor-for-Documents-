@@ -2,12 +2,13 @@ import type { PageExtractionEvent } from "@/application/dto/page-extraction-even
 import { AsyncEventQueue } from "@/application/services/async-event-queue";
 import type { DocumentPagesStore } from "@/application/services/document-pages-store";
 import type { ExtractionRegistry } from "@/application/services/extraction-registry";
+import type { PageExtractionDriver } from "@/application/services/page-extraction-driver";
+import type { PageExtractionSession } from "@/application/services/page-extraction-session";
+import type { PageExtractionWatcher } from "@/application/services/page-extraction-watcher";
 import type { DocumentPagesFile } from "@/domain/entities/document-pages";
-import { isPageSettled } from "@/domain/entities/document-pages";
+import { extractedPages } from "@/domain/entities/document-pages";
 import { NotFoundError } from "@/domain/errors/app-error";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
-import type { DocumentTextExtractor } from "@/domain/services/document-text-extractor";
-import type { FileStorage } from "@/domain/services/file-storage";
 import type { Logger } from "@/domain/services/logger";
 
 export interface ExtractDocumentPagesInput {
@@ -16,19 +17,15 @@ export interface ExtractDocumentPagesInput {
 }
 
 const HEARTBEAT_MS = 15_000;
-const WATCH_INTERVAL_MS = 2_000;
 
 export class ExtractDocumentPagesUseCase {
   constructor(
     private readonly repository: DocumentRepository,
-    private readonly storage: FileStorage,
-    private readonly extractor: DocumentTextExtractor,
     private readonly pagesStore: DocumentPagesStore,
     private readonly registry: ExtractionRegistry,
-    private readonly logger: Logger,
-    private readonly batchSize: number,
-    private readonly sourceUrlTtlSeconds: number,
-    private readonly maxPageAttempts: number,
+    private readonly driver: PageExtractionDriver,
+    private readonly watcher: PageExtractionWatcher,
+    private readonly logger: Logger
   ) { }
 
   async execute(
@@ -41,23 +38,24 @@ export class ExtractDocumentPagesUseCase {
     }
 
     const queue = new AsyncEventQueue<PageExtractionEvent>();
-    void this.run(input, document.storagePath, document.pageCount, signal, queue);
+    void this.run({
+      userId: input.userId,
+      documentId: input.documentId,
+      storagePath: document.storagePath,
+      pageCount: document.pageCount,
+      signal,
+      queue,
+      log: this.logger.scope("extract-stream")
+    });
     return queue;
   }
 
-  private async run(
-    input: ExtractDocumentPagesInput,
-    storagePath: string,
-    pageCount: number,
-    signal: AbortSignal,
-    queue: AsyncEventQueue<PageExtractionEvent>
-  ): Promise<void> {
-    const log = this.logger.scope("extract-stream");
-    const { userId, documentId } = input;
+  private async run(session: PageExtractionSession): Promise<void> {
+    const { userId, documentId, signal, queue, log } = session;
     const heartbeat = setInterval(() => queue.push({ event: "ping", data: {} }), HEARTBEAT_MS);
     try {
-      let known = (await this.pagesStore.read(userId, documentId))?.file ?? null;
-      queue.push(snapshotEvent(known, pageCount, this.extractingPagesFor(documentId, known, pageCount)));
+      const known = (await this.pagesStore.read(userId, documentId))?.file ?? null;
+      queue.push(this.snapshot(session, known));
       if (known?.done) {
         queue.push({ event: "done", data: {} });
         return;
@@ -66,12 +64,12 @@ export class ExtractDocumentPagesUseCase {
 
       if (this.registry.acquire(documentId)) {
         try {
-          await this.drive(input, storagePath, pageCount, signal, queue, known, log);
+          await this.driver.drive(session, known);
         } finally {
           this.registry.release(documentId);
         }
       } else {
-        await this.watch(input, storagePath, pageCount, signal, queue, known, log);
+        await this.watcher.follow(session, known);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Extraction failed.";
@@ -83,251 +81,29 @@ export class ExtractDocumentPagesUseCase {
     }
   }
 
-  private async drive(
-    input: ExtractDocumentPagesInput,
-    storagePath: string,
-    pageCount: number,
-    signal: AbortSignal,
-    queue: AsyncEventQueue<PageExtractionEvent>,
-    known: DocumentPagesFile | null,
-    log: Logger
-  ): Promise<void> {
-    const { documentId } = input;
-    if (!(await this.storage.head(storagePath))) {
-      throw new NotFoundError("The document file could not be found.");
-    }
-
-    const pdfUrl = await this.storage.presignGet(storagePath, {
-      expiresInSeconds: this.sourceUrlTtlSeconds,
-      contentType: "application/pdf"
-    });
-    log.info(`document ${documentId} · driving extraction of ${pageCount} page(s)`);
-
-    for (let pass = 0; !signal.aborted; pass += 1) {
-      const targets = this.pagesNeedingWork(known, pageCount);
-      if (targets.length === 0) break;
-
-      if (pass > 0) {
-        log.info(
-          `document ${documentId} · retry pass ${pass} · ${targets.length} page(s) still pending`
-        );
-        // Back off before retrying so transient rate limits have time to clear.
-        await abortableSleep(this.retryBackoffMs(pass), signal);
-        if (signal.aborted) return;
+  private snapshot(
+    session: PageExtractionSession,
+    file: DocumentPagesFile | null
+  ): PageExtractionEvent {
+    return {
+      event: "progress",
+      data: {
+        pageCount: file?.pageCount || session.pageCount,
+        extracted: extractedPages(file),
+        failed: file?.failed ?? [],
+        extracting: this.extractingPages(session, file),
+        done: file?.done ?? false
       }
-
-      for (let i = 0; i < targets.length; i += this.normalizedBatchSize()) {
-        if (signal.aborted) {
-          log.info(`document ${documentId} · client disconnected · pausing extraction`);
-          return;
-        }
-        const batch = targets.slice(i, i + this.normalizedBatchSize());
-        known = await this.extractBatch(pdfUrl, batch, input, pageCount, queue, log);
-      }
-    }
-
-    if (known?.done) {
-      log.info(`document ${documentId} · extraction complete`);
-      queue.push({ event: "done", data: {} });
-    }
+    };
   }
 
-  /** Exponential backoff between retry passes, capped at 30s. */
-  private retryBackoffMs(pass: number): number {
-    return Math.min(30_000, 2_000 * 2 ** (pass - 1));
-  }
-
-  /**
-   * Pages that still need (re)extraction: not yet extracted and not yet out of
-   * retry budget, in ascending order.
-   */
-  private pagesNeedingWork(file: DocumentPagesFile | null, pageCount: number): number[] {
-    const pages: number[] = [];
-    for (let page = 1; page <= pageCount; page += 1) {
-      if (!isPageSettled(file, page, this.maxPageAttempts)) pages.push(page);
-    }
-    return pages;
-  }
-
-  private async extractBatch(
-    pdfUrl: string,
-    pages: number[],
-    input: ExtractDocumentPagesInput,
-    pageCount: number,
-    queue: AsyncEventQueue<PageExtractionEvent>,
-    log: Logger
-  ): Promise<DocumentPagesFile | null> {
-    const { userId, documentId } = input;
-    this.registry.setActivePages(documentId, pages);
-    for (const page of pages) {
-      queue.push({ event: "page-start", data: { page } });
-    }
-
-    try {
-      const extracted = await this.extractor.extractPages(pdfUrl, pages);
-      const textByPage = new Map(extracted.map((page) => [page.pageNumber, page.text]));
-      const known = await this.pagesStore.mergePages(
-        userId,
-        documentId,
-        pages.map((pageNumber) => ({
-          pageNumber,
-          text: textByPage.get(pageNumber) ?? ""
-        })),
-        { pageCount }
-      );
-      for (const page of pages) {
-        queue.push({ event: "page-ready", data: { page } });
-      }
-      return known;
-    } catch (error) {
-      log.warn(`document ${documentId} · batch [${pages.join(", ")}] extraction failed`, error);
-      return this.extractBatchOneByOne(pdfUrl, pages, input, pageCount, queue, log);
-    } finally {
-      this.registry.clearActivePages(documentId);
-    }
-  }
-
-  private async extractBatchOneByOne(
-    pdfUrl: string,
-    pages: number[],
-    input: ExtractDocumentPagesInput,
-    pageCount: number,
-    queue: AsyncEventQueue<PageExtractionEvent>,
-    log: Logger
-  ): Promise<DocumentPagesFile | null> {
-    const { userId, documentId } = input;
-    let known: DocumentPagesFile | null = null;
-    for (const page of pages) {
-      try {
-        const extracted = await this.extractor.extractPages(pdfUrl, [page]);
-        const text = extracted.find((item) => item.pageNumber === page)?.text ?? "";
-        known = await this.pagesStore.mergePages(
-          userId,
-          documentId,
-          [{ pageNumber: page, text }],
-          { pageCount }
-        );
-        queue.push({ event: "page-ready", data: { page } });
-      } catch (error) {
-        log.warn(`document ${documentId} · page ${page} extraction failed`, error);
-        known = await this.pagesStore.mergePages(userId, documentId, [], {
-          pageCount,
-          failedPages: [page]
-        });
-        queue.push({ event: "page-failed", data: { page } });
-      }
-    }
-    return known;
-  }
-
-  private normalizedBatchSize(): number {
-    const size = Math.floor(this.batchSize);
-    return Number.isFinite(size) && size >= 1 ? size : 1;
-  }
-
-  private async watch(
-    input: ExtractDocumentPagesInput,
-    storagePath: string,
-    pageCount: number,
-    signal: AbortSignal,
-    queue: AsyncEventQueue<PageExtractionEvent>,
-    known: DocumentPagesFile | null,
-    log: Logger
-  ): Promise<void> {
-    const { userId, documentId } = input;
-    log.info(`document ${documentId} · another stream is driving · watching pages.json`);
-    let seenPages = new Set(extractedPages(known));
-    let seenFailed = new Set(known?.failed ?? []);
-    let seenStarted = new Set(this.registry.activePages(documentId));
-
-    while (!signal.aborted) {
-      await abortableSleep(WATCH_INTERVAL_MS, signal);
-      if (signal.aborted) return;
-
-      if (this.registry.acquire(documentId)) {
-        try {
-          const latest = (await this.pagesStore.read(userId, documentId))?.file ?? null;
-          await this.drive(input, storagePath, pageCount, signal, queue, latest, log);
-        } finally {
-          this.registry.release(documentId);
-        }
-        return;
-      }
-
-      for (const page of this.registry.activePages(documentId)) {
-        if (!seenStarted.has(page)) {
-          queue.push({ event: "page-start", data: { page } });
-          seenStarted.add(page);
-        }
-      }
-
-      const latest = (await this.pagesStore.read(userId, documentId))?.file ?? null;
-      for (const page of extractedPages(latest)) {
-        if (!seenPages.has(page)) {
-          queue.push({ event: "page-ready", data: { page } });
-        }
-      }
-      for (const page of latest?.failed ?? []) {
-        if (!seenFailed.has(page)) {
-          queue.push({ event: "page-failed", data: { page } });
-        }
-      }
-      seenPages = new Set(extractedPages(latest));
-      seenFailed = new Set(latest?.failed ?? []);
-      if (latest?.done) {
-        queue.push({ event: "done", data: {} });
-        return;
-      }
-    }
-  }
-
-  private extractingPagesFor(
-    documentId: string,
-    file: DocumentPagesFile | null,
-    pageCount: number
+  private extractingPages(
+    session: PageExtractionSession,
+    file: DocumentPagesFile | null
   ): number[] {
-    const active = this.registry.activePages(documentId);
+    const active = this.registry.activePages(session.documentId);
     if (active.length > 0) return active;
     if (file?.done) return [];
-    return this.pagesNeedingWork(file, pageCount).slice(0, this.normalizedBatchSize());
+    return this.driver.nextBatch(file, session.pageCount);
   }
-}
-
-function snapshotEvent(
-  file: DocumentPagesFile | null,
-  pageCount: number,
-  extracting: number[]
-): PageExtractionEvent {
-  return {
-    event: "progress",
-    data: {
-      pageCount: file?.pageCount || pageCount,
-      extracted: extractedPages(file),
-      failed: file?.failed ?? [],
-      extracting,
-      done: file?.done ?? false
-    }
-  };
-}
-
-function extractedPages(file: DocumentPagesFile | null): number[] {
-  if (!file) return [];
-  return Object.keys(file.pages)
-    .map(Number)
-    .filter((page) => Number.isInteger(page) && page >= 1)
-    .sort((a, b) => a - b);
-}
-
-function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      signal.removeEventListener("abort", onAbort);
-      resolve();
-    }, ms);
-    const onAbort = () => {
-      clearTimeout(timer);
-      resolve();
-    };
-    signal.addEventListener("abort", onAbort, { once: true });
-  });
 }

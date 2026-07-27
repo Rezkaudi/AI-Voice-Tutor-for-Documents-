@@ -13,6 +13,8 @@ import { PrepareLessonPagesUseCase } from "@/application/use-cases/documents/pre
 import { ExtractDocumentPagesUseCase } from "@/application/use-cases/documents/extract-document-pages.use-case";
 import { DocumentPagesStore } from "@/application/services/document-pages-store";
 import { ExtractionRegistry } from "@/application/services/extraction-registry";
+import { PageExtractionDriver } from "@/application/services/page-extraction-driver";
+import { PageExtractionWatcher } from "@/application/services/page-extraction-watcher";
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
 import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
 import { TranscribeAudioUseCase } from "@/application/use-cases/transcription/transcribe-audio.use-case";
@@ -208,16 +210,22 @@ export async function buildContainer(): Promise<Container> {
   const listDocuments = new ListDocumentsUseCase(documentRepository);
   const deleteDocument = new DeleteDocumentUseCase(documentRepository, fileStorage, documentPagesStore);
   const endLessonSession = new EndLessonSessionUseCase(pageCache);
-  const extractDocumentPages = new ExtractDocumentPagesUseCase(
-    documentRepository,
+  const pageExtractionDriver = new PageExtractionDriver(
     fileStorage,
     textExtractor,
     documentPagesStore,
     extractionRegistry,
-    logger,
     ENV_CONFIG.DEFAULT_PAGE_EXTRACTION_BATCH_SIZE,
     ENV_CONFIG.OCR_SOURCE_URL_TTL_SECONDS,
     ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS
+  );
+  const extractDocumentPages = new ExtractDocumentPagesUseCase(
+    documentRepository,
+    documentPagesStore,
+    extractionRegistry,
+    pageExtractionDriver,
+    new PageExtractionWatcher(documentPagesStore, extractionRegistry, pageExtractionDriver),
+    logger
   );
   const streamChat = new StreamChatUseCase(
     documentRepository,
