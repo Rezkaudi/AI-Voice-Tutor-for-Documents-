@@ -2,7 +2,6 @@ import OpenAI from "openai";
 import { UpstreamError } from "@/domain/errors/app-error";
 import type {
   SpeechSynthesisService,
-  SynthesizedSpeech,
   SynthesizedSpeechStream
 } from "@/domain/services/speech-services";
 import type { EnvConfig } from "@/config/env.config";
@@ -13,19 +12,6 @@ export class OpenAiTextToSpeechService implements SpeechSynthesisService {
 
   constructor(private readonly config: EnvConfig) {
     this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
-  }
-
-  async synthesize(text: string, signal?: AbortSignal): Promise<SynthesizedSpeech> {
-    try {
-      const response = await this.createSpeech(text, signal);
-      return {
-        audio: Buffer.from(await response.arrayBuffer()),
-        contentType: "audio/mpeg",
-        usage: this.usageFor(text)
-      };
-    } catch (error) {
-      throw new UpstreamError(`Speech synthesis failed: ${describe(error)}`);
-    }
   }
 
   async synthesizeStream(text: string, signal?: AbortSignal): Promise<SynthesizedSpeechStream> {

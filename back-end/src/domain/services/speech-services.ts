@@ -1,11 +1,5 @@
 import type { AiUsage } from "@/domain/services/ai-usage";
 
-export interface SynthesizedSpeech {
-  readonly audio: Buffer;
-  readonly contentType: string;
-  readonly usage: AiUsage;
-}
-
 export interface SynthesizedSpeechStream {
   readonly audio: AsyncIterable<Buffer>;
   readonly contentType: string;
@@ -13,7 +7,6 @@ export interface SynthesizedSpeechStream {
 }
 
 export interface SpeechSynthesisService {
-  synthesize(text: string, signal?: AbortSignal): Promise<SynthesizedSpeech>;
   synthesizeStream(text: string, signal?: AbortSignal): Promise<SynthesizedSpeechStream>;
 }
 

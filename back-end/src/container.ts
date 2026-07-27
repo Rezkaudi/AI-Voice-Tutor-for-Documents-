@@ -16,7 +16,6 @@ import { ExtractionRegistry } from "@/application/services/extraction-registry";
 import { PageExtractionDriver } from "@/application/services/page-extraction-driver";
 import { PageExtractionWatcher } from "@/application/services/page-extraction-watcher";
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
-import { SynthesizeSpeechUseCase } from "@/application/use-cases/speech/synthesize-speech.use-case";
 import { TranscribeAudioUseCase } from "@/application/use-cases/transcription/transcribe-audio.use-case";
 import { CostTracker } from "@/application/services/cost-tracker";
 import { GetGoogleAuthUrlUseCase } from "@/application/use-cases/auth/get-google-auth-url.use-case";
@@ -68,7 +67,6 @@ import { ConsoleLogger } from "@/infrastructure/logging/console-logger";
 
 import { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
 import { ChatController } from "@/infrastructure/http/controllers/chat.controller";
-import { SpeechController } from "@/infrastructure/http/controllers/speech.controller";
 import { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
 import { AuthController } from "@/infrastructure/http/controllers/auth.controller";
 import { buildRequireAuth } from "@/infrastructure/http/middleware/require-auth";
@@ -234,11 +232,6 @@ export async function buildContainer(): Promise<Container> {
     costTracker,
     logger
   );
-  const synthesizeSpeech = new SynthesizeSpeechUseCase(
-    speechService,
-    costTracker,
-    logger
-  );
   const transcribeAudio = new TranscribeAudioUseCase(
     transcriptionService,
     costTracker,
@@ -273,7 +266,6 @@ export async function buildContainer(): Promise<Container> {
       extractDocumentPages
     ),
     chat: new ChatController(streamChat),
-    speech: new SpeechController(synthesizeSpeech),
     transcription: new TranscriptionController(transcribeAudio),
     auth: new AuthController(
       getGoogleAuthUrl,

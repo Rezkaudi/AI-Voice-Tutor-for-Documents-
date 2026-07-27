@@ -8,13 +8,11 @@ import { errorHandler, notFoundHandler } from "@/infrastructure/http/middleware/
 
 import type { ChatController } from "@/infrastructure/http/controllers/chat.controller";
 import type { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
-import type { SpeechController } from "@/infrastructure/http/controllers/speech.controller";
 import type { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
 import type { AuthController } from "@/infrastructure/http/controllers/auth.controller";
 
 import { buildChatRoutes } from "@/infrastructure/http/routes/chat.routes";
 import { buildDocumentRoutes } from "@/infrastructure/http/routes/documents.routes";
-import { buildSpeechRoutes } from "@/infrastructure/http/routes/speech.routes";
 import { buildTranscriptionRoutes } from "@/infrastructure/http/routes/transcription.routes";
 import { buildAuthRoutes } from "@/infrastructure/http/routes/auth.routes";
 
@@ -23,7 +21,6 @@ import type { Logger } from "@/domain/services/logger";
 export interface ServerDependencies {
   documents: DocumentsController;
   chat: ChatController;
-  speech: SpeechController;
   transcription: TranscriptionController;
   auth: AuthController;
   requireAuth: RequestHandler;
@@ -59,7 +56,6 @@ export class Server {
     apiRoutes.use(this.deps.requireAuth);
     apiRoutes.use(buildDocumentRoutes(this.deps.documents));
     apiRoutes.use(buildChatRoutes(this.deps.chat));
-    apiRoutes.use(buildSpeechRoutes(this.deps.speech));
     apiRoutes.use(buildTranscriptionRoutes(this.deps.transcription));
 
     this.app.get("/health", (_req, res) => {
