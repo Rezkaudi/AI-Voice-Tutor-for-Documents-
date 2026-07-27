@@ -54,7 +54,6 @@ import { CryptoIdGenerator } from "@/infrastructure/services/generators/crypto-i
 import { BrevoContactSync } from "@/infrastructure/services/marketing/brevo-contact-sync";
 
 import { S3FileStorage } from "@/infrastructure/services/storage/s3-file-storage";
-// import { PdfJsTextExtractor } from "@/infrastructure/services/documents/pdfjs-text-extractor";
 import { PdfiumPageRenderer } from "@/infrastructure/services/documents/pdfium-page-renderer";
 import { PaddleOcrTextExtractor } from "@/infrastructure/services/documents/paddle-ocr-text-extractor";
 import { HfVlTextExtractor } from "@/infrastructure/services/documents/hf-vl-text-extractor";
@@ -132,7 +131,6 @@ export async function buildContainer(): Promise<Container> {
   //   logger
   // );
 
-  // const textExtractor = PdfJsTextExtractor.createDefault();
   const textExtractor = new RemoteOcrTextExtractor(ENV_CONFIG, logger);
   const pdfPageCounter = new PdfiumPageRenderer();
 
