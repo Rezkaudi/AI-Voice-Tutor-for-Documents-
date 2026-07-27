@@ -1,5 +1,4 @@
 export type UploadState = "idle" | "processing";
-export type MobilePane = "document" | "teacher";
 export type SpeechLanguage = "ja" | "en" | "ar" | "";
 export type MicPermission = "unknown" | PermissionState;
 export type MessageRole = "user" | "assistant";

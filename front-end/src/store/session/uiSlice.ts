@@ -3,7 +3,6 @@ import type { SessionStore, UiSlice } from "./types";
 
 export const createUiSlice: StateCreator<SessionStore, [], [], UiSlice> = (set, get) => ({
   error: null,
-  mobilePane: "teacher",
   speechLanguage: "",
   showTranscript: false,
   showCaption: true,
@@ -19,6 +18,5 @@ export const createUiSlice: StateCreator<SessionStore, [], [], UiSlice> = (set, 
   toggleTranscript: () => set((s) => ({ showTranscript: !s.showTranscript })),
   setTranscript: (showTranscript) => set({ showTranscript }),
   toggleCaption: () => set((s) => ({ showCaption: !s.showCaption })),
-  setMobilePane: (mobilePane) => set({ mobilePane }),
   setSpeechLanguage: (speechLanguage) => set({ speechLanguage })
 });
