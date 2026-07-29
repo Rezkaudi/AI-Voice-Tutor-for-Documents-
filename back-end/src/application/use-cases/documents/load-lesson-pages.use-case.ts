@@ -55,7 +55,13 @@ export class LoadLessonPagesUseCase {
         expiresInSeconds: this.sourceUrlTtlSeconds,
         contentType: "application/pdf"
       });
-      for (const page of await this.extractor.extractPages(pdfUrl, missing)) {
+      // A lesson waits on this, so latency beats efficiency: one request per
+      // page, all in flight together, rather than one request that recognises
+      // the pages one after another.
+      const extracted = await Promise.all(
+        missing.map((pageNumber) => this.extractor.extractPages(pdfUrl, [pageNumber]))
+      );
+      for (const page of extracted.flat()) {
         await this.cache.set(userId, documentId, page.pageNumber, page.text);
         pages.set(page.pageNumber, page.text);
       }
