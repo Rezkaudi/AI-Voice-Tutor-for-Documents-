@@ -5,6 +5,7 @@ import type { FileStorage } from "@/domain/services/file-storage";
 import type { UploadValidator } from "@/domain/logic/upload-validator";
 import type { FileNaming } from "@/domain/logic/file-naming";
 import type { PdfCompressor } from "@/domain/services/pdf-compressor";
+import type { ExtractionQueue } from "@/domain/services/extraction-queue";
 import type { Logger } from "@/domain/services/logger";
 
 export interface RegisterUploadInput {
@@ -27,6 +28,7 @@ export class RegisterUploadUseCase {
     private readonly validator: UploadValidator,
     private readonly naming: FileNaming,
     private readonly compressor: PdfCompressor,
+    private readonly extractionQueue: ExtractionQueue,
     private readonly logger: Logger
   ) { }
 
@@ -77,6 +79,15 @@ export class RegisterUploadUseCase {
 
     await this.repository.save(record);
     log.info(`registered documentId=${input.documentId} · ${pageCount} page(s) · ${storedSize} bytes`);
+
+    try {
+      await this.extractionQueue.enqueue({
+        userId: input.userId,
+        documentId: input.documentId
+      });
+    } catch (error) {
+      log.warn(`documentId=${input.documentId} · could not queue extraction`, error);
+    }
 
     return { documentId: input.documentId, status: record.status };
   }

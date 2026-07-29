@@ -10,11 +10,13 @@ import type { ChatController } from "@/infrastructure/http/controllers/chat.cont
 import type { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
 import type { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
 import type { AuthController } from "@/infrastructure/http/controllers/auth.controller";
+import type { InternalController } from "@/infrastructure/http/controllers/internal.controller";
 
 import { buildChatRoutes } from "@/infrastructure/http/routes/chat.routes";
 import { buildDocumentRoutes } from "@/infrastructure/http/routes/documents.routes";
 import { buildTranscriptionRoutes } from "@/infrastructure/http/routes/transcription.routes";
 import { buildAuthRoutes } from "@/infrastructure/http/routes/auth.routes";
+import { buildInternalRoutes } from "@/infrastructure/http/routes/internal.routes";
 
 import type { Logger } from "@/domain/services/logger";
 
@@ -23,7 +25,9 @@ export interface ServerDependencies {
   chat: ChatController;
   transcription: TranscriptionController;
   auth: AuthController;
+  internal: InternalController;
   requireAuth: RequestHandler;
+  requireWorkerToken: RequestHandler;
   logger: Logger;
 }
 
@@ -63,6 +67,11 @@ export class Server {
     });
 
     this.app.use("/api", apiRoutes);
+
+    this.app.use(
+      "/internal",
+      buildInternalRoutes(this.deps.internal, this.deps.requireWorkerToken)
+    );
   }
 
   private configureErrorHandling(): void {
