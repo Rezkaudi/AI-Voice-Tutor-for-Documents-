@@ -225,9 +225,15 @@ export async function buildContainer(): Promise<Container> {
     fileStorage,
     textExtractor,
     documentPagesStore,
-    ENV_CONFIG.DEFAULT_PAGE_EXTRACTION_BATCH_SIZE,
-    ENV_CONFIG.OCR_SOURCE_URL_TTL_SECONDS,
-    ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS
+    {
+      batchSize: ENV_CONFIG.DEFAULT_PAGE_EXTRACTION_BATCH_SIZE,
+      concurrency: ENV_CONFIG.PAGE_EXTRACTION_CONCURRENCY,
+      sourceUrlTtlSeconds: ENV_CONFIG.OCR_SOURCE_URL_TTL_SECONDS,
+      maxPageAttempts: ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS,
+      flushEveryPages: ENV_CONFIG.PAGE_EXTRACTION_FLUSH_PAGES,
+      flushEveryMs: ENV_CONFIG.PAGE_EXTRACTION_FLUSH_MS,
+      activeReportIntervalMs: ENV_CONFIG.PAGE_EXTRACTION_ACTIVE_REPORT_MS
+    }
   );
   const pageExtractionWatcher = new PageExtractionWatcher(
     documentPagesStore,

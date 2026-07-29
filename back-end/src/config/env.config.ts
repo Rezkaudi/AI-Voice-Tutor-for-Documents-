@@ -37,7 +37,13 @@ export type EnvConfig = {
 
   OCR_SERVICE_URL: string;
   OCR_SERVICE_TIMEOUT_MS: number;
+  OCR_SERVICE_MAX_ATTEMPTS: number;
   OCR_SOURCE_URL_TTL_SECONDS: number;
+
+  PAGE_EXTRACTION_CONCURRENCY: number;
+  PAGE_EXTRACTION_FLUSH_PAGES: number;
+  PAGE_EXTRACTION_FLUSH_MS: number;
+  PAGE_EXTRACTION_ACTIVE_REPORT_MS: number;
 
   EXTRACTION_WORKER_TOKEN: string;
   EXTRACTION_WORKER_URL: string;
@@ -127,9 +133,22 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   HF_VL_CONCURRENCY: Number(getEnv("HF_VL_CONCURRENCY")) || 5,
 
   OCR_SERVICE_URL: getEnv("OCR_SERVICE_URL") || "http://localhost:8080",
-  OCR_SERVICE_TIMEOUT_MS: Number(getEnv("OCR_SERVICE_TIMEOUT_MS")) || 2 * 60 * 1000,
+  OCR_SERVICE_TIMEOUT_MS: Number(getEnv("OCR_SERVICE_TIMEOUT_MS")) || 5 * 60 * 1000,
+  // Retries for saturation-style failures (429/503). Without these a busy
+  // fleet consumes a page's MAX_PAGE_EXTRACTION_ATTEMPTS budget.
+  OCR_SERVICE_MAX_ATTEMPTS: Number(getEnv("OCR_SERVICE_MAX_ATTEMPTS")) || 6,
 
   OCR_SOURCE_URL_TTL_SECONDS: Number(getEnv("OCR_SOURCE_URL_TTL_SECONDS")) || 4 * 60 * 60,
+
+  // OCR requests in flight per document. This — not the batch size — is what
+  // sets extraction throughput, and it needs headroom on ocr-service's
+  // max-instances (which is per-project, shared by every document at once).
+  PAGE_EXTRACTION_CONCURRENCY: Number(getEnv("PAGE_EXTRACTION_CONCURRENCY")) || 20,
+  // How much finished work may sit unwritten before pages.json is updated.
+  PAGE_EXTRACTION_FLUSH_PAGES: Number(getEnv("PAGE_EXTRACTION_FLUSH_PAGES")) || 16,
+  PAGE_EXTRACTION_FLUSH_MS: Number(getEnv("PAGE_EXTRACTION_FLUSH_MS")) || 5_000,
+  PAGE_EXTRACTION_ACTIVE_REPORT_MS:
+    Number(getEnv("PAGE_EXTRACTION_ACTIVE_REPORT_MS")) || 5_000,
 
   EXTRACTION_WORKER_TOKEN: getEnv("EXTRACTION_WORKER_TOKEN") || "",
   EXTRACTION_WORKER_URL: getEnv("EXTRACTION_WORKER_URL") || "",

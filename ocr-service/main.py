@@ -10,8 +10,13 @@ through the request body.
 
 Entry point: `ocr` (functions-framework). Routes on request path:
   GET  /health         → liveness
-  POST /count-pages    → { count }         · body: { url }
-  POST /extract-pages  → { pages:[...] }    · body: { url, pages }
+  POST /count-pages    → { count }          · body: { url }
+  POST /detect-model   → { model }          · body: { url }
+  POST /extract-pages  → { pages:[...] }    · body: { url, pages, model? }
+
+`model` on /extract-pages is the choice /detect-model already made for this
+document. Passing it skips a two-page probe that every fresh instance would
+otherwise repeat; the recognition itself is unchanged either way.
 
 Local run:   functions-framework --target ocr --port 8080
 Deploy:      gcloud run deploy ocr-service --source . --function ocr ...
@@ -22,12 +27,14 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import re
 import threading
 import time
 import urllib.request
 from urllib.parse import urlparse
 
 import functions_framework
+import numpy as np
 
 from assembly import group_into_lines
 from config import Settings
@@ -37,7 +44,11 @@ from render import PageRenderer
 from script_detector import RecognitionSample, default_model_failed
 from text_assembly import to_page_text
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    force=True,
+)
 log = logging.getLogger("ocr-fn")
 
 _settings = Settings()
@@ -49,6 +60,22 @@ _model_cache: dict[str, str] = {}
 _engine_lock = threading.Lock()
 
 _PROBE_PAGE_COUNT = 2
+_VALID_MODELS = {"default", "arabic"}
+
+# Engines are built lazily on first use, which cost ~20s of *request* latency
+# on every cold instance. Warming them on a background thread at import keeps
+# the port open for health checks while the models load out of band.
+_WARMUP_ENABLED = os.getenv("OCR_WARMUP", "true").lower() in {"1", "true", "yes", "on"}
+# Accept comma, colon, semicolon or whitespace: `gcloud --set-env-vars` treats
+# commas as its own separator, so a comma-delimited value cannot be passed
+# without the alternate-delimiter syntax.
+_WARMUP_MODELS = [
+    model
+    for model in re.split(r"[,:;\s]+", os.getenv("OCR_WARMUP_MODELS", "default,arabic"))
+    if model in _VALID_MODELS
+]
+_warmup_started = False
+_warmup_lock = threading.Lock()
 
 _ALLOWED_SCHEMES = {"http", "https"}
 _MAX_PDF_BYTES = int(os.getenv("OCR_MAX_PDF_BYTES", str(200 * 1024 * 1024)))
@@ -208,7 +235,12 @@ def _extract_pages(body: dict) -> dict:
     pages = body.get("pages") or []
 
     started = time.time()
-    model = _choose_model(pdf_bytes)
+    # The caller may pass the model it already resolved via /detect-model. The
+    # probe is deterministic for a given PDF, so this is the same choice the
+    # local detection would make — it just is not recomputed on every instance
+    # that has not seen this document before.
+    requested = body.get("model")
+    model = requested if requested in _VALID_MODELS else _choose_model(pdf_bytes)
     rendered = renderer.render(pdf_bytes, pages)
     out_pages = []
     for page_number, image in rendered:
@@ -229,9 +261,60 @@ def _count_pages(body: dict) -> dict:
     return {"count": _get_renderer().count(_load_pdf(body))}
 
 
+def _detect_model_route(body: dict) -> dict:
+    """Resolves the OCR model for a document once, so callers can pass it to
+    every /extract-pages request instead of each instance re-probing."""
+    return {"model": _choose_model(_load_pdf(body))}
+
+
+def _warmup() -> None:
+    """Builds the renderer, layout and recognition engines ahead of traffic."""
+    started = time.time()
+    try:
+        _get_renderer()
+        _get_layout()
+        blank = np.zeros((320, 320, 3), dtype="uint8")
+        for model in _WARMUP_MODELS:
+            _get_ocr().recognize(blank, model)
+        log.info(
+            "warmup complete in %.1fs (models=%s)", time.time() - started, ",".join(_WARMUP_MODELS)
+        )
+    except Exception as error:  # noqa: BLE001
+        # Warmup is an optimisation; a failure here must not stop the service
+        # from starting, since the lazy path still works.
+        log.warning("warmup failed (engines will load on first request): %s", error)
+
+
+def _ensure_warmup() -> None:
+    """Starts warmup once per process.
+
+    Deploying with `--function` replaces the image's CMD with Google's own
+    functions-framework launcher, which does not reliably run module-level
+    side effects early enough to observe. Kicking warmup from the first
+    request — including the startup probe's /health — makes it independent of
+    how the process was launched. The thread is daemonised so it never holds
+    up shutdown, and every engine getter is already lock-guarded, so a real
+    request arriving mid-warmup simply waits on the same lock it would have
+    taken anyway.
+    """
+    global _warmup_started
+    if _warmup_started or not _WARMUP_ENABLED:
+        return
+    with _warmup_lock:
+        if _warmup_started:
+            return
+        _warmup_started = True
+        log.info("starting warmup (models=%s)", ",".join(_WARMUP_MODELS) or "none")
+        threading.Thread(target=_warmup, name="ocr-warmup", daemon=True).start()
+
+
+_ensure_warmup()
+
+
 @functions_framework.http
 def ocr(request):
     """HTTP entry point. Dispatches on path."""
+    _ensure_warmup()
     path = (request.path or "/").rstrip("/") or "/"
 
     if path.endswith("/health") or path == "/":
@@ -243,6 +326,8 @@ def ocr(request):
             return _count_pages(body)
         if path.endswith("/extract-pages"):
             return _extract_pages(body)
+        if path.endswith("/detect-model"):
+            return _detect_model_route(body)
     except ValueError as error:
         return ({"error": str(error)}, 400)
     except KeyError as error:

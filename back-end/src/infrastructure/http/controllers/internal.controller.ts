@@ -1,6 +1,24 @@
 import type { Request, Response } from "express";
 
-import type { RunExtractionJobUseCase } from "@/application/use-cases/documents/run-extraction-job.use-case";
+import type {
+  RunExtractionJobStatus,
+  RunExtractionJobUseCase
+} from "@/application/use-cases/documents/run-extraction-job.use-case";
+
+/**
+ * `busy` must not be 200. A 2xx tells Cloud Tasks the job is finished and the
+ * task is deleted — so when several dispatches raced for one document, every
+ * loser was silently dropped. If the winner then died mid-pass, nothing was
+ * left in the queue to resume it. 409 makes Cloud Tasks retry after its
+ * backoff, which is exactly the desired behaviour.
+ */
+const STATUS_CODES: Record<RunExtractionJobStatus, number> = {
+  done: 200,
+  continued: 200,
+  missing: 200,
+  busy: 409,
+  failed: 500
+};
 
 export class InternalController {
   constructor(private readonly runExtractionJob: RunExtractionJobUseCase) { }
@@ -15,6 +33,6 @@ export class InternalController {
 
     const result = await this.runExtractionJob.execute({ userId, documentId });
 
-    res.status(result.status === "failed" ? 500 : 200).json(result);
+    res.status(STATUS_CODES[result.status]).json(result);
   };
 }
