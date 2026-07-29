@@ -1,5 +1,4 @@
 import type { DocumentPagesStore } from "@/application/services/document-pages-store";
-import type { ExtractionRegistry } from "@/application/services/extraction-registry";
 import {
   abortableSleep,
   type PageExtractionSession
@@ -15,7 +14,6 @@ export class PageExtractionDriver {
     private readonly storage: FileStorage,
     private readonly extractor: DocumentTextExtractor,
     private readonly pagesStore: DocumentPagesStore,
-    private readonly registry: ExtractionRegistry,
     private readonly batchSize: number,
     private readonly sourceUrlTtlSeconds: number,
     private readonly maxPageAttempts: number
@@ -37,27 +35,31 @@ export class PageExtractionDriver {
     });
     log.info(`document ${documentId} · driving extraction of ${pageCount} page(s)`);
 
-    for (let pass = 0; !signal.aborted; pass += 1) {
-      const targets = this.pending(known, pageCount);
-      if (targets.length === 0) break;
+    try {
+      for (let pass = 0; !signal.aborted; pass += 1) {
+        const targets = this.pending(known, pageCount);
+        if (targets.length === 0) break;
 
-      if (pass > 0) {
-        log.info(
-          `document ${documentId} · retry pass ${pass} · ${targets.length} page(s) still pending`
-        );
-        // Back off before retrying so transient rate limits have time to clear.
-        await abortableSleep(this.retryBackoffMs(pass), signal);
-        if (signal.aborted) return;
-      }
-
-      for (let i = 0; i < targets.length; i += this.normalizedBatchSize()) {
-        if (signal.aborted) {
-          log.info(`document ${documentId} · client disconnected · pausing extraction`);
-          return;
+        if (pass > 0) {
+          log.info(
+            `document ${documentId} · retry pass ${pass} · ${targets.length} page(s) still pending`
+          );
+          // Back off before retrying so transient rate limits have time to clear.
+          await abortableSleep(this.retryBackoffMs(pass), signal);
+          if (signal.aborted) return;
         }
-        const batch = targets.slice(i, i + this.normalizedBatchSize());
-        known = await this.extractBatch(session, pdfUrl, batch);
+
+        for (let i = 0; i < targets.length; i += this.normalizedBatchSize()) {
+          if (signal.aborted) {
+            log.info(`document ${documentId} · extraction paused · ${targets.length - i} page(s) left`);
+            return;
+          }
+          const batch = targets.slice(i, i + this.normalizedBatchSize());
+          known = await this.extractBatch(session, pdfUrl, batch);
+        }
       }
+    } finally {
+      await session.reportActive?.([]);
     }
 
     if (known?.done) {
@@ -72,7 +74,7 @@ export class PageExtractionDriver {
     pages: number[]
   ): Promise<DocumentPagesFile | null> {
     const { userId, documentId, pageCount, queue, log } = session;
-    this.registry.setActivePages(documentId, pages);
+    await session.reportActive?.(pages);
     for (const page of pages) {
       queue.push({ event: "page-start", data: { page } });
     }
@@ -96,8 +98,6 @@ export class PageExtractionDriver {
     } catch (error) {
       log.warn(`document ${documentId} · batch [${pages.join(", ")}] extraction failed`, error);
       return this.extractPagesIndividually(session, pdfUrl, pages);
-    } finally {
-      this.registry.clearActivePages(documentId);
     }
   }
 

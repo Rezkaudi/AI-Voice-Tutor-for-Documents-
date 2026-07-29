@@ -9,8 +9,9 @@ import { RegisterUploadUseCase } from "@/application/use-cases/documents/registe
 import { LoadLessonPagesUseCase } from "@/application/use-cases/documents/load-lesson-pages.use-case";
 import { PrepareLessonPagesUseCase } from "@/application/use-cases/documents/prepare-lesson-pages.use-case";
 import { ExtractDocumentPagesUseCase } from "@/application/use-cases/documents/extract-document-pages.use-case";
+import { RunExtractionJobUseCase } from "@/application/use-cases/documents/run-extraction-job.use-case";
 import { DocumentPagesStore } from "@/application/services/document-pages-store";
-import { ExtractionRegistry } from "@/application/services/extraction-registry";
+import { ExtractionLease } from "@/application/services/extraction-lease";
 import { PageExtractionDriver } from "@/application/services/page-extraction-driver";
 import { PageExtractionWatcher } from "@/application/services/page-extraction-watcher";
 import { StreamChatUseCase } from "@/application/use-cases/chat/stream-chat.use-case";
@@ -63,11 +64,17 @@ import { OpenAiTextToSpeechService } from "@/infrastructure/services/ai/openai-t
 import { OpenAiSpeechToTextService } from "@/infrastructure/services/ai/openai-speech-to-text.service";
 import { ConsoleLogger } from "@/infrastructure/logging/console-logger";
 
+import { CloudTasksExtractionQueue } from "@/infrastructure/services/queue/cloud-tasks-extraction-queue";
+import { InProcessExtractionQueue } from "@/infrastructure/services/queue/in-process-extraction-queue";
+
 import { DocumentsController } from "@/infrastructure/http/controllers/documents.controller";
 import { ChatController } from "@/infrastructure/http/controllers/chat.controller";
 import { TranscriptionController } from "@/infrastructure/http/controllers/transcription.controller";
 import { AuthController } from "@/infrastructure/http/controllers/auth.controller";
+import { InternalController } from "@/infrastructure/http/controllers/internal.controller";
 import { buildRequireAuth } from "@/infrastructure/http/middleware/require-auth";
+import { buildRequireWorkerToken } from "@/infrastructure/http/middleware/require-worker-token";
+import type { ExtractionQueue } from "@/domain/services/extraction-queue";
 import type { ServerDependencies } from "@/infrastructure/http/server";
 
 import { ENV_CONFIG } from "@/config/env.config";
@@ -135,7 +142,29 @@ export async function buildContainer(): Promise<Container> {
     logger,
     ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS
   );
-  const extractionRegistry = new ExtractionRegistry();
+  const extractionLease = new ExtractionLease(
+    fileStorage,
+    logger,
+    ENV_CONFIG.EXTRACTION_LEASE_TTL_SECONDS
+  );
+
+  const useCloudTasks = Boolean(
+    ENV_CONFIG.GCP_PROJECT_ID &&
+    ENV_CONFIG.GCP_TASKS_LOCATION &&
+    ENV_CONFIG.GCP_TASKS_QUEUE &&
+    ENV_CONFIG.EXTRACTION_WORKER_URL
+  );
+  const inProcessQueue = useCloudTasks ? null : new InProcessExtractionQueue(logger);
+  const extractionQueue: ExtractionQueue =
+    inProcessQueue ?? new CloudTasksExtractionQueue(ENV_CONFIG, logger);
+  logger
+    .scope("extraction")
+    .info(
+      useCloudTasks
+        ? `background extraction via Cloud Tasks queue "${ENV_CONFIG.GCP_TASKS_QUEUE}"`
+        : "background extraction running in-process — set GCP_TASKS_* to use Cloud Tasks"
+    );
+
   const pageCache = new StoragePageCache(documentPagesStore);
   const tutorService = new OpenAiTutorService(
     ENV_CONFIG,
@@ -172,6 +201,7 @@ export async function buildContainer(): Promise<Container> {
     uploadValidator,
     fileNaming,
     pdfCompressor,
+    extractionQueue,
     logger
   );
   const loadLessonPages = new LoadLessonPagesUseCase(
@@ -195,19 +225,38 @@ export async function buildContainer(): Promise<Container> {
     fileStorage,
     textExtractor,
     documentPagesStore,
-    extractionRegistry,
     ENV_CONFIG.DEFAULT_PAGE_EXTRACTION_BATCH_SIZE,
     ENV_CONFIG.OCR_SOURCE_URL_TTL_SECONDS,
+    ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS
+  );
+  const pageExtractionWatcher = new PageExtractionWatcher(
+    documentPagesStore,
+    extractionLease,
+    extractionQueue,
     ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS
   );
   const extractDocumentPages = new ExtractDocumentPagesUseCase(
     documentRepository,
     documentPagesStore,
-    extractionRegistry,
+    extractionLease,
+    extractionQueue,
+    pageExtractionWatcher,
     pageExtractionDriver,
-    new PageExtractionWatcher(documentPagesStore, extractionRegistry, pageExtractionDriver),
-    logger
+    logger,
+    ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS
   );
+  const runExtractionJob = new RunExtractionJobUseCase(
+    documentRepository,
+    documentPagesStore,
+    extractionLease,
+    pageExtractionDriver,
+    extractionQueue,
+    logger,
+    ENV_CONFIG.EXTRACTION_JOB_BUDGET_MS,
+    ENV_CONFIG.MAX_PAGE_EXTRACTION_ATTEMPTS,
+    Math.max(15_000, Math.floor((ENV_CONFIG.EXTRACTION_LEASE_TTL_SECONDS * 1000) / 3))
+  );
+  inProcessQueue?.setRunner((job) => runExtractionJob.execute(job));
   const streamChat = new StreamChatUseCase(
     documentRepository,
     tutorService,
@@ -235,6 +284,7 @@ export async function buildContainer(): Promise<Container> {
 
   // The gate every protected route shares, built from the same token service.
   const requireAuth = buildRequireAuth(tokenService);
+  const requireWorkerToken = buildRequireWorkerToken(ENV_CONFIG.EXTRACTION_WORKER_TOKEN);
 
   // ─── HTTP controllers ────────────────────────────────────────────────────
   const deps: ServerDependencies = {
@@ -257,7 +307,9 @@ export async function buildContainer(): Promise<Container> {
       getCurrentUser,
       logger
     ),
+    internal: new InternalController(runExtractionJob),
     requireAuth,
+    requireWorkerToken,
     logger
   };
 

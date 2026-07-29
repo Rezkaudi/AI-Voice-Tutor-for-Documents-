@@ -1,14 +1,15 @@
 import type { PageExtractionEvent } from "@/application/dto/page-extraction-event";
 import { AsyncEventQueue } from "@/application/services/async-event-queue";
 import type { DocumentPagesStore } from "@/application/services/document-pages-store";
-import type { ExtractionRegistry } from "@/application/services/extraction-registry";
+import type { ExtractionLease } from "@/application/services/extraction-lease";
 import type { PageExtractionDriver } from "@/application/services/page-extraction-driver";
 import type { PageExtractionSession } from "@/application/services/page-extraction-session";
 import type { PageExtractionWatcher } from "@/application/services/page-extraction-watcher";
 import type { DocumentPagesFile } from "@/domain/entities/document-pages";
-import { extractedPages } from "@/domain/entities/document-pages";
+import { extractedPages, pagesNeedingWork } from "@/domain/entities/document-pages";
 import { NotFoundError } from "@/domain/errors/app-error";
 import type { DocumentRepository } from "@/domain/repositories/document-repository";
+import type { ExtractionQueue } from "@/domain/services/extraction-queue";
 import type { Logger } from "@/domain/services/logger";
 
 export interface ExtractDocumentPagesInput {
@@ -22,10 +23,12 @@ export class ExtractDocumentPagesUseCase {
   constructor(
     private readonly repository: DocumentRepository,
     private readonly pagesStore: DocumentPagesStore,
-    private readonly registry: ExtractionRegistry,
-    private readonly driver: PageExtractionDriver,
+    private readonly lease: ExtractionLease,
+    private readonly extractionQueue: ExtractionQueue,
     private readonly watcher: PageExtractionWatcher,
-    private readonly logger: Logger
+    private readonly driver: PageExtractionDriver,
+    private readonly logger: Logger,
+    private readonly maxPageAttempts: number
   ) { }
 
   async execute(
@@ -51,26 +54,28 @@ export class ExtractDocumentPagesUseCase {
   }
 
   private async run(session: PageExtractionSession): Promise<void> {
-    const { userId, documentId, signal, queue, log } = session;
+    const { userId, documentId, pageCount, signal, queue, log } = session;
     const heartbeat = setInterval(() => queue.push({ event: "ping", data: {} }), HEARTBEAT_MS);
     try {
       const known = (await this.pagesStore.read(userId, documentId))?.file ?? null;
-      queue.push(this.snapshot(session, known));
-      if (known?.done) {
+      queue.push(await this.snapshot(session, known));
+
+      if (pagesNeedingWork(known, pageCount, this.maxPageAttempts).length === 0) {
         queue.push({ event: "done", data: {} });
         return;
       }
       if (signal.aborted) return;
 
-      if (this.registry.acquire(documentId)) {
-        try {
-          await this.driver.drive(session, known);
-        } finally {
-          this.registry.release(documentId);
-        }
-      } else {
-        await this.watcher.follow(session, known);
+      try {
+        await this.extractionQueue.enqueue(
+          { userId, documentId },
+          { dedupeKey: `extract-${documentId}-${Math.floor(Date.now() / 60_000)}` }
+        );
+      } catch (error) {
+        log.warn(`document ${documentId} · could not queue extraction`, error);
       }
+
+      await this.watcher.follow(session, known);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Extraction failed.";
       log.error(`document ${documentId} · extraction stream failed`, error);
@@ -81,27 +86,27 @@ export class ExtractDocumentPagesUseCase {
     }
   }
 
-  private snapshot(
+  private async snapshot(
     session: PageExtractionSession,
     file: DocumentPagesFile | null
-  ): PageExtractionEvent {
+  ): Promise<PageExtractionEvent> {
     return {
       event: "progress",
       data: {
         pageCount: file?.pageCount || session.pageCount,
         extracted: extractedPages(file),
         failed: file?.failed ?? [],
-        extracting: this.extractingPages(session, file),
+        extracting: await this.extractingPages(session, file),
         done: file?.done ?? false
       }
     };
   }
 
-  private extractingPages(
+  private async extractingPages(
     session: PageExtractionSession,
     file: DocumentPagesFile | null
-  ): number[] {
-    const active = this.registry.activePages(session.documentId);
+  ): Promise<number[]> {
+    const active = await this.lease.activePages(session.userId, session.documentId);
     if (active.length > 0) return active;
     if (file?.done) return [];
     return this.driver.nextBatch(file, session.pageCount);

@@ -10,6 +10,7 @@ export interface PageExtractionSession {
   readonly signal: AbortSignal;
   readonly queue: AsyncEventQueue<PageExtractionEvent>;
   readonly log: Logger;
+  readonly reportActive?: (pages: number[]) => Promise<boolean>;
 }
 
 export function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {

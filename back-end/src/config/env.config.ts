@@ -38,6 +38,16 @@ export type EnvConfig = {
   OCR_SERVICE_URL: string;
   OCR_SERVICE_TIMEOUT_MS: number;
   OCR_SOURCE_URL_TTL_SECONDS: number;
+
+  EXTRACTION_WORKER_TOKEN: string;
+  EXTRACTION_WORKER_URL: string;
+  EXTRACTION_JOB_BUDGET_MS: number;
+  EXTRACTION_LEASE_TTL_SECONDS: number;
+  GCP_PROJECT_ID: string;
+  GCP_TASKS_LOCATION: string;
+  GCP_TASKS_QUEUE: string;
+  GCP_TASKS_SERVICE_ACCOUNT: string;
+
   // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
@@ -120,6 +130,15 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   OCR_SERVICE_TIMEOUT_MS: Number(getEnv("OCR_SERVICE_TIMEOUT_MS")) || 2 * 60 * 1000,
 
   OCR_SOURCE_URL_TTL_SECONDS: Number(getEnv("OCR_SOURCE_URL_TTL_SECONDS")) || 4 * 60 * 60,
+
+  EXTRACTION_WORKER_TOKEN: getEnv("EXTRACTION_WORKER_TOKEN") || "",
+  EXTRACTION_WORKER_URL: getEnv("EXTRACTION_WORKER_URL") || "",
+  EXTRACTION_JOB_BUDGET_MS: Number(getEnv("EXTRACTION_JOB_BUDGET_MS")) || 8 * 60 * 1000,
+  EXTRACTION_LEASE_TTL_SECONDS: Number(getEnv("EXTRACTION_LEASE_TTL_SECONDS")) || 3 * 60,
+  GCP_PROJECT_ID: getEnv("GCP_PROJECT_ID") || "",
+  GCP_TASKS_LOCATION: getEnv("GCP_TASKS_LOCATION") || "",
+  GCP_TASKS_QUEUE: getEnv("GCP_TASKS_QUEUE") || "",
+  GCP_TASKS_SERVICE_ACCOUNT: getEnv("GCP_TASKS_SERVICE_ACCOUNT") || "",
 
   // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
   GOOGLE_CLIENT_ID: requireEnv("GOOGLE_CLIENT_ID"),
