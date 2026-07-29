@@ -11,7 +11,7 @@ import type { DocumentTextExtractor } from "@/domain/services/document-text-extr
 import type { FileStorage } from "@/domain/services/file-storage";
 
 export interface PageExtractionDriverOptions {
-  /** Pages recognised per OCR request. Amortises the PDF fetch and parse. */
+  /** Pages per OCR request. Keep at 1 — see DEFAULT_PAGE_EXTRACTION_BATCH_SIZE. */
   readonly batchSize: number;
   /** OCR requests in flight at once. This is what sets throughput. */
   readonly concurrency: number;

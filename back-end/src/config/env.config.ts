@@ -116,7 +116,12 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
     getEnv("TUTOR_LOG_VERBOSE"),
     (getEnv("NODE_ENV") || "development") !== "production"
   ),
-  DEFAULT_PAGE_EXTRACTION_BATCH_SIZE: Number(getEnv("DEFAULT_PAGE_EXTRACTION_BATCH_SIZE")) || 4,
+  // Pages per OCR request. Keep this at 1: throughput is set by
+  // PAGE_EXTRACTION_CONCURRENCY, not by batching, and a multi-page request
+  // multiplies its own duration. Slow pages (~80s each) made 4-page requests
+  // run 290-326s against a 300s client timeout — the service kept finishing
+  // the work just as the backend gave up, so those pages could never land.
+  DEFAULT_PAGE_EXTRACTION_BATCH_SIZE: Number(getEnv("DEFAULT_PAGE_EXTRACTION_BATCH_SIZE")) || 1,
 
   MAX_PAGE_EXTRACTION_ATTEMPTS: Number(getEnv("MAX_PAGE_EXTRACTION_ATTEMPTS")) || 5,
   DOCUMENT_URL_TTL_SECONDS: Number(getEnv("DOCUMENT_URL_TTL_SECONDS")) || 24 * 60 * 60,
@@ -133,7 +138,10 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   HF_VL_CONCURRENCY: Number(getEnv("HF_VL_CONCURRENCY")) || 5,
 
   OCR_SERVICE_URL: getEnv("OCR_SERVICE_URL") || "http://localhost:8080",
-  OCR_SERVICE_TIMEOUT_MS: Number(getEnv("OCR_SERVICE_TIMEOUT_MS")) || 5 * 60 * 1000,
+  // Per attempt. Must stay comfortably above the slowest single page and well
+  // below the job budget, so a wedged request is abandoned and retried on a
+  // fresh instance rather than burning the whole budget.
+  OCR_SERVICE_TIMEOUT_MS: Number(getEnv("OCR_SERVICE_TIMEOUT_MS")) || 2 * 60 * 1000,
   // Retries for saturation-style failures (429/503). Without these a busy
   // fleet consumes a page's MAX_PAGE_EXTRACTION_ATTEMPTS budget.
   OCR_SERVICE_MAX_ATTEMPTS: Number(getEnv("OCR_SERVICE_MAX_ATTEMPTS")) || 6,
