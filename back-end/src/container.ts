@@ -155,8 +155,7 @@ export async function buildContainer(): Promise<Container> {
     ENV_CONFIG.EXTRACTION_WORKER_URL
   );
   const inProcessQueue = useCloudTasks ? null : new InProcessExtractionQueue(logger);
-  const extractionQueue: ExtractionQueue =
-    inProcessQueue ?? new CloudTasksExtractionQueue(ENV_CONFIG, logger);
+  const extractionQueue: ExtractionQueue = inProcessQueue ?? new CloudTasksExtractionQueue(ENV_CONFIG, logger);
   logger
     .scope("extraction")
     .info(

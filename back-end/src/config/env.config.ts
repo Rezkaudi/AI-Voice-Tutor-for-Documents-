@@ -52,7 +52,6 @@ export type EnvConfig = {
   GCP_PROJECT_ID: string;
   GCP_TASKS_LOCATION: string;
   GCP_TASKS_QUEUE: string;
-  GCP_TASKS_SERVICE_ACCOUNT: string;
 
   // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
   GOOGLE_CLIENT_ID: string;
@@ -116,11 +115,7 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
     getEnv("TUTOR_LOG_VERBOSE"),
     (getEnv("NODE_ENV") || "development") !== "production"
   ),
-  // Pages per OCR request. Keep this at 1: throughput is set by
-  // PAGE_EXTRACTION_CONCURRENCY, not by batching, and a multi-page request
-  // multiplies its own duration. Slow pages (~80s each) made 4-page requests
-  // run 290-326s against a 300s client timeout — the service kept finishing
-  // the work just as the backend gave up, so those pages could never land.
+
   DEFAULT_PAGE_EXTRACTION_BATCH_SIZE: Number(getEnv("DEFAULT_PAGE_EXTRACTION_BATCH_SIZE")) || 1,
 
   MAX_PAGE_EXTRACTION_ATTEMPTS: Number(getEnv("MAX_PAGE_EXTRACTION_ATTEMPTS")) || 5,
@@ -138,25 +133,17 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   HF_VL_CONCURRENCY: Number(getEnv("HF_VL_CONCURRENCY")) || 5,
 
   OCR_SERVICE_URL: getEnv("OCR_SERVICE_URL") || "http://localhost:8080",
-  // Per attempt. Must stay comfortably above the slowest single page and well
-  // below the job budget, so a wedged request is abandoned and retried on a
-  // fresh instance rather than burning the whole budget.
+
   OCR_SERVICE_TIMEOUT_MS: Number(getEnv("OCR_SERVICE_TIMEOUT_MS")) || 2 * 60 * 1000,
-  // Retries for saturation-style failures (429/503). Without these a busy
-  // fleet consumes a page's MAX_PAGE_EXTRACTION_ATTEMPTS budget.
+
   OCR_SERVICE_MAX_ATTEMPTS: Number(getEnv("OCR_SERVICE_MAX_ATTEMPTS")) || 6,
 
   OCR_SOURCE_URL_TTL_SECONDS: Number(getEnv("OCR_SOURCE_URL_TTL_SECONDS")) || 4 * 60 * 60,
 
-  // OCR requests in flight per document. This — not the batch size — is what
-  // sets extraction throughput, and it needs headroom on ocr-service's
-  // max-instances (which is per-project, shared by every document at once).
-  PAGE_EXTRACTION_CONCURRENCY: Number(getEnv("PAGE_EXTRACTION_CONCURRENCY")) || 20,
-  // How much finished work may sit unwritten before pages.json is updated.
+  PAGE_EXTRACTION_CONCURRENCY: Number(getEnv("PAGE_EXTRACTION_CONCURRENCY")) || 1,
   PAGE_EXTRACTION_FLUSH_PAGES: Number(getEnv("PAGE_EXTRACTION_FLUSH_PAGES")) || 16,
   PAGE_EXTRACTION_FLUSH_MS: Number(getEnv("PAGE_EXTRACTION_FLUSH_MS")) || 5_000,
-  PAGE_EXTRACTION_ACTIVE_REPORT_MS:
-    Number(getEnv("PAGE_EXTRACTION_ACTIVE_REPORT_MS")) || 5_000,
+  PAGE_EXTRACTION_ACTIVE_REPORT_MS: Number(getEnv("PAGE_EXTRACTION_ACTIVE_REPORT_MS")) || 5_000,
 
   EXTRACTION_WORKER_TOKEN: getEnv("EXTRACTION_WORKER_TOKEN") || "",
   EXTRACTION_WORKER_URL: getEnv("EXTRACTION_WORKER_URL") || "",
@@ -165,7 +152,6 @@ export const ENV_CONFIG: Readonly<EnvConfig> = Object.freeze({
   GCP_PROJECT_ID: getEnv("GCP_PROJECT_ID") || "",
   GCP_TASKS_LOCATION: getEnv("GCP_TASKS_LOCATION") || "",
   GCP_TASKS_QUEUE: getEnv("GCP_TASKS_QUEUE") || "",
-  GCP_TASKS_SERVICE_ACCOUNT: getEnv("GCP_TASKS_SERVICE_ACCOUNT") || "",
 
   // ─── Auth (Google OAuth + JWT cookie sessions) ───────────────────────────
   GOOGLE_CLIENT_ID: requireEnv("GOOGLE_CLIENT_ID"),

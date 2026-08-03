@@ -17,17 +17,6 @@ interface DetectModelResponse {
   model?: string;
 }
 
-/**
- * Statuses that mean "the OCR fleet is saturated, come back shortly" rather
- * than "this page cannot be read". Retrying these in-place matters: without it
- * a transient 429 propagates up as a page failure and burns one of the page's
- * MAX_PAGE_EXTRACTION_ATTEMPTS, so a busy minute can permanently mark readable
- * pages as exhausted.
- *
- * 500 is deliberately absent: that is the service reporting it processed the
- * page and threw, which repeats deterministically. Only infrastructure-level
- * statuses are worth another attempt.
- */
 const RETRYABLE_STATUSES = new Set([408, 425, 429, 502, 503, 504]);
 
 const BASE_BACKOFF_MS = 1_000;
@@ -51,12 +40,6 @@ export class RemoteOcrTextExtractor implements DocumentTextExtractor {
     private readonly logger: Logger
   ) { }
 
-  /**
-   * Recognises `pageNumbers` in a single round trip. The OCR service renders
-   * and recognises each page exactly as it does for a one-page request, so the
-   * text is byte-identical to sending them separately — batching only
-   * amortises the PDF fetch and parse.
-   */
   async extractPages(
     pdfUrl: string,
     pageNumbers: number[],
@@ -83,11 +66,6 @@ export class RemoteOcrTextExtractor implements DocumentTextExtractor {
       .sort((a, b) => a.pageNumber - b.pageNumber);
   }
 
-  /**
-   * Runs the service's own script probe once. Returns null when the service is
-   * older than this endpoint, in which case callers omit the model and the
-   * service falls back to detecting per request — the previous behaviour.
-   */
   async resolveModel(pdfUrl: string, signal?: AbortSignal): Promise<string | null> {
     try {
       const result = await this.call<DetectModelResponse>(
@@ -158,8 +136,7 @@ export class RemoteOcrTextExtractor implements DocumentTextExtractor {
       return (await response.json()) as T;
     } catch (error) {
       if (error instanceof OcrRequestError) throw error;
-      // The caller's signal firing is a real cancellation; anything else
-      // (socket reset, DNS blip, our own timeout) is worth another attempt.
+
       if (signal?.aborted) throw error;
       throw new OcrRequestError(
         `OCR function ${path} → ${(error as Error)?.message ?? "network error"}`,
@@ -176,8 +153,7 @@ export class RemoteOcrTextExtractor implements DocumentTextExtractor {
   private backoffMs(attempt: number, retryAfter: number | null): number {
     if (retryAfter !== null) return Math.min(MAX_BACKOFF_MS, retryAfter);
     const exponential = Math.min(MAX_BACKOFF_MS, BASE_BACKOFF_MS * 2 ** (attempt - 1));
-    // Full jitter keeps a saturated fleet from being hit by a synchronised
-    // retry wave from every worker that failed in the same instant.
+
     return Math.floor(exponential / 2 + Math.random() * (exponential / 2));
   }
 }

@@ -5,13 +5,6 @@ import type {
   RunExtractionJobUseCase
 } from "@/application/use-cases/documents/run-extraction-job.use-case";
 
-/**
- * `busy` must not be 200. A 2xx tells Cloud Tasks the job is finished and the
- * task is deleted — so when several dispatches raced for one document, every
- * loser was silently dropped. If the winner then died mid-pass, nothing was
- * left in the queue to resume it. 409 makes Cloud Tasks retry after its
- * backoff, which is exactly the desired behaviour.
- */
 const STATUS_CODES: Record<RunExtractionJobStatus, number> = {
   done: 200,
   continued: 200,

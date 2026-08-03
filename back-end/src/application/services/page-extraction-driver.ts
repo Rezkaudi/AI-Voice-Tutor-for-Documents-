@@ -1,8 +1,5 @@
 import type { DocumentPagesStore } from "@/application/services/document-pages-store";
-import {
-  abortableSleep,
-  type PageExtractionSession
-} from "@/application/services/page-extraction-session";
+import { abortableSleep, type PageExtractionSession } from "@/application/services/page-extraction-session";
 import { PageWriteBuffer } from "@/application/services/page-write-buffer";
 import type { DocumentPagesFile } from "@/domain/entities/document-pages";
 import { pagesNeedingWork } from "@/domain/entities/document-pages";
@@ -11,9 +8,7 @@ import type { DocumentTextExtractor } from "@/domain/services/document-text-extr
 import type { FileStorage } from "@/domain/services/file-storage";
 
 export interface PageExtractionDriverOptions {
-  /** Pages per OCR request. Keep at 1 — see DEFAULT_PAGE_EXTRACTION_BATCH_SIZE. */
   readonly batchSize: number;
-  /** OCR requests in flight at once. This is what sets throughput. */
   readonly concurrency: number;
   readonly sourceUrlTtlSeconds: number;
   readonly maxPageAttempts: number;
@@ -48,10 +43,6 @@ export class PageExtractionDriver {
       contentType: "application/pdf"
     });
 
-    // Resolve the script once. The OCR service otherwise re-probes two pages
-    // with the default model on every instance that has not seen this PDF
-    // before — the probe result is identical, it was just being recomputed
-    // dozens of times inside real request latency.
     const model = await this.resolveModel(pdfUrl, session);
 
     const buffer = new PageWriteBuffer(
@@ -95,8 +86,6 @@ export class PageExtractionDriver {
       }
     } finally {
       stopReporting();
-      // Persist whatever the pool finished before the budget ran out, then
-      // clear the lease's active-page list so watchers stop showing them.
       await buffer.flush().catch((error) => {
         log.error(`document ${documentId} · could not persist extracted pages`, error);
       });
@@ -115,12 +104,6 @@ export class PageExtractionDriver {
     }
   }
 
-  /**
-   * Runs `concurrency` workers over a shared cursor. A worker that finishes a
-   * fast page immediately takes the next one instead of idling until every
-   * page in a fixed batch is done, so throughput tracks the *average* page
-   * latency rather than the slowest page in each group.
-   */
   private async runPool(
     session: PageExtractionSession,
     pdfUrl: string,
@@ -187,10 +170,6 @@ export class PageExtractionDriver {
     }
   }
 
-  /**
-   * A failed batch is retried page by page so one unreadable page cannot cost
-   * an attempt for the healthy pages sharing its request.
-   */
   private async extractPagesIndividually(
     session: PageExtractionSession,
     pdfUrl: string,
@@ -218,14 +197,6 @@ export class PageExtractionDriver {
     }
   }
 
-  /**
-   * Publishes the in-flight page set to the lease on a timer.
-   *
-   * This used to be written once per batch. With a worker pool that would be
-   * one S3 compare-and-set per worker per batch, all against the same lock
-   * object — a write storm that scales with concurrency and buys nothing,
-   * since the only consumer polls every two seconds anyway.
-   */
   private reportActivePeriodically(
     session: PageExtractionSession,
     active: Set<number>
