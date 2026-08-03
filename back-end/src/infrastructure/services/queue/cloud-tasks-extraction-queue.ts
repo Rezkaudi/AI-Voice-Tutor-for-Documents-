@@ -28,21 +28,12 @@ export class CloudTasksExtractionQueue implements ExtractionQueue {
     if (this.config.EXTRACTION_WORKER_TOKEN) {
       headers["X-Extraction-Token"] = this.config.EXTRACTION_WORKER_TOKEN;
     }
-
     const task: Record<string, unknown> = {
       httpRequest: {
         url: `${this.config.EXTRACTION_WORKER_URL}/internal/extraction/run`,
         httpMethod: "POST",
         headers,
-        body: Buffer.from(JSON.stringify(job), "utf8").toString("base64"),
-        ...(this.config.GCP_TASKS_SERVICE_ACCOUNT
-          ? {
-            oidcToken: {
-              serviceAccountEmail: this.config.GCP_TASKS_SERVICE_ACCOUNT,
-              audience: this.config.EXTRACTION_WORKER_URL
-            }
-          }
-          : {})
+        body: Buffer.from(JSON.stringify(job), "utf8").toString("base64")
       }
     };
 

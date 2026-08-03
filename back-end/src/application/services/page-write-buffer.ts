@@ -7,27 +7,10 @@ export interface PageWriteBufferOptions {
   readonly flushEveryMs: number;
 }
 
-/**
- * Coalescing, serialised writer for a document's `pages.json`.
- *
- * `DocumentPagesStore.mergePages` is a read-modify-write of one S3 object
- * guarded by an ETag compare-and-set. Calling it once per finished batch was
- * fine while a single batch was ever in flight, but with a worker pool every
- * worker would contend on the same object, exhaust MAX_MERGE_ATTEMPTS and
- * throw — which the driver would then treat as a batch failure and re-OCR
- * pages that had already succeeded.
- *
- * So writes funnel through one promise chain (never concurrent, therefore
- * never a CAS conflict) and are batched: a flush happens once enough pages
- * have accumulated or enough time has passed. The extraction lease already
- * guarantees only one job per document runs at a time, so an in-process chain
- * is sufficient to make conflicts impossible rather than merely rare.
- */
 export class PageWriteBuffer {
   private view: DocumentPagesFile | null;
   private bufferedPages: PageEntry[] = [];
   private bufferedFailed: number[] = [];
-  /** Pages recorded but not yet flushed — already done, must not be re-issued. */
   private readonly settled = new Set<number>();
   private lastFlushAt = Date.now();
   private chain: Promise<void> = Promise.resolve();
@@ -44,16 +27,10 @@ export class PageWriteBuffer {
     this.view = known;
   }
 
-  /** Latest persisted view. Only authoritative straight after `flush()`. */
   get snapshot(): DocumentPagesFile | null {
     return this.view;
   }
 
-  /**
-   * Pages still needing OCR, accounting for work buffered but not yet written.
-   * Without the `settled` filter a retry pass could re-dispatch a page whose
-   * result is sitting in the buffer.
-   */
   pending(): number[] {
     return pagesNeedingWork(this.view, this.pageCount, this.maxPageAttempts).filter(
       (page) => !this.settled.has(page)
@@ -84,7 +61,6 @@ export class PageWriteBuffer {
     if (due) await this.flush();
   }
 
-  /** Writes everything buffered. Safe to call concurrently — writes serialise. */
   async flush(): Promise<DocumentPagesFile | null> {
     const next = this.chain.catch(() => undefined).then(() => this.flushOnce());
     this.chain = next.catch(() => undefined);
@@ -106,13 +82,9 @@ export class PageWriteBuffer {
         pageCount: this.pageCount,
         failedPages: failed
       });
-      // Everything in this write is now reflected in `view`; the overlay that
-      // kept it from being re-issued is no longer needed.
       for (const entry of entries) this.settled.delete(entry.pageNumber);
       for (const page of failed) this.settled.delete(page);
     } catch (error) {
-      // Put the work back so the next flush (or the final one) retries it
-      // rather than silently dropping OCR results we already paid for.
       this.bufferedPages = entries.concat(this.bufferedPages);
       this.bufferedFailed = failed.concat(this.bufferedFailed);
       throw error;
